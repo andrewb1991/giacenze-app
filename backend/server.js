@@ -1813,7 +1813,7 @@ app.patch('/api/admin/products/:id/toggle', authenticateToken, requireAdmin, asy
 });
 
 // Avvia il server
-app.listen(PORT, async () => {
+app.listen(process.env.PORT, async () => {
   console.log(`🚀 Server giacenze multi-settimana su porta ${PORT}`);
   console.log(`🔑 JWT Secret: ${JWT_SECRET ? 'Configurato' : 'ERRORE: Mancante!'}`);
   console.log(`🗄️  MongoDB: ${MONGODB_URI}`);
