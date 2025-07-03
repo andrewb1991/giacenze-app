@@ -43,7 +43,7 @@ const AssignmentsManagement = () => {
 
   const handleUpdateAssignment = async (assignmentId) => {
     try {
-      const response = await fetch(`http://localhost:7070/api/assegnazioni/${assignmentId}`, {
+      const response = await fetch(`https://giacenze-app-production.up.railway.app/api/assegnazioni/${assignmentId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -66,7 +66,7 @@ const AssignmentsManagement = () => {
   const handleDeleteAssignment = async (assignmentId) => {
     if (window.confirm('Sei sicuro di voler eliminare questa assegnazione?')) {
       try {
-        const response = await fetch(`http://localhost:7070/api/assegnazioni/${assignmentId}`, {
+        const response = await fetch(`https://giacenze-app-production.up.railway.app/api/assegnazioni/${assignmentId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
