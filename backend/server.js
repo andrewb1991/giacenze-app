@@ -18,7 +18,7 @@ app.use(express.json());
 const corsOptions = {
   origin: [
     'http://localhost:3000', // Development
-    'https://giacenze-app-production.up.railway.app' // Production
+    'https://resourceful-serenity-production.up.railway.app' // Production
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
