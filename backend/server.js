@@ -15,6 +15,18 @@ const JWT_SECRET = process.env.JWT_SECRET || 'giacenze-default-secret-key-molto-
 app.use(cors());
 app.use(express.json());
 
+const corsOptions = {
+  origin: [
+    'http://localhost:3000', // Development
+    'https://giacenze-app-production.up.railway.app' // Production
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+
 // Connessione MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://andreabramucci:qWREkLZknWIxlawS@automando.fwkavbr.mongodb.net';
 mongoose.connect(MONGODB_URI, {
