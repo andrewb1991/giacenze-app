@@ -167,8 +167,6 @@ const [activeTab, setActiveTab] = useState('giacenze'); // 'overview', 'user-gia
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     setCurrentPage('dashboard');
-    setIsAuthenticated(true);
-    setUser(data.user);
   } catch (err) {
     setError(err.message);
   } finally {

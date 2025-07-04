@@ -12,7 +12,7 @@ export const apiCall = async (endpoint, options = {}, token = null) => {
       },
       ...options
     };
-
+    
     const response = await fetch(`${API_BASE}${endpoint}`, config);
     
     if (!response.ok) {
