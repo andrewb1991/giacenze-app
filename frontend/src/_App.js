@@ -88,7 +88,7 @@ const [editForm, setEditForm] = useState({
   const [adminView, setAdminView] = useState('overview');
 const [activeTab, setActiveTab] = useState('giacenze'); // 'overview', 'user-giacenze'
 
-  const API_BASE = 'http://localhost:8080/api';
+  const API_BASE = 'http://localhost:7070/api';
 
   // Funzione per formattare le settimane
   const formatWeek = (settimana) => {

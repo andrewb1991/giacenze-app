@@ -9,7 +9,7 @@ const jwt = require('jsonwebtoken');
 const xlsx = require('xlsx');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 7070;
 const JWT_SECRET = process.env.JWT_SECRET || 'giacenze-default-secret-key-molto-lunga-per-sicurezza-2024';
 
 app.use(cors());
@@ -28,7 +28,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Connessione MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || "localhost:3000"
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/giacenze"
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true

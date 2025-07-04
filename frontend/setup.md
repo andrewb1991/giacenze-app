@@ -18,7 +18,8 @@ Configura variabili ambiente (.env):
 
 MONGODB_URI=mongodb://localhost:27017/giacenze
 JWT_SECRET=your-super-secret-key
-PORT=8080
+PORT=51044
+
 
 Avvia server:
 
