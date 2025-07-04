@@ -9,7 +9,7 @@ const jwt = require('jsonwebtoken');
 const xlsx = require('xlsx');
 
 const app = express();
-const PORT = process.env.PORT || 7070;
+const PORT = process.env.PORT || 8080;
 const JWT_SECRET = process.env.JWT_SECRET || 'giacenze-default-secret-key-molto-lunga-per-sicurezza-2024';
 
 app.use(cors());
