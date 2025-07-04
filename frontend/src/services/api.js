@@ -1,5 +1,5 @@
 // services/api.js
-const API_BASE = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost'
+const API_BASE = process.env.NODE_ENV === 'production' 
   ? process.env.REACT_APP_API_URL || 'https://giacenze-app-production.up.railway.app/api'
   : 'http://localhost:7070/api';
 
