@@ -28,7 +28,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Connessione MongoDB
-const MONGODB_URI = process.env.MONGODB_URI
+const MONGODB_URI = process.env.MONGODB_URI || "localhost:3000"
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
