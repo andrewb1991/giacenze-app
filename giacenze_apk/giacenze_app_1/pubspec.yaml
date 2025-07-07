@@ -1,0 +1,38 @@
+name: giacenze_app
+description: App mobile per la gestione delle giacenze Automando
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # WebView per incorporare la webapp
+  webview_flutter: ^4.4.2
+  
+  # Controllo connettività
+  connectivity_plus: ^5.0.1
+  
+  # Icone Material (già incluse in Flutter)
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  
+  # Icona dell'app
+  # assets:
+  #   - assets/images/
+  
+  # Puoi aggiungere un'icona personalizzata qui
+  # flutter_icons:
+  #   android: "launcher_icon"
+  #   ios: true
+  #   image_path: "assets/icon/icon.png"
