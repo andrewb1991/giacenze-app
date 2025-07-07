@@ -1,7 +1,7 @@
-// App.js
+// App.js - Componente principale con gestione persistenza
 import React from 'react';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import { AppProvider } from './contexts/AppContext';
-import { useAuth } from './hooks/useAuth';
 import LoginPage from './components/auth/LoginPage';
 import Dashboard from './components/dashboard/Dashboard';
 import GiacenzePage from './components/giacenze/GiacenzePage';
@@ -10,71 +10,68 @@ import ReportsPage from './components/reports/ReportsPage';
 import AdminPage from './components/admin/AdminPage';
 import ErrorMessage from './components/shared/ErrorMessage';
 
+// 🔄 Componente di Loading
+const LoadingScreen = () => (
+  <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+    <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Caricamento...</h2>
+        <p className="text-gray-600">Verifica autenticazione in corso</p>
+      </div>
+    </div>
+  </div>
+);
+
+// 🎯 Componente principale dell'app (interno al provider)
 const AppContent = () => {
-  const { user, currentPage, setCurrentPage } = useAuth();
+  const { user, loading, currentPage, isAuthenticated } = useAuth();
 
+  // 🔄 Mostra loading durante l'inizializzazione
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  // 🔐 Se non autenticato, mostra login
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  // 🎨 Renderizza la pagina corrente in base al currentPage
   const renderCurrentPage = () => {
-    if (!user && currentPage !== 'login') {
-      return <LoginPage />;
-    }
-
     switch (currentPage) {
-      case 'login':
-        return <LoginPage />;
       case 'dashboard':
-        return user ? <Dashboard /> : <LoginPage />;
+        return <Dashboard />;
       case 'giacenze':
-        return user ? <GiacenzePage /> : <LoginPage />;
+        return <GiacenzePage />;
       case 'utilizzi':
-        return user ? <UtilizziPage /> : <LoginPage />;
+        return <UtilizziPage />;
       case 'reports':
-        return user ? <ReportsPage /> : <LoginPage />;
+        return <ReportsPage />;
       case 'admin':
-        return user && user.role === 'admin' ? <AdminPage /> : <AccessDenied />;
+        return user?.role === 'admin' ? <AdminPage /> : <Dashboard />;
       default:
-        // Homepage diversa in base al ruolo
-        if (user) {
-          return user.role === 'admin' ? <AdminPage /> : <Dashboard />;
-        }
-        return <LoginPage />;
+        return <Dashboard />;
     }
   };
 
   return (
-    <div>
-      <ErrorMessage />
+    <div className="App">
       {renderCurrentPage()}
+      <ErrorMessage />
     </div>
   );
 };
 
-const AccessDenied = () => {
-  const { setCurrentPage } = useAuth();
-  
+// 🚀 Componente App principale con tutti i provider
+const App = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md">
-        <h2 className="text-xl font-bold text-red-600 mb-4">Accesso Negato</h2>
-        <p className="text-gray-600 mb-4">
-          Non hai i permessi per accedere alla sezione amministrazione.
-        </p>
-        <button
-          onClick={() => setCurrentPage('dashboard')}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          Torna al Dashboard
-        </button>
-      </div>
-    </div>
+    <AuthProvider>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </AuthProvider>
   );
 };
 
-const GiacenzeApp = () => {
-  return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
-  );
-};
-
-export default GiacenzeApp;
+export default App;
