@@ -10,7 +10,7 @@
     "serve:local": "serve -s build -l 3000",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "deploy:railway": "railway up",
+    "deploy:railway": "serve -s build",
     "vars:railway": "railway variables --list",
     "logs:railway": "railway logs --follow"
   },
