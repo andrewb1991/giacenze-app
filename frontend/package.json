@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "react-scripts start",
-    "start": "react-scripts start",
+    "start": "serve -s build",
     "build": "react-scripts build",
     "serve": "serve -s build -l $PORT",
     "serve:local": "serve -s build -l 3000",
