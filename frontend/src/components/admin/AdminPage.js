@@ -115,6 +115,7 @@ import AdminStats from './AdminStats';
 import UtilizziManagement from './UtilizziManagement';
 import OperatoriManagement from './OperatoriManagement';
 import ProdottiManagement from './ProdottiManagement';
+import ReportsPage from '../reports/ReportsPage';
 
 const AdminPage = () => {
   const { setCurrentPage } = useAuth();
@@ -140,7 +141,8 @@ const AdminPage = () => {
     { id: 'assegnazioni', label: 'Assegnazioni', icon: '📋' },
     { id: 'utilizzi', label: 'Gestione Utilizzi', icon: '📊' },
     { id: 'operatori', label: 'Gestione Operatori', icon: '👥' },
-    { id: 'prodotti', label: 'Gestione Prodotti', icon: '🏷️' }
+    { id: 'prodotti', label: 'Gestione Prodotti', icon: '🏷️' },
+    {id: 'reports', label: 'Report', icon:'📑'}
   ];
 
   return (
@@ -198,6 +200,7 @@ const AdminPage = () => {
                   {activeTab === 'utilizzi' && <UtilizziManagement />}
                   {activeTab === 'operatori' && <OperatoriManagement />}
                   {activeTab === 'prodotti' && <ProdottiManagement />}
+                  {activeTab === 'reports' && <ReportsPage/>}
 
                   {/* Statistiche Admin */}
                   <AdminStats />

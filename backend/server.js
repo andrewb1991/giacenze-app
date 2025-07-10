@@ -877,7 +877,192 @@ app.get('/api/admin/utilizzi', authenticateToken, requireAdmin, async (req, res)
   }
 });
 
-// Report Excel
+// // Report Excel
+// app.get('/api/reports/excel', authenticateToken, async (req, res) => {
+//   try {
+//     const { settimanaId, poloId, mezzoId, userId } = req.query;
+    
+//     const filter = {};
+//     if (settimanaId) filter.settimanaId = settimanaId;
+//     if (poloId) filter.poloId = poloId;
+//     if (mezzoId) filter.mezzoId = mezzoId;
+    
+//     // Se non è admin, può vedere solo i suoi utilizzi
+//     if (req.user.role !== 'admin') {
+//       filter.userId = req.user.userId;
+//     } else if (userId) {
+//       filter.userId = userId;
+//     }
+    
+//     const utilizzi = await Utilizzo.find(filter)
+//       .populate('userId', 'username')
+//       .populate('productId', 'nome categoria unita')
+//       .populate('giacenzaUtenteId')
+//       .populate('settimanaId', 'numero anno dataInizio dataFine')
+//       .populate('poloId', 'nome')
+//       .populate('mezzoId', 'nome');
+    
+//     // Aggrega dati per report
+//     const reportData = {};
+    
+//     utilizzi.forEach(utilizzo => {
+//       const key = `${utilizzo.userId._id}-${utilizzo.productId._id}-${utilizzo.settimanaId?._id || 'global'}`;
+      
+//       if (!reportData[key]) {
+//         let periodoSettimana = 'Non disponibile';
+//         if (utilizzo.settimanaId?.dataInizio && utilizzo.settimanaId?.dataFine) {
+//           const dataInizio = new Date(utilizzo.settimanaId.dataInizio);
+//           const dataFine = new Date(utilizzo.settimanaId.dataFine);
+//           periodoSettimana = `${dataInizio.toLocaleDateString('it-IT')} - ${dataFine.toLocaleDateString('it-IT')}`;
+//         }
+        
+//         const quantitaDisponibile = utilizzo.giacenzaUtenteId?.quantitaDisponibile || 0;
+//         const quantitaMinima = utilizzo.giacenzaUtenteId?.quantitaMinima || 0;
+//         const quantitaAssegnata = utilizzo.giacenzaUtenteId?.quantitaAssegnata || 0;
+        
+//         // Calcola quantità da ordinare
+//         let quantitaDaOrdinare = 0;
+//         if (quantitaDisponibile <= quantitaMinima) {
+//           // Se siamo sotto soglia, ordiniamo per tornare alla quantità assegnata
+//           quantitaDaOrdinare = quantitaAssegnata - quantitaDisponibile;
+//         }
+        
+//         reportData[key] = {
+//           'Utente': utilizzo.userId.username,
+//           'Prodotto': utilizzo.productId.nome,
+//           'Categoria': utilizzo.productId.categoria || 'N/A',
+//           'Quantità Totale Utilizzata': 0,
+//           'Unità': utilizzo.productId.unita,
+//           'Quantità Disponibile': quantitaDisponibile,
+//           'Quantità Assegnata': quantitaAssegnata,
+//           'Quantità Minima': quantitaMinima,
+//           'Quantità da Ordinare': quantitaDaOrdinare, // ← NUOVA COLONNA
+//           'Polo': utilizzo.poloId?.nome || 'N/A',
+//           'Mezzo': utilizzo.mezzoId?.nome || 'N/A',
+//           'Periodo': periodoSettimana
+//         };
+//       }
+      
+//       reportData[key]['Quantità Totale Utilizzata'] += utilizzo.quantitaUtilizzata;
+//     });
+    
+//     // Converti in array e calcola stato
+//     const dataArray = Object.values(reportData).map(item => {
+//       // Ricalcola quantità da ordinare dopo aver sommato tutti gli utilizzi
+//       const disponibile = item['Quantità Disponibile'];
+//       const minima = item['Quantità Minima'];
+//       const assegnata = item['Quantità Assegnata'];
+      
+//       let quantitaDaOrdinare = 0;
+//       if (disponibile <= minima && assegnata > 0) {
+//         quantitaDaOrdinare = assegnata - disponibile;
+//       }
+      
+//       return {
+//         ...item,
+//         'Quantità da Ordinare': quantitaDaOrdinare,
+//         'Da Ordinare': (disponibile <= minima) ? 'SÌ' : 'NO',
+//         'Stato Giacenza': disponibile <= minima ? 'CRITICO' : 'OK',
+//         'Percentuale Rimasta': assegnata > 0 ? Math.round((disponibile / assegnata) * 100) + '%' : '0%'
+//       };
+//     });
+    
+//     // Ordina per prodotti critici prima, poi per quantità da ordinare (decrescente)
+//     dataArray.sort((a, b) => {
+//       // Prima i prodotti critici (da ordinare = SÌ)
+//       if (a['Da Ordinare'] === 'SÌ' && b['Da Ordinare'] === 'NO') return -1;
+//       if (a['Da Ordinare'] === 'NO' && b['Da Ordinare'] === 'SÌ') return 1;
+      
+//       // Poi per quantità da ordinare (decrescente)
+//       if (a['Da Ordinare'] === 'SÌ' && b['Da Ordinare'] === 'SÌ') {
+//         return b['Quantità da Ordinare'] - a['Quantità da Ordinare'];
+//       }
+      
+//       // Infine per utente e prodotto
+//       return a['Utente'].localeCompare(b['Utente']) || a['Prodotto'].localeCompare(b['Prodotto']);
+//     });
+    
+//     // Crea Excel con colonne ottimizzate
+//     const wb = xlsx.utils.book_new();
+//     const ws = xlsx.utils.json_to_sheet(dataArray);
+    
+//     // Impostazioni colonne con larghezze ottimizzate
+//     ws['!cols'] = [
+//       { wch: 15 }, // Utente
+//       { wch: 25 }, // Prodotto
+//       { wch: 15 }, // Categoria
+//       { wch: 12 }, // Quantità Utilizzata
+//       { wch: 8 },  // Unità
+//       { wch: 12 }, // Disponibile
+//       { wch: 12 }, // Assegnata
+//       { wch: 12 }, // Minima
+//       { wch: 15 }, // Quantità da Ordinare ← NUOVA
+//       { wch: 15 }, // Polo
+//       { wch: 15 }, // Mezzo
+//       { wch: 20 }, // Periodo
+//       { wch: 12 }, // Da Ordinare
+//       { wch: 12 }, // Stato
+//       { wch: 12 }  // Percentuale Rimasta
+//     ];
+    
+//     // Formattazione condizionale per le righe critiche
+//     const range = xlsx.utils.decode_range(ws['!ref']);
+//     for (let row = 1; row <= range.e.r; row++) {
+//       const daOrdinareCell = ws[xlsx.utils.encode_cell({ r: row, c: 12 })]; // Colonna "Da Ordinare"
+//       if (daOrdinareCell && daOrdinareCell.v === 'SÌ') {
+//         // Evidenzia in rosso le righe critiche
+//         for (let col = 0; col <= range.e.c; col++) {
+//           const cellRef = xlsx.utils.encode_cell({ r: row, c: col });
+//           if (!ws[cellRef]) ws[cellRef] = {};
+//           ws[cellRef].s = {
+//             fill: { fgColor: { rgb: "FFE6E6" } }, // Sfondo rosso chiaro
+//             font: { bold: true }
+//           };
+//         }
+//       }
+//     }
+    
+//     xlsx.utils.book_append_sheet(wb, ws, 'Report Utilizzi');
+    
+//     // Aggiungi un secondo foglio con il riepilogo ordini
+//     const riepilogoOrdini = dataArray
+//       .filter(item => item['Da Ordinare'] === 'SÌ')
+//       .map(item => ({
+//         'Prodotto': item['Prodotto'],
+//         'Categoria': item['Categoria'],
+//         'Utente': item['Utente'],
+//         'Quantità da Ordinare': item['Quantità da Ordinare'],
+//         'Unità': item['Unità'],
+//         'Disponibile': item['Quantità Disponibile'],
+//         'Minima': item['Quantità Minima'],
+//         'Note': `Sotto soglia - Urgente`
+//       }));
+    
+//     if (riepilogoOrdini.length > 0) {
+//       const wsOrdini = xlsx.utils.json_to_sheet(riepilogoOrdini);
+//       wsOrdini['!cols'] = [
+//         { wch: 25 }, // Prodotto
+//         { wch: 15 }, // Categoria
+//         { wch: 15 }, // Utente
+//         { wch: 15 }, // Quantità da Ordinare
+//         { wch: 8 },  // Unità
+//         { wch: 12 }, // Disponibile
+//         { wch: 12 }, // Minima
+//         { wch: 20 }  // Note
+//       ];
+//       xlsx.utils.book_append_sheet(wb, wsOrdini, 'Lista Ordini');
+//     }
+    
+//     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    
+//     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+//     res.setHeader('Content-Disposition', `attachment; filename=report_giacenze_${Date.now()}.xlsx`);
+//     res.send(buffer);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+
 app.get('/api/reports/excel', authenticateToken, async (req, res) => {
   try {
     const { settimanaId, poloId, mezzoId, userId } = req.query;
@@ -895,14 +1080,14 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
     }
     
     const utilizzi = await Utilizzo.find(filter)
-      .populate('userId', 'username')
+      .populate('userId', 'username email')
       .populate('productId', 'nome categoria unita')
       .populate('giacenzaUtenteId')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome');
     
-    // Aggrega dati per report
+    // Aggrega dati per report UTILIZZI (foglio 1)
     const reportData = {};
     
     utilizzi.forEach(utilizzo => {
@@ -920,10 +1105,8 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
         const quantitaMinima = utilizzo.giacenzaUtenteId?.quantitaMinima || 0;
         const quantitaAssegnata = utilizzo.giacenzaUtenteId?.quantitaAssegnata || 0;
         
-        // Calcola quantità da ordinare
         let quantitaDaOrdinare = 0;
         if (quantitaDisponibile <= quantitaMinima) {
-          // Se siamo sotto soglia, ordiniamo per tornare alla quantità assegnata
           quantitaDaOrdinare = quantitaAssegnata - quantitaDisponibile;
         }
         
@@ -936,7 +1119,7 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
           'Quantità Disponibile': quantitaDisponibile,
           'Quantità Assegnata': quantitaAssegnata,
           'Quantità Minima': quantitaMinima,
-          'Quantità da Ordinare': quantitaDaOrdinare, // ← NUOVA COLONNA
+          'Quantità da Ordinare': quantitaDaOrdinare,
           'Polo': utilizzo.poloId?.nome || 'N/A',
           'Mezzo': utilizzo.mezzoId?.nome || 'N/A',
           'Periodo': periodoSettimana
@@ -946,9 +1129,8 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
       reportData[key]['Quantità Totale Utilizzata'] += utilizzo.quantitaUtilizzata;
     });
     
-    // Converti in array e calcola stato
+    // Converti in array e calcola stato per UTILIZZI
     const dataArray = Object.values(reportData).map(item => {
-      // Ricalcola quantità da ordinare dopo aver sommato tutti gli utilizzi
       const disponibile = item['Quantità Disponibile'];
       const minima = item['Quantità Minima'];
       const assegnata = item['Quantità Assegnata'];
@@ -969,62 +1151,152 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
     
     // Ordina per prodotti critici prima, poi per quantità da ordinare (decrescente)
     dataArray.sort((a, b) => {
-      // Prima i prodotti critici (da ordinare = SÌ)
       if (a['Da Ordinare'] === 'SÌ' && b['Da Ordinare'] === 'NO') return -1;
       if (a['Da Ordinare'] === 'NO' && b['Da Ordinare'] === 'SÌ') return 1;
       
-      // Poi per quantità da ordinare (decrescente)
       if (a['Da Ordinare'] === 'SÌ' && b['Da Ordinare'] === 'SÌ') {
         return b['Quantità da Ordinare'] - a['Quantità da Ordinare'];
       }
       
-      // Infine per utente e prodotto
       return a['Utente'].localeCompare(b['Utente']) || a['Prodotto'].localeCompare(b['Prodotto']);
     });
+
+    // ========== NUOVO: Query per GIACENZE PER OPERATORE (foglio 3) ==========
     
-    // Crea Excel con colonne ottimizzate
+    // Costruisci filtro per giacenze
+    const giacenzeFilter = {};
+    if (settimanaId) {
+      giacenzeFilter.$or = [
+        { settimanaId: settimanaId },
+        { settimanaId: null }
+      ];
+    }
+    
+    // Se non è admin, può vedere solo le sue giacenze
+    if (req.user.role !== 'admin') {
+      giacenzeFilter.userId = req.user.userId;
+    } else if (userId) {
+      giacenzeFilter.userId = userId;
+    }
+    
+    // Query per tutte le giacenze (SEMPLIFICATA)
+    const giacenze = await GiacenzaUtente.find(giacenzeFilter)
+      .populate('userId', 'username email')
+      .populate('productId', 'nome categoria unita')
+      .populate('settimanaId', 'numero anno dataInizio dataFine');
+
+    // Query separata per le assegnazioni
+    let assegnazioniMap = {};
+    if (giacenze.length > 0) {
+      // Costruisci filtro per assegnazioni
+      const assegnazioniFilter = {
+        userId: { $in: giacenze.map(g => g.userId._id) }
+      };
+      if (settimanaId) assegnazioniFilter.settimanaId = settimanaId;
+      if (poloId) assegnazioniFilter.poloId = poloId;
+      if (mezzoId) assegnazioniFilter.mezzoId = mezzoId;
+      
+      const assegnazioni = await Assegnazione.find(assegnazioniFilter)
+        .populate('poloId', 'nome')
+        .populate('mezzoId', 'nome')
+        .populate('settimanaId', 'numero anno');
+      
+      // Crea mappa per lookup veloce
+      assegnazioni.forEach(ass => {
+        const key = `${ass.userId}-${ass.settimanaId?._id || 'global'}`;
+        if (!assegnazioniMap[key]) {
+          assegnazioniMap[key] = ass;
+        }
+      });
+      
+      // Crea anche una mappa per utente (per giacenze globali)
+      assegnazioni.forEach(ass => {
+        const userKey = `${ass.userId}-user`;
+        if (!assegnazioniMap[userKey]) {
+          assegnazioniMap[userKey] = ass;
+        }
+      });
+    }
+    
+    // Prepara dati per foglio GIACENZE PER OPERATORE
+    const giacenzeData = giacenze.map(giacenza => {
+      const settimanaKey = giacenza.settimanaId?._id || 'global';
+      const userKey = `${giacenza.userId._id}-user`;
+      
+      // Cerca prima per settimana specifica, poi per utente generico
+      const assegnazione = assegnazioniMap[`${giacenza.userId._id}-${settimanaKey}`] || 
+                          assegnazioniMap[userKey];
+      
+      let periodoSettimana = 'Globale';
+      if (giacenza.settimanaId?.dataInizio && giacenza.settimanaId?.dataFine) {
+        const dataInizio = new Date(giacenza.settimanaId.dataInizio);
+        const dataFine = new Date(giacenza.settimanaId.dataFine);
+        periodoSettimana = `Sett. ${giacenza.settimanaId.numero}/${giacenza.settimanaId.anno} (${dataInizio.toLocaleDateString('it-IT')} - ${dataFine.toLocaleDateString('it-IT')})`;
+      }
+      
+      const stato = giacenza.quantitaDisponibile <= giacenza.quantitaMinima ? 'CRITICO' : 'OK';
+      const percentuale = giacenza.quantitaAssegnata > 0 
+        ? Math.round((giacenza.quantitaDisponibile / giacenza.quantitaAssegnata) * 100) 
+        : 0;
+      
+      return {
+        'Operatore': giacenza.userId.username,
+        'Email': giacenza.userId.email || 'N/A',
+        'Prodotto': giacenza.productId.nome,
+        'Categoria': giacenza.productId.categoria || 'N/A',
+        'Unità': giacenza.productId.unita,
+        'Quantità Assegnata': giacenza.quantitaAssegnata,
+        'Quantità Disponibile': giacenza.quantitaDisponibile,
+        'Soglia Minima': giacenza.quantitaMinima,
+        'Stato': stato,
+        'Percentuale Rimasta': percentuale + '%',
+        'Settimana/Periodo': periodoSettimana,
+        'Polo': assegnazione?.poloId?.nome || 'N/A',
+        'Mezzo': assegnazione?.mezzoId?.nome || 'N/A',
+        'Ultima Modifica': giacenza.updatedAt ? new Date(giacenza.updatedAt).toLocaleDateString('it-IT') : 'N/A'
+      };
+    });
+    
+    // Ordina giacenze: prima quelle critiche, poi per operatore
+    giacenzeData.sort((a, b) => {
+      if (a.Stato === 'CRITICO' && b.Stato === 'OK') return -1;
+      if (a.Stato === 'OK' && b.Stato === 'CRITICO') return 1;
+      return a.Operatore.localeCompare(b.Operatore) || a.Prodotto.localeCompare(b.Prodotto);
+    });
+
+    // ========== CREAZIONE FILE EXCEL CON 3 FOGLI ==========
+    
     const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(dataArray);
     
-    // Impostazioni colonne con larghezze ottimizzate
+    // FOGLIO 1: Report Utilizzi (esistente)
+    const ws = xlsx.utils.json_to_sheet(dataArray);
     ws['!cols'] = [
-      { wch: 15 }, // Utente
-      { wch: 25 }, // Prodotto
-      { wch: 15 }, // Categoria
-      { wch: 12 }, // Quantità Utilizzata
-      { wch: 8 },  // Unità
-      { wch: 12 }, // Disponibile
-      { wch: 12 }, // Assegnata
-      { wch: 12 }, // Minima
-      { wch: 15 }, // Quantità da Ordinare ← NUOVA
-      { wch: 15 }, // Polo
-      { wch: 15 }, // Mezzo
-      { wch: 20 }, // Periodo
-      { wch: 12 }, // Da Ordinare
-      { wch: 12 }, // Stato
-      { wch: 12 }  // Percentuale Rimasta
+      { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 8 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 15 },
+      { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 12 }
     ];
     
-    // Formattazione condizionale per le righe critiche
-    const range = xlsx.utils.decode_range(ws['!ref']);
-    for (let row = 1; row <= range.e.r; row++) {
-      const daOrdinareCell = ws[xlsx.utils.encode_cell({ r: row, c: 12 })]; // Colonna "Da Ordinare"
-      if (daOrdinareCell && daOrdinareCell.v === 'SÌ') {
-        // Evidenzia in rosso le righe critiche
-        for (let col = 0; col <= range.e.c; col++) {
-          const cellRef = xlsx.utils.encode_cell({ r: row, c: col });
-          if (!ws[cellRef]) ws[cellRef] = {};
-          ws[cellRef].s = {
-            fill: { fgColor: { rgb: "FFE6E6" } }, // Sfondo rosso chiaro
-            font: { bold: true }
-          };
+    // Formattazione condizionale per le righe critiche (foglio 1)
+    if (ws['!ref']) {
+      const range = xlsx.utils.decode_range(ws['!ref']);
+      for (let row = 1; row <= range.e.r; row++) {
+        const daOrdinareCell = ws[xlsx.utils.encode_cell({ r: row, c: 12 })];
+        if (daOrdinareCell && daOrdinareCell.v === 'SÌ') {
+          for (let col = 0; col <= range.e.c; col++) {
+            const cellRef = xlsx.utils.encode_cell({ r: row, c: col });
+            if (!ws[cellRef]) ws[cellRef] = {};
+            ws[cellRef].s = {
+              fill: { fgColor: { rgb: "FFE6E6" } },
+              font: { bold: true }
+            };
+          }
         }
       }
     }
     
     xlsx.utils.book_append_sheet(wb, ws, 'Report Utilizzi');
     
-    // Aggiungi un secondo foglio con il riepilogo ordini
+    // FOGLIO 2: Lista Ordini (esistente)
     const riepilogoOrdini = dataArray
       .filter(item => item['Da Ordinare'] === 'SÌ')
       .map(item => ({
@@ -1041,24 +1313,50 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
     if (riepilogoOrdini.length > 0) {
       const wsOrdini = xlsx.utils.json_to_sheet(riepilogoOrdini);
       wsOrdini['!cols'] = [
-        { wch: 25 }, // Prodotto
-        { wch: 15 }, // Categoria
-        { wch: 15 }, // Utente
-        { wch: 15 }, // Quantità da Ordinare
-        { wch: 8 },  // Unità
-        { wch: 12 }, // Disponibile
-        { wch: 12 }, // Minima
-        { wch: 20 }  // Note
+        { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+        { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 20 }
       ];
       xlsx.utils.book_append_sheet(wb, wsOrdini, 'Lista Ordini');
+    }
+    
+    // FOGLIO 3: Giacenze per Operatore (NUOVO)
+    if (giacenzeData.length > 0) {
+      const wsGiacenze = xlsx.utils.json_to_sheet(giacenzeData);
+      wsGiacenze['!cols'] = [
+        { wch: 18 }, { wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 8 },
+        { wch: 15 }, { wch: 18 }, { wch: 12 }, { wch: 10 }, { wch: 12 },
+        { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 12 }
+      ];
+      
+      // Formattazione condizionale per giacenze critiche
+      if (wsGiacenze['!ref']) {
+        const rangeGiacenze = xlsx.utils.decode_range(wsGiacenze['!ref']);
+        for (let row = 1; row <= rangeGiacenze.e.r; row++) {
+          const statoCell = wsGiacenze[xlsx.utils.encode_cell({ r: row, c: 8 })];
+          if (statoCell && statoCell.v === 'CRITICO') {
+            for (let col = 0; col <= rangeGiacenze.e.c; col++) {
+              const cellRef = xlsx.utils.encode_cell({ r: row, c: col });
+              if (!wsGiacenze[cellRef]) wsGiacenze[cellRef] = {};
+              wsGiacenze[cellRef].s = {
+                fill: { fgColor: { rgb: "FFCCCC" } },
+                font: { bold: true }
+              };
+            }
+          }
+        }
+      }
+      
+      xlsx.utils.book_append_sheet(wb, wsGiacenze, 'Giacenze per Operatore');
     }
     
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
     
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=report_giacenze_${Date.now()}.xlsx`);
+    res.setHeader('Content-Disposition', `attachment; filename=report_completo_giacenze_${Date.now()}.xlsx`);
     res.send(buffer);
+    
   } catch (error) {
+    console.error('❌ Errore generazione report:', error);
     res.status(500).json({ message: error.message });
   }
 });
