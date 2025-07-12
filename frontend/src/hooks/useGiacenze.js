@@ -206,6 +206,42 @@ export const useGiacenze = () => {
     }
   };
 
+  const loadUserGiacenze = async (userId, filters = {}) => {
+  try {
+    setLoading(true);
+    setError('');
+    
+    // Costruisci i parametri della query
+    const queryParams = new URLSearchParams();
+    
+    // Aggiungi userId se specificato (per admin che visualizza giacenze di un utente)
+    if (userId) {
+      queryParams.append('userId', userId);
+    }
+    
+    // Aggiungi tutti i filtri
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== '' && value !== null && value !== undefined) {
+        queryParams.append(key, value);
+      }
+    });
+    
+    // Determina quale endpoint usare
+    const endpoint = userId 
+      ? `/admin/giacenze?${queryParams}` // Admin che visualizza giacenze di un utente
+      : `/my-giacenze?${queryParams}`;   // Utente che visualizza le sue giacenze
+    
+    console.log('🔍 Caricando giacenze da:', endpoint);
+    
+    const data = await apiCall(endpoint, {}, token);
+    setAllGiacenze(Array.isArray(data) ? data : []);
+  } catch (err) {
+    setError('Errore nel caricamento giacenze: ' + err.message);
+    setAllGiacenze([]);
+  } finally {
+    setLoading(false);
+  }
+};
   const setSelectedAssignment = (assignment) => {
     dispatch({ type: 'SET_SELECTED_ASSIGNMENT', payload: assignment });
   };

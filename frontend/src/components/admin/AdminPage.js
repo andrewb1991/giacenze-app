@@ -142,7 +142,7 @@ const AdminPage = () => {
     { id: 'utilizzi', label: 'Gestione Utilizzi', icon: '📊' },
     { id: 'operatori', label: 'Gestione Operatori', icon: '👥' },
     { id: 'prodotti', label: 'Gestione Prodotti', icon: '🏷️' },
-    {id: 'reports', label: 'Report', icon:'📑'}
+    {id: 'reports', label: 'Genera Report', icon:'📑'}
   ];
 
   return (

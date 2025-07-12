@@ -209,16 +209,59 @@ app.get('/api/products', authenticateToken, async (req, res) => {
 });
 
 // MODIFICATA: Giacenze personali dell'utente (con supporto multi-settimana)
+// modifica 12/07/2025
+// app.get('/api/my-giacenze', authenticateToken, async (req, res) => {
+//   try {
+//     const { settimanaId } = req.query;
+    
+//     let filter = { 
+//       userId: req.user.userId, 
+//       attiva: true 
+//     };
+    
+//     // Se specificata una settimana, cerca giacenze per quella settimana O globali
+//     if (settimanaId) {
+//       filter.$or = [
+//         { settimanaId: settimanaId },
+//         { isGlobale: true }
+//       ];
+//     }
+    
+//     const giacenze = await GiacenzaUtente.find(filter)
+//       .populate('productId', 'nome descrizione unita categoria')
+//       .populate('assegnatoDa', 'username')
+//       .populate('settimanaId', 'numero anno dataInizio dataFine')
+//       .sort({ 'productId.nome': 1 });
+
+//     res.json(giacenze);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+
+// AGGIORNA l'endpoint esistente /api/my-giacenze nel server.js:
+
 app.get('/api/my-giacenze', authenticateToken, async (req, res) => {
   try {
-    const { settimanaId } = req.query;
+    const { 
+      settimanaId, 
+      productId, 
+      stato, 
+      searchTerm,
+      quantitaAssegnataMin,
+      quantitaAssegnataMax,
+      quantitaDisponibileMin,
+      quantitaDisponibileMax,
+      sogliaMinimaMin,
+      sogliaMinimaMax
+    } = req.query;
     
     let filter = { 
       userId: req.user.userId, 
       attiva: true 
     };
     
-    // Se specificata una settimana, cerca giacenze per quella settimana O globali
+    // Filtro per settimana (esistente)
     if (settimanaId) {
       filter.$or = [
         { settimanaId: settimanaId },
@@ -226,14 +269,97 @@ app.get('/api/my-giacenze', authenticateToken, async (req, res) => {
       ];
     }
     
+    // NUOVO: Filtro per prodotto specifico
+    if (productId) {
+      filter.productId = productId;
+    }
+    
+    console.log('🔍 Filtri applicati:', { 
+      settimanaId, 
+      productId, 
+      stato, 
+      searchTerm,
+      ranges: {
+        quantitaAssegnataMin,
+        quantitaAssegnataMax,
+        quantitaDisponibileMin,
+        quantitaDisponibileMax,
+        sogliaMinimaMin,
+        sogliaMinimaMax
+      }
+    });
+    
     const giacenze = await GiacenzaUtente.find(filter)
       .populate('productId', 'nome descrizione unita categoria')
       .populate('assegnatoDa', 'username')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
       .sort({ 'productId.nome': 1 });
 
-    res.json(giacenze);
+    let filteredGiacenze = giacenze;
+
+    // NUOVO: Filtri aggiuntivi (lato server per performance)
+    
+    // Filtro per stato (critico/ok)
+    if (stato) {
+      if (stato === 'critico') {
+        filteredGiacenze = filteredGiacenze.filter(g => 
+          g.quantitaDisponibile <= g.quantitaMinima
+        );
+      } else if (stato === 'ok') {
+        filteredGiacenze = filteredGiacenze.filter(g => 
+          g.quantitaDisponibile > g.quantitaMinima
+        );
+      }
+    }
+
+    // Filtro ricerca libera
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filteredGiacenze = filteredGiacenze.filter(g => 
+        g.productId?.nome.toLowerCase().includes(term) ||
+        g.productId?.categoria.toLowerCase().includes(term) ||
+        g.productId?.descrizione?.toLowerCase().includes(term) ||
+        g.productId?.unita.toLowerCase().includes(term) ||
+        g.note?.toLowerCase().includes(term)
+      );
+    }
+
+    // Filtri numerici per quantità
+    if (quantitaAssegnataMin) {
+      const min = parseInt(quantitaAssegnataMin);
+      filteredGiacenze = filteredGiacenze.filter(g => g.quantitaAssegnata >= min);
+    }
+    
+    if (quantitaAssegnataMax) {
+      const max = parseInt(quantitaAssegnataMax);
+      filteredGiacenze = filteredGiacenze.filter(g => g.quantitaAssegnata <= max);
+    }
+
+    if (quantitaDisponibileMin) {
+      const min = parseInt(quantitaDisponibileMin);
+      filteredGiacenze = filteredGiacenze.filter(g => g.quantitaDisponibile >= min);
+    }
+    
+    if (quantitaDisponibileMax) {
+      const max = parseInt(quantitaDisponibileMax);
+      filteredGiacenze = filteredGiacenze.filter(g => g.quantitaDisponibile <= max);
+    }
+
+    if (sogliaMinimaMin) {
+      const min = parseInt(sogliaMinimaMin);
+      filteredGiacenze = filteredGiacenze.filter(g => g.quantitaMinima >= min);
+    }
+    
+    if (sogliaMinimaMax) {
+      const max = parseInt(sogliaMinimaMax);
+      filteredGiacenze = filteredGiacenze.filter(g => g.quantitaMinima <= max);
+    }
+
+    console.log(`📊 Risultati: ${filteredGiacenze.length} di ${giacenze.length} giacenze`);
+
+    res.json(filteredGiacenze);
   } catch (error) {
+    console.error('❌ Errore caricamento giacenze utente:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -646,12 +772,56 @@ app.post('/api/use-product', authenticateToken, async (req, res) => {
 });
 
 // Routes Admin per gestire giacenze
+// MODIFICA 12/07/205
+// app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res) => {
+//   try {
+//     const { userId, settimanaId } = req.query;
+    
+//     let filter = { attiva: true };
+//     if (userId) filter.userId = userId;
+//     if (settimanaId) {
+//       filter.$or = [
+//         { settimanaId: settimanaId },
+//         { isGlobale: true }
+//       ];
+//     }
+
+//     const giacenze = await GiacenzaUtente.find(filter)
+//       .populate('userId', 'username email')
+//       .populate('productId', 'nome categoria unita')
+//       .populate('assegnatoDa', 'username')
+//       .populate('settimanaId', 'numero anno dataInizio dataFine')
+//       .sort({ 'userId.username': 1, 'productId.nome': 1 });
+
+//     res.json(giacenze);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+// AGGIORNA anche l'endpoint admin /api/admin/giacenze per coerenza:
+
 app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { userId, settimanaId } = req.query;
+    const { 
+      userId, 
+      settimanaId,
+      productId,
+      stato,
+      searchTerm,
+      quantitaAssegnataMin,
+      quantitaAssegnataMax,
+      quantitaDisponibileMin,
+      quantitaDisponibileMax,
+      sogliaMinimaMin,
+      sogliaMinimaMax
+    } = req.query;
     
     let filter = { attiva: true };
+    
+    // Filtri base
     if (userId) filter.userId = userId;
+    if (productId) filter.productId = productId;
+    
     if (settimanaId) {
       filter.$or = [
         { settimanaId: settimanaId },
@@ -659,19 +829,86 @@ app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res)
       ];
     }
 
+    console.log('🔍 Admin filtri:', filter);
+
     const giacenze = await GiacenzaUtente.find(filter)
       .populate('userId', 'username email')
-      .populate('productId', 'nome categoria unita')
+      .populate('productId', 'nome categoria unita descrizione')
       .populate('assegnatoDa', 'username')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
       .sort({ 'userId.username': 1, 'productId.nome': 1 });
 
-    res.json(giacenze);
+    let filteredGiacenze = giacenze;
+
+    // Applica filtri aggiuntivi
+    if (stato) {
+      if (stato === 'critico') {
+        filteredGiacenze = filteredGiacenze.filter(g => 
+          g.quantitaDisponibile <= g.quantitaMinima
+        );
+      } else if (stato === 'ok') {
+        filteredGiacenze = filteredGiacenze.filter(g => 
+          g.quantitaDisponibile > g.quantitaMinima
+        );
+      }
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filteredGiacenze = filteredGiacenze.filter(g => 
+        g.userId?.username.toLowerCase().includes(term) ||
+        g.userId?.email.toLowerCase().includes(term) ||
+        g.productId?.nome.toLowerCase().includes(term) ||
+        g.productId?.categoria.toLowerCase().includes(term) ||
+        g.assegnatoDa?.username.toLowerCase().includes(term)
+      );
+    }
+
+    // Filtri numerici (stessa logica dell'endpoint utente)
+    if (quantitaAssegnataMin) {
+      filteredGiacenze = filteredGiacenze.filter(g => 
+        g.quantitaAssegnata >= parseInt(quantitaAssegnataMin)
+      );
+    }
+    
+    if (quantitaAssegnataMax) {
+      filteredGiacenze = filteredGiacenze.filter(g => 
+        g.quantitaAssegnata <= parseInt(quantitaAssegnataMax)
+      );
+    }
+
+    if (quantitaDisponibileMin) {
+      filteredGiacenze = filteredGiacenze.filter(g => 
+        g.quantitaDisponibile >= parseInt(quantitaDisponibileMin)
+      );
+    }
+    
+    if (quantitaDisponibileMax) {
+      filteredGiacenze = filteredGiacenze.filter(g => 
+        g.quantitaDisponibile <= parseInt(quantitaDisponibileMax)
+      );
+    }
+
+    if (sogliaMinimaMin) {
+      filteredGiacenze = filteredGiacenze.filter(g => 
+        g.quantitaMinima >= parseInt(sogliaMinimaMin)
+      );
+    }
+    
+    if (sogliaMinimaMax) {
+      filteredGiacenze = filteredGiacenze.filter(g => 
+        g.quantitaMinima <= parseInt(sogliaMinimaMax)
+      );
+    }
+
+    console.log(`📊 Admin risultati: ${filteredGiacenze.length} di ${giacenze.length} giacenze`);
+
+    res.json(filteredGiacenze);
   } catch (error) {
+    console.error('❌ Errore caricamento giacenze admin:', error);
     res.status(500).json({ message: error.message });
   }
 });
-
 // MODIFICATA: Assegna/Aggiorna giacenza con supporto multi-settimana
 app.post('/api/admin/assign-giacenza', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -1218,6 +1455,65 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
       });
     }
     
+    // NUOVO: Endpoint per statistiche giacenze utente (bonus)
+app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
+  try {
+    const { settimanaId } = req.query;
+    
+    let filter = { 
+      userId: req.user.userId, 
+      attiva: true 
+    };
+    
+    if (settimanaId) {
+      filter.$or = [
+        { settimanaId: settimanaId },
+        { isGlobale: true }
+      ];
+    }
+    
+    const giacenze = await GiacenzaUtente.find(filter)
+      .populate('productId', 'categoria');
+    
+    // Calcola statistiche
+    const stats = {
+      totaleGiacenze: giacenze.length,
+      giacenzeCritiche: giacenze.filter(g => g.quantitaDisponibile <= g.quantitaMinima).length,
+      giacenzeOk: giacenze.filter(g => g.quantitaDisponibile > g.quantitaMinima).length,
+      quantitaTotaleAssegnata: giacenze.reduce((sum, g) => sum + g.quantitaAssegnata, 0),
+      quantitaTotaleDisponibile: giacenze.reduce((sum, g) => sum + g.quantitaDisponibile, 0),
+      categorieUniche: [...new Set(giacenze.map(g => g.productId?.categoria).filter(Boolean))],
+      percentualeTotaleRimasta: 0
+    };
+    
+    // Calcola percentuale totale rimasta
+    if (stats.quantitaTotaleAssegnata > 0) {
+      stats.percentualeTotaleRimasta = Math.round(
+        (stats.quantitaTotaleDisponibile / stats.quantitaTotaleAssegnata) * 100
+      );
+    }
+    
+    // Statistiche per categoria
+    const statsByCategory = {};
+    stats.categorieUniche.forEach(categoria => {
+      const giacenzeCategoria = giacenze.filter(g => g.productId?.categoria === categoria);
+      statsByCategory[categoria] = {
+        totale: giacenzeCategoria.length,
+        critiche: giacenzeCategoria.filter(g => g.quantitaDisponibile <= g.quantitaMinima).length,
+        quantitaAssegnata: giacenzeCategoria.reduce((sum, g) => sum + g.quantitaAssegnata, 0),
+        quantitaDisponibile: giacenzeCategoria.reduce((sum, g) => sum + g.quantitaDisponibile, 0)
+      };
+    });
+    
+    res.json({
+      ...stats,
+      perCategoria: statsByCategory
+    });
+  } catch (error) {
+    console.error('❌ Errore statistiche giacenze:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
     // Prepara dati per foglio GIACENZE PER OPERATORE
     const giacenzeData = giacenze.map(giacenza => {
       const settimanaKey = giacenza.settimanaId?._id || 'global';
@@ -1389,15 +1685,63 @@ app.get('/api/settimane', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) => {
+// app.get('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) => {
+//   try {
+//     const assegnazioni = await Assegnazione.find({ attiva: true })
+//       .populate('userId', 'username')
+//       .populate('poloId', 'nome')
+//       .populate('mezzoId', 'nome')
+//       .populate('settimanaId', 'numero anno dataInizio dataFine');
+//     res.json(assegnazioni);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+
+app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
   try {
-    const assegnazioni = await Assegnazione.find({ attiva: true })
-      .populate('userId', 'username')
+    const { 
+      userId, 
+      poloId, 
+      mezzoId, 
+      settimanaId, 
+      attiva // può essere: 'true', 'false', o undefined
+    } = req.query;
+    
+    const filter = {};
+    
+    // Filtri standard
+    if (userId) filter.userId = userId;
+    if (poloId) filter.poloId = poloId;
+    if (mezzoId) filter.mezzoId = mezzoId;
+    if (settimanaId) filter.settimanaId = settimanaId;
+    
+    // CORREZIONE: Filtro stato solo se specificato esplicitamente
+    if (attiva === 'true') {
+      filter.attiva = true;
+      console.log('🟢 Filtro: Solo ATTIVE');
+    } else if (attiva === 'false') {
+      filter.attiva = false;
+      console.log('🔴 Filtro: Solo INATTIVE');
+    } else {
+      // attiva è undefined - mostra TUTTO
+      console.log('🔵 Filtro: TUTTE (attive + inattive)');
+    }
+    
+    console.log('📋 Filter applicato:', filter);
+    
+    const assegnazioni = await Assegnazione.find(filter)
+      .populate('userId', 'username email')
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
-      .populate('settimanaId', 'numero anno dataInizio dataFine');
+      .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .sort({ createdAt: -1 });
+    
+    console.log(`📊 Risultati trovati: ${assegnazioni.length}`);
+    
     res.json(assegnazioni);
   } catch (error) {
+    console.error('❌ Errore query assegnazioni:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -1467,6 +1811,27 @@ app.put('/api/assegnazioni/:id', authenticateToken, requireAdmin, async (req, re
 });
 
 // NUOVA: Elimina assegnazione
+// app.delete('/api/assegnazioni/:id', authenticateToken, requireAdmin, async (req, res) => {
+//   try {
+//     const { id } = req.params;
+    
+//     // Soft delete - marca come non attiva
+//     const assegnazione = await Assegnazione.findByIdAndUpdate(
+//       id,
+//       { attiva: false },
+//       { new: true }
+//     );
+    
+//     if (!assegnazione) {
+//       return res.status(404).json({ message: 'Assegnazione non trovata' });
+//     }
+    
+//     res.json({ message: 'Assegnazione eliminata con successo' });
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// });
+
 app.delete('/api/assegnazioni/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -1482,7 +1847,120 @@ app.delete('/api/assegnazioni/:id', authenticateToken, requireAdmin, async (req,
       return res.status(404).json({ message: 'Assegnazione non trovata' });
     }
     
-    res.json({ message: 'Assegnazione eliminata con successo' });
+    res.json({ message: 'Assegnazione disattivata con successo' });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// NUOVO: Hard delete - Eliminazione definitiva con ripristino utilizzi
+app.delete('/api/assegnazioni/:id/permanent', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Trova l'assegnazione prima di eliminarla
+    const assegnazione = await Assegnazione.findById(id);
+    if (!assegnazione) {
+      return res.status(404).json({ message: 'Assegnazione non trovata' });
+    }
+    
+    // Inizia una transazione per garantire consistenza
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
+    try {
+      // 1. Trova tutti gli utilizzi correlati a questa assegnazione
+      const utilizzi = await Utilizzo.find({
+        userId: assegnazione.userId,
+        settimanaId: assegnazione.settimanaId,
+        poloId: assegnazione.poloId,
+        mezzoId: assegnazione.mezzoId
+      }).session(session);
+      
+      // 2. Ripristina le quantità nelle giacenze per ogni utilizzo
+      for (const utilizzo of utilizzi) {
+        if (utilizzo.giacenzaUtenteId) {
+          await GiacenzaUtente.findByIdAndUpdate(
+            utilizzo.giacenzaUtenteId,
+            { 
+              $inc: { 
+                quantitaDisponibile: utilizzo.quantitaUtilizzata 
+              }
+            },
+            { session }
+          );
+        }
+      }
+      
+      // 3. Elimina tutti gli utilizzi correlati
+      await Utilizzo.deleteMany({
+        userId: assegnazione.userId,
+        settimanaId: assegnazione.settimanaId,
+        poloId: assegnazione.poloId,
+        mezzoId: assegnazione.mezzoId
+      }).session(session);
+      
+      // 4. Elimina tutte le giacenze specifiche per questa assegnazione
+      await GiacenzaUtente.deleteMany({
+        userId: assegnazione.userId,
+        settimanaId: assegnazione.settimanaId
+      }).session(session);
+      
+      // 5. Elimina l'assegnazione stessa
+      await Assegnazione.findByIdAndDelete(id).session(session);
+      
+      // Conferma la transazione
+      await session.commitTransaction();
+      
+      res.json({ 
+        message: 'Assegnazione eliminata definitivamente con successo',
+        utilizziRipristinati: utilizzi.length,
+        dettagli: {
+          operatore: assegnazione.userId,
+          settimana: assegnazione.settimanaId,
+          polo: assegnazione.poloId,
+          mezzo: assegnazione.mezzoId
+        }
+      });
+      
+    } catch (error) {
+      // Annulla la transazione in caso di errore
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+    
+  } catch (error) {
+    console.error('Errore nell\'eliminazione definitiva:', error);
+    res.status(500).json({ 
+      message: 'Errore nell\'eliminazione definitiva dell\'assegnazione',
+      error: error.message 
+    });
+  }
+});
+
+app.patch('/api/assegnazioni/:id/restore', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const assegnazione = await Assegnazione.findByIdAndUpdate(
+      id,
+      { attiva: true },
+      { new: true }
+    ).populate('userId', 'username email')
+     .populate('poloId', 'nome')
+     .populate('mezzoId', 'nome')
+     .populate('settimanaId', 'numero anno dataInizio dataFine');
+    
+    if (!assegnazione) {
+      return res.status(404).json({ message: 'Assegnazione non trovata' });
+    }
+    
+    res.json({ 
+      message: 'Assegnazione ripristinata con successo',
+      assegnazione 
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
