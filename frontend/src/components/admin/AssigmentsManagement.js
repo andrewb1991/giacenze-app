@@ -950,6 +950,7 @@
 // export default AssignmentsManagement;
 
   // components/admin/AssegnazioniManagement.js
+// components/admin/AssignmentsManagement.js
 import React, { useState, useEffect } from 'react';
 import { 
   Search, 
@@ -963,15 +964,23 @@ import {
   Calendar,
   MapPin,
   Truck,
-  User
+  User,
+  Plus,
+  Edit,
+  Settings,
+  UserCheck
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
+import { useAppContext } from '../../contexts/AppContext';
 import { apiCall } from '../../services/api';
+import { formatWeek } from '../../utils/formatters';
 
-const AssegnazioniManagement = () => {
+const AssignmentsManagement = () => {
   const { token, setError } = useAuth();
   const { users, poli, mezzi, settimane } = useGiacenze();
+  const { state, dispatch } = useAppContext();
+  const { assegnazioneForm, editAssignmentId, editForm } = state;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   
   // Stati per filtri
@@ -988,7 +997,6 @@ const AssegnazioniManagement = () => {
   const [assegnazioni, setAssegnazioni] = useState([]);
   const [filteredAssegnazioni, setFilteredAssegnazioni] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showInactive, setShowInactive] = useState(false);
 
   // Mouse tracking
   useEffect(() => {
@@ -999,41 +1007,73 @@ const AssegnazioniManagement = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Carica assegnazioni
-// Nel componente AssegnazioniManagement.js, modifica la funzione loadAssegnazioni:
+  const updateAssegnazioneForm = (updates) => {
+    dispatch({ type: 'SET_ASSEGNAZIONE_FORM', payload: updates });
+  };
 
-const loadAssegnazioni = async () => {
-  try {
-    setLoading(true);
-    setError('');
-    
-    const queryParams = new URLSearchParams();
-    if (filters.userId) queryParams.append('userId', filters.userId);
-    if (filters.poloId) queryParams.append('poloId', filters.poloId);
-    if (filters.mezzoId) queryParams.append('mezzoId', filters.mezzoId);
-    if (filters.settimanaId) queryParams.append('settimanaId', filters.settimanaId);
-    
-    // CORREZIONE: Gestisci il filtro stato
-    if (filters.attiva === '') {
-      // "Tutti gli stati" - non inviare parametro attiva
-      // Il backend mostrerà TUTTE le assegnazioni (attive + inattive)
-      // Non usare includeInactive quando vogliamo vedere tutti gli stati
-    } else {
-      // Filtro specifico: "Solo Attive" o "Solo Inattive"
-      queryParams.append('attiva', filters.attiva);
+  const setEditAssignmentId = (id) => {
+    dispatch({ type: 'SET_EDIT_ASSIGNMENT_ID', payload: id });
+  };
+
+  const updateEditForm = (updates) => {
+    dispatch({ type: 'SET_EDIT_FORM', payload: updates });
+  };
+
+  const handleCreateAssignment = async () => {
+    try {
+      await apiCall('/assegnazioni', {
+        method: 'POST',
+        body: JSON.stringify(assegnazioneForm)
+      }, token);
+      
+      await loadAssegnazioni();
+      dispatch({ type: 'RESET_ASSEGNAZIONE_FORM' });
+      setError('Assegnazione creata con successo');
+    } catch (err) {
+      setError('Errore nella creazione assegnazione: ' + err.message);
     }
-    
-    console.log('🔍 Query params:', queryParams.toString()); // Debug
-    
-    const data = await apiCall(`/assegnazioni?${queryParams}`, {}, token);
-    setAssegnazioni(Array.isArray(data) ? data : []);
-  } catch (err) {
-    setError('Errore nel caricamento assegnazioni: ' + err.message);
-    setAssegnazioni([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
+  const handleUpdateAssignment = async (assignmentId) => {
+    try {
+      await apiCall(`/assegnazioni/${assignmentId}`, {
+        method: 'PUT',
+        body: JSON.stringify(editForm)
+      }, token);
+
+      await loadAssegnazioni();
+      setEditAssignmentId(null);
+      setError('Assegnazione modificata con successo');
+    } catch (err) {
+      setError('Errore nella modifica: ' + err.message);
+    }
+  };
+
+  // Carica assegnazioni
+  const loadAssegnazioni = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const queryParams = new URLSearchParams();
+      if (filters.userId) queryParams.append('userId', filters.userId);
+      if (filters.poloId) queryParams.append('poloId', filters.poloId);
+      if (filters.mezzoId) queryParams.append('mezzoId', filters.mezzoId);
+      if (filters.settimanaId) queryParams.append('settimanaId', filters.settimanaId);
+      
+      if (filters.attiva !== '') {
+        queryParams.append('attiva', filters.attiva);
+      }
+      
+      const data = await apiCall(`/assegnazioni?${queryParams}`, {}, token);
+      setAssegnazioni(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Errore nel caricamento assegnazioni: ' + err.message);
+      setAssegnazioni([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Applica filtri locali
   useEffect(() => {
@@ -1052,9 +1092,9 @@ const loadAssegnazioni = async () => {
   }, [assegnazioni, filters.searchTerm]);
 
   // Ricarica quando cambiano i filtri principali
-useEffect(() => {
-  loadAssegnazioni();
-}, [filters.userId, filters.poloId, filters.mezzoId, filters.settimanaId, filters.attiva, showInactive]);
+  useEffect(() => {
+    loadAssegnazioni();
+  }, [filters.userId, filters.poloId, filters.mezzoId, filters.settimanaId, filters.attiva]);
 
   // Carica dati iniziali
   useEffect(() => {
@@ -1132,6 +1172,116 @@ useEffect(() => {
 
       {/* Main Content */}
       <div className="relative z-10 space-y-6">
+        {/* Form Nuova Assegnazione */}
+        <div className="glass-assignment-card p-8 rounded-3xl">
+          <div className="glass-card-header mb-6">
+            <div className="flex items-center mb-4">
+              <div className="glass-icon p-4 rounded-2xl mr-4">
+                <Plus className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-white">Crea Nuova Assegnazione</h2>
+                <p className="text-white/70">Assegna operatori a poli, mezzi e settimane specifiche</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                <UserCheck className="w-4 h-4 inline mr-2" />
+                Utente *
+              </label>
+              <div className="glass-input-container">
+                <select
+                  className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white"
+                  value={assegnazioneForm.userId}
+                  onChange={(e) => updateAssegnazioneForm({ userId: e.target.value })}
+                >
+                  <option value="" className="bg-gray-800">Seleziona utente</option>
+                  {users.filter(u => u.role === 'user').map(user => (
+                    <option key={user._id} value={user._id} className="bg-gray-800">
+                      {user.username}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                <MapPin className="w-4 h-4 inline mr-2" />
+                Polo *
+              </label>
+              <div className="glass-input-container">
+                <select
+                  className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white"
+                  value={assegnazioneForm.poloId}
+                  onChange={(e) => updateAssegnazioneForm({ poloId: e.target.value })}
+                >
+                  <option value="" className="bg-gray-800">Seleziona polo</option>
+                  {poli.map(polo => (
+                    <option key={polo._id} value={polo._id} className="bg-gray-800">
+                      {polo.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                <Truck className="w-4 h-4 inline mr-2" />
+                Mezzo *
+              </label>
+              <div className="glass-input-container">
+                <select
+                  className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white"
+                  value={assegnazioneForm.mezzoId}
+                  onChange={(e) => updateAssegnazioneForm({ mezzoId: e.target.value })}
+                >
+                  <option value="" className="bg-gray-800">Seleziona mezzo</option>
+                  {mezzi.map(mezzo => (
+                    <option key={mezzo._id} value={mezzo._id} className="bg-gray-800">
+                      {mezzo.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                <Calendar className="w-4 h-4 inline mr-2" />
+                Settimana *
+              </label>
+              <div className="glass-input-container">
+                <select
+                  className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white"
+                  value={assegnazioneForm.settimanaId}
+                  onChange={(e) => updateAssegnazioneForm({ settimanaId: e.target.value })}
+                >
+                  <option value="" className="bg-gray-800">Seleziona settimana</option>
+                  {settimane.map(settimana => (
+                    <option key={settimana._id} value={settimana._id} className="bg-gray-800">
+                      {formatWeek(settimana)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleCreateAssignment}
+            disabled={!assegnazioneForm.userId || !assegnazioneForm.poloId || !assegnazioneForm.mezzoId || !assegnazioneForm.settimanaId}
+            className="glass-button-primary flex items-center gap-3 px-8 py-4 rounded-2xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="font-medium">Crea Assegnazione</span>
+          </button>
+        </div>
+
         {/* Header */}
         <div className="glass-card p-6 rounded-2xl">
           <div className="flex items-center justify-between">
@@ -1382,6 +1532,20 @@ useEffect(() => {
                           {assegnazione.attiva ? (
                             <>
                               <button
+                                onClick={() => {
+                                  setEditAssignmentId(assegnazione._id);
+                                  updateEditForm({
+                                    poloId: assegnazione.poloId?._id || '',
+                                    mezzoId: assegnazione.mezzoId?._id || '',
+                                    settimanaId: assegnazione.settimanaId?._id || ''
+                                  });
+                                }}
+                                className="glass-button-primary p-2 rounded-xl hover:scale-105 transition-all duration-300"
+                                title="Modifica assegnazione"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
                                 onClick={() => handleSoftDelete(assegnazione._id)}
                                 className="glass-button-warning p-2 rounded-xl hover:scale-105 transition-all duration-300"
                                 title="Disattiva assegnazione"
@@ -1415,6 +1579,72 @@ useEffect(() => {
                             </>
                           )}
                         </div>
+
+                        {/* Form di Modifica Inline */}
+                        {editAssignmentId === assegnazione._id && (
+                          <div className="glass-edit-form mt-4 p-4 rounded-2xl">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                              <div className="glass-input-container">
+                                <select
+                                  className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+                                  value={editForm.poloId}
+                                  onChange={(e) => updateEditForm({ poloId: e.target.value })}
+                                >
+                                  <option value="" className="bg-gray-800">Seleziona Polo</option>
+                                  {poli.map(p => (
+                                    <option key={p._id} value={p._id} className="bg-gray-800">{p.nome}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="glass-input-container">
+                                <select
+                                  className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+                                  value={editForm.mezzoId}
+                                  onChange={(e) => updateEditForm({ mezzoId: e.target.value })}
+                                >
+                                  <option value="" className="bg-gray-800">Seleziona Mezzo</option>
+                                  {mezzi.map(m => (
+                                    <option key={m._id} value={m._id} className="bg-gray-800">{m.nome}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="glass-input-container">
+                                <select
+                                  className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+                                  value={editForm.settimanaId}
+                                  onChange={(e) => updateEditForm({ settimanaId: e.target.value })}
+                                >
+                                  <option value="" className="bg-gray-800">Seleziona Settimana</option>
+                                  {settimane.map(s => (
+                                    <option key={s._id} value={s._id} className="bg-gray-800">
+                                      {formatWeek(s)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="flex space-x-3">
+                              <button
+                                onClick={() => handleUpdateAssignment(assegnazione._id)}
+                                className="glass-button-success flex items-center gap-2 px-4 py-2 rounded-xl hover:scale-105 transition-all duration-300"
+                              >
+                                <Edit className="w-4 h-4" />
+                                <span className="text-sm font-medium">Salva</span>
+                              </button>
+
+                              <button
+                                onClick={() => setEditAssignmentId(null)}
+                                className="glass-button-secondary flex items-center gap-2 px-4 py-2 rounded-xl hover:scale-105 transition-all duration-300"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                <span className="text-sm font-medium">Annulla</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1439,7 +1669,6 @@ useEffect(() => {
 
       {/* Custom Styles */}
       <style jsx>{`
-        /* Tutti gli stili glass esistenti... */
         .glass-card {
           background: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(20px);
@@ -1454,114 +1683,187 @@ useEffect(() => {
           box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
         }
 
-        .glass-toggle-button {
-          background: rgba(255, 255, 255, 0.1);
+        .glass-assignment-card {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-card-header {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          padding-bottom: 1.5rem;
+        }
+
+        .glass-icon {
+          background: rgba(255, 255, 255, 0.15);
           backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-avatar {
+          background: rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-input-container {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 1rem;
+          transition: all 0.3s ease;
+        }
+
+        .glass-input {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          transition: all 0.3s ease;
+        }
+
+        .glass-input:focus {
+          background: rgba(255, 255, 255, 0.12);
+          border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .glass-input-container:focus-within {
+          border-color: rgba(59, 130, 246, 0.5);
+          box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+          background: rgba(255, 255, 255, 0.12);
+        }
+
+        .glass-table-header {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+        }
+
+        .glass-table-row {
+          background: rgba(255, 255, 255, 0.02);
+          backdrop-filter: blur(5px);
+        }
+
+        .glass-status-badge {
+          backdrop-filter: blur(10px);
+        }
+
+        .glass-button-primary {
+          background: rgba(59, 130, 246, 0.3);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(59, 130, 246, 0.4);
+          box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
           color: white;
         }
 
-        .glass-toggle-button.glass-active {
-          background: rgba(59, 130, 246, 0.3);
-          border-color: rgba(59, 130, 246, 0.4);
+        .glass-button-primary:hover:not(:disabled) {
+          background: rgba(59, 130, 246, 0.4);
+          box-shadow: 0 12px 32px rgba(59, 130, 246, 0.3);
         }
-        .glass-icon {
-         background: rgba(255, 255, 255, 0.15);
-         backdrop-filter: blur(10px);
-         border: 1px solid rgba(255, 255, 255, 0.2);
-       }
 
-       .glass-avatar {
-         background: rgba(255, 255, 255, 0.15);
-         backdrop-filter: blur(10px);
-         border: 1px solid rgba(255, 255, 255, 0.2);
-       }
+        .glass-button-success {
+          background: rgba(34, 197, 94, 0.3);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(34, 197, 94, 0.4);
+          color: white;
+        }
 
-       .glass-input-container {
-         background: rgba(255, 255, 255, 0.08);
-         backdrop-filter: blur(15px);
-         border: 1px solid rgba(255, 255, 255, 0.15);
-       }
+        .glass-button-success:hover {
+          background: rgba(34, 197, 94, 0.4);
+          box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+        }
 
-       .glass-input {
-         background: rgba(255, 255, 255, 0.08);
-         backdrop-filter: blur(15px);
-         border: 1px solid rgba(255, 255, 255, 0.15);
-       }
+        .glass-button-warning {
+          background: rgba(251, 191, 36, 0.3);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(251, 191, 36, 0.4);
+          color: white;
+        }
 
-       .glass-input:focus {
-         background: rgba(255, 255, 255, 0.12);
-         border: 1px solid rgba(255, 255, 255, 0.3);
-       }
+        .glass-button-warning:hover {
+          background: rgba(251, 191, 36, 0.4);
+          box-shadow: 0 8px 24px rgba(251, 191, 36, 0.3);
+        }
 
-       .glass-table-header {
-         background: rgba(255, 255, 255, 0.05);
-         backdrop-filter: blur(10px);
-       }
+        .glass-button-danger {
+          background: rgba(239, 68, 68, 0.3);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(239, 68, 68, 0.4);
+          color: white;
+        }
 
-       .glass-table-row {
-         background: rgba(255, 255, 255, 0.02);
-         backdrop-filter: blur(5px);
-       }
+        .glass-button-danger:hover {
+          background: rgba(239, 68, 68, 0.4);
+          box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+        }
 
-       .glass-status-badge {
-         backdrop-filter: blur(10px);
-       }
+        .glass-button-secondary {
+          background: rgba(107, 114, 128, 0.3);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(107, 114, 128, 0.4);
+          box-shadow: 0 4px 16px rgba(107, 114, 128, 0.2);
+          color: white;
+        }
 
-       .glass-button-success {
-         background: rgba(34, 197, 94, 0.3);
-         backdrop-filter: blur(15px);
-         border: 1px solid rgba(34, 197, 94, 0.4);
-         color: white;
-       }
+        .glass-button-secondary:hover {
+          background: rgba(107, 114, 128, 0.4);
+          box-shadow: 0 8px 24px rgba(107, 114, 128, 0.3);
+        }
 
-       .glass-button-warning {
-         background: rgba(251, 191, 36, 0.3);
-         backdrop-filter: blur(15px);
-         border: 1px solid rgba(251, 191, 36, 0.4);
-         color: white;
-       }
+        .glass-edit-form {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+        }
 
-       .glass-button-danger {
-         background: rgba(239, 68, 68, 0.3);
-         backdrop-filter: blur(15px);
-         border: 1px solid rgba(239, 68, 68, 0.4);
-         color: white;
-       }
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
 
-       @keyframes blob {
-         0% {
-           transform: translate(0px, 0px) scale(1);
-         }
-         33% {
-           transform: translate(30px, -50px) scale(1.1);
-         }
-         66% {
-           transform: translate(-20px, 20px) scale(0.9);
-         }
-         100% {
-           transform: translate(0px, 0px) scale(1);
-         }
-       }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
 
-       .animate-blob {
-         animation: blob 7s infinite;
-       }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
 
-       .animation-delay-2000 {
-         animation-delay: 2s;
-       }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
 
-       .animation-delay-4000 {
-         animation-delay: 4s;
-       }
+        .bg-gradient-radial {
+          background: radial-gradient(circle, var(--tw-gradient-stops));
+        }
 
-       .bg-gradient-radial {
-         background: radial-gradient(circle, var(--tw-gradient-stops));
-       }
-     `}</style>
-   </div>
- );
+        /* Responsive */
+        @media (max-width: 768px) {
+          .glass-assignment-card {
+            padding: 1rem;
+          }
+          
+          .grid {
+            grid-template-columns: 1fr;
+          }
+          
+          .px-6 {
+            padding-left: 1rem;
+            padding-right: 1rem;
+          }
+        }
+      `}</style>
+    </div>
+  );
 };
 
-export default AssegnazioniManagement;
+export default AssignmentsManagement;
