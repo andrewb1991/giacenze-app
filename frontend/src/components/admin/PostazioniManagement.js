@@ -1104,13 +1104,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { apiCall } from '../../services/api';
 import { formatDate } from '../../utils/formatters';
 
+
 const PostazioniManagement = () => {
   const { token, setError } = useAuth();
   
   // Stati per dati
   const [postazioni, setPostazioni] = useState([]);
   const [allPostazioni, setAllPostazioni] = useState([]); // ← NUOVO: Tutte le postazioni
-  const [settimane, setSettimane] = useState([]);
+  const [poli, setPoli] = useState([]); // ← CAMBIATO: da settimane a poli
   const [loading, setLoading] = useState(false);
   
   // Stati per form nuova postazione
@@ -1118,7 +1119,7 @@ const PostazioniManagement = () => {
   const [addForm, setAddForm] = useState({
     nome: '',
     descrizione: '',
-    settimanaId: '',
+    poloId: '', // ← CAMBIATO: da settimanaId a poloId
     indirizzo: '',
     coordinate: { lat: '', lng: '' },
     capacitaPersone: 1,
@@ -1132,7 +1133,7 @@ const PostazioniManagement = () => {
   const [editForm, setEditForm] = useState({
     nome: '',
     descrizione: '',
-    settimanaId: '',
+    poloId: '', // ← CAMBIATO: da settimanaId a poloId
     indirizzo: '',
     coordinate: { lat: '', lng: '' },
     capacitaPersone: 1,
@@ -1143,7 +1144,7 @@ const PostazioniManagement = () => {
 
   // Stati per filtri
   const [filters, setFilters] = useState({
-    settimanaId: '',
+    poloId: '', // ← CAMBIATO: da settimanaId a poloId
     attiva: '',
     searchTerm: '',
     capacitaMin: '',
@@ -1153,8 +1154,8 @@ const PostazioniManagement = () => {
   // Stati per copia
   const [showCopyForm, setShowCopyForm] = useState(false);
   const [copyForm, setCopyForm] = useState({
-    fromSettimanaId: '',
-    toSettimanaId: ''
+    fromPoloId: '', // ← CAMBIATO: da fromSettimanaId a fromPoloId
+    toPoloId: '' // ← CAMBIATO: da toSettimanaId a toPoloId
   });
 
   // Carica dati dal server
@@ -1163,14 +1164,13 @@ const PostazioniManagement = () => {
       setLoading(true);
       setError('');
       
-      
-      // Carica settimane
-      const settimaneData = await apiCall('/settimane', {}, token);
-      setSettimane(settimaneData || []);
+      // Carica poli (cambiato da settimane)
+      const poliData = await apiCall('/poli', {}, token);
+      setPoli(poliData || []);
       
       // Carica TUTTE le postazioni (senza filtro searchTerm)
       const queryParams = new URLSearchParams();
-      if (filters.settimanaId) queryParams.append('settimanaId', filters.settimanaId);
+      if (filters.poloId) queryParams.append('poloId', filters.poloId); // ← CAMBIATO
       if (filters.attiva !== '') queryParams.append('attiva', filters.attiva);
       if (filters.capacitaMin) queryParams.append('capacitaMin', filters.capacitaMin);
       if (filters.capacitaMax) queryParams.append('capacitaMax', filters.capacitaMax);
@@ -1180,7 +1180,7 @@ const PostazioniManagement = () => {
     } catch (err) {
       setError('Errore nel caricamento dati: ' + err.message);
       setAllPostazioni([]);
-      setSettimane([]);
+      setPoli([]); // ← CAMBIATO
     } finally {
       setLoading(false);
     }
@@ -1199,8 +1199,8 @@ const PostazioniManagement = () => {
         postazione.indirizzo?.toLowerCase().includes(term) ||
         postazione.note?.toLowerCase().includes(term) ||
         postazione.attrezzature?.some(att => att.toLowerCase().includes(term)) ||
-        (postazione.settimanaId?.numero && `settimana ${postazione.settimanaId.numero}`.includes(term)) ||
-        (postazione.settimanaId?.anno && postazione.settimanaId.anno.toString().includes(term))
+        // ← CAMBIATO: ricerca nel polo invece della settimana
+        (postazione.poloId?.nome && postazione.poloId.nome.toLowerCase().includes(term))
       );
     }
 
@@ -1210,7 +1210,7 @@ const PostazioniManagement = () => {
   // Carica dati quando cambiano i filtri SERVER
   useEffect(() => {
     loadData();
-  }, [filters.settimanaId, filters.attiva, filters.capacitaMin, filters.capacitaMax]);
+  }, [filters.poloId, filters.attiva, filters.capacitaMin, filters.capacitaMax]); // ← CAMBIATO
 
   // Applica filtri CLIENT quando cambiano searchTerm o allPostazioni
   useEffect(() => {
@@ -1227,7 +1227,7 @@ const PostazioniManagement = () => {
     setAddForm({
       nome: '',
       descrizione: '',
-      settimanaId: '',
+      poloId: '', // ← CAMBIATO
       indirizzo: '',
       coordinate: { lat: '', lng: '' },
       capacitaPersone: 1,
@@ -1240,8 +1240,8 @@ const PostazioniManagement = () => {
 
   // Crea nuova postazione
   const handleCreatePostazione = async () => {
-   if (!addForm.nome || !addForm.settimanaId) {
-      setError('Nome e settimana sono obbligatori');
+   if (!addForm.nome || !addForm.poloId) { // ← CAMBIATO
+      setError('Nome e polo sono obbligatori');
       return;
     }
 
@@ -1267,7 +1267,7 @@ const PostazioniManagement = () => {
     setEditForm({
       nome: postazione.nome,
       descrizione: postazione.descrizione || '',
-      settimanaId: postazione.settimanaId?._id || '',
+      poloId: postazione.poloId?._id || '', // ← CAMBIATO
       indirizzo: postazione.indirizzo || '',
       coordinate: postazione.coordinate || { lat: '', lng: '' },
       capacitaPersone: postazione.capacitaPersone || 1,
@@ -1283,7 +1283,7 @@ const PostazioniManagement = () => {
     setEditForm({
       nome: '',
       descrizione: '',
-      settimanaId: '',
+      poloId: '', // ← CAMBIATO
       indirizzo: '',
       coordinate: { lat: '', lng: '' },
       capacitaPersone: 1,
@@ -1348,10 +1348,10 @@ const PostazioniManagement = () => {
     }
   };
 
-  // Copia postazioni tra settimane
+  // Copia postazioni tra poli (cambiato da settimane)
   const handleCopyPostazioni = async () => {
-    if (!copyForm.fromSettimanaId || !copyForm.toSettimanaId) {
-      setError('Seleziona entrambe le settimane');
+    if (!copyForm.fromPoloId || !copyForm.toPoloId) { // ← CAMBIATO
+      setError('Seleziona entrambi i poli');
       return;
     }
 
@@ -1365,7 +1365,7 @@ const PostazioniManagement = () => {
 
       await loadData(); // ← RICARICA DAL SERVER
       setShowCopyForm(false);
-      setCopyForm({ fromSettimanaId: '', toSettimanaId: '' });
+      setCopyForm({ fromPoloId: '', toPoloId: '' }); // ← CAMBIATO
       setError(`Copia completata: ${result.copiate} postazioni copiate, ${result.saltate} già esistenti`);
     } catch (err) {
       setError('Errore nella copia: ' + err.message);
@@ -1380,7 +1380,7 @@ const PostazioniManagement = () => {
   // Reset filtri
   const resetFilters = () => {
     setFilters({
-      settimanaId: '',
+      poloId: '', // ← CAMBIATO
       attiva: '',
       searchTerm: '',
       capacitaMin: '',
@@ -1411,6 +1411,7 @@ const PostazioniManagement = () => {
       attrezzature: form.attrezzature.filter((_, i) => i !== index)
     });
   };
+
 // Funzione per aprire Google Maps
 const openInGoogleMaps = (postazione) => {
   let url = 'https://www.google.com/maps/search/';
@@ -1461,7 +1462,7 @@ const openNavigation = (postazione) => {
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-2">Gestione Postazioni</h2>
                 <p className="text-white/70">
-                  Crea e gestisci postazioni di lavoro per ogni settimana
+                  Crea e gestisci postazioni di lavoro per ogni polo {/* ← CAMBIATO testo */}
                 </p>
               </div>
             </div>
@@ -1484,27 +1485,27 @@ const openNavigation = (postazione) => {
           </div>
         </div>
 
-        {/* Form Copia Postazioni - UGUALE */}
+        {/* Form Copia Postazioni - AGGIORNATO PER POLI */}
         {showCopyForm && (
           <div className="glass-postazioni-card p-6 rounded-3xl border-l-4 border-blue-400">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
               <Copy className="w-5 h-5 mr-2" />
-              Copia Postazioni tra Settimane
+              Copia Postazioni tra Poli {/* ← CAMBIATO testo */}
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">Da Settimana</label>
+                <label className="block text-sm font-medium text-white/80 mb-2">Da Polo</label> {/* ← CAMBIATO */}
                 <div className="glass-input-container">
                   <select
                     className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                    value={copyForm.fromSettimanaId}
-                    onChange={(e) => setCopyForm({ ...copyForm, fromSettimanaId: e.target.value })}
+                    value={copyForm.fromPoloId} // ← CAMBIATO
+                    onChange={(e) => setCopyForm({ ...copyForm, fromPoloId: e.target.value })} // ← CAMBIATO
                   >
-                    <option value="" className="bg-gray-800">Seleziona settimana origine</option>
-                    {settimane.map(settimana => (
-                      <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                        Settimana {settimana.numero}/{settimana.anno}
+                    <option value="" className="bg-gray-800">Seleziona polo origine</option> {/* ← CAMBIATO */}
+                    {poli.map(polo => ( // ← CAMBIATO: da settimane a poli
+                      <option key={polo._id} value={polo._id} className="bg-gray-800">
+                        {polo.nome} {/* ← CAMBIATO: mostra nome polo */}
                       </option>
                     ))}
                   </select>
@@ -1512,17 +1513,17 @@ const openNavigation = (postazione) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">A Settimana</label>
+                <label className="block text-sm font-medium text-white/80 mb-2">A Polo</label> {/* ← CAMBIATO */}
                 <div className="glass-input-container">
                   <select
                     className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                    value={copyForm.toSettimanaId}
-                    onChange={(e) => setCopyForm({ ...copyForm, toSettimanaId: e.target.value })}
+                    value={copyForm.toPoloId} // ← CAMBIATO
+                    onChange={(e) => setCopyForm({ ...copyForm, toPoloId: e.target.value })} // ← CAMBIATO
                   >
-                    <option value="" className="bg-gray-800">Seleziona settimana destinazione</option>
-                    {settimane.map(settimana => (
-                      <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                        Settimana {settimana.numero}/{settimana.anno}
+                    <option value="" className="bg-gray-800">Seleziona polo destinazione</option> {/* ← CAMBIATO */}
+                    {poli.map(polo => ( // ← CAMBIATO: da settimane a poli
+                      <option key={polo._id} value={polo._id} className="bg-gray-800">
+                        {polo.nome} {/* ← CAMBIATO: mostra nome polo */}
                       </option>
                     ))}
                   </select>
@@ -1549,7 +1550,7 @@ const openNavigation = (postazione) => {
           </div>
         )}
 
-                {/* Form Nuova Postazione */}
+        {/* Form Nuova Postazione - AGGIORNATO PER POLI */}
         {showAddForm && (
           <div className="glass-postazioni-card p-8 rounded-3xl border-l-4 border-green-400">
             <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
@@ -1572,17 +1573,17 @@ const openNavigation = (postazione) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">Settimana *</label>
+                <label className="block text-sm font-medium text-white/80 mb-2">Polo *</label> {/* ← CAMBIATO */}
                 <div className="glass-input-container">
                   <select
                     className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white"
-                    value={addForm.settimanaId}
-                    onChange={(e) => setAddForm({ ...addForm, settimanaId: e.target.value })}
+                    value={addForm.poloId} // ← CAMBIATO
+                    onChange={(e) => setAddForm({ ...addForm, poloId: e.target.value })} // ← CAMBIATO
                   >
-                    <option value="" className="bg-gray-800">Seleziona settimana</option>
-                    {settimane.map(settimana => (
-                      <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                        Settimana {settimana.numero}/{settimana.anno}
+                    <option value="" className="bg-gray-800">Seleziona polo</option> {/* ← CAMBIATO */}
+                    {poli.map(polo => ( // ← CAMBIATO: da settimane a poli
+                      <option key={polo._id} value={polo._id} className="bg-gray-800">
+                        {polo.nome} {/* ← CAMBIATO: mostra nome polo */}
                       </option>
                     ))}
                   </select>
@@ -1721,8 +1722,7 @@ const openNavigation = (postazione) => {
           </div>
         )}
 
-
-        {/* Filtri - AGGIORNATI */}
+        {/* Filtri - AGGIORNATI PER POLI */}
         <div className="glass-postazioni-card p-6 rounded-2xl">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-white flex items-center">
@@ -1737,17 +1737,17 @@ const openNavigation = (postazione) => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Settimana</label>
+              <label className="block text-sm font-medium text-white/80 mb-2">Polo</label> {/* ← CAMBIATO */}
               <div className="glass-input-container">
                 <select
                   className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                  value={filters.settimanaId}
-                  onChange={(e) => updateFilters({ settimanaId: e.target.value })}
+                  value={filters.poloId} // ← CAMBIATO
+                  onChange={(e) => updateFilters({ poloId: e.target.value })} // ← CAMBIATO
                 >
-                  <option value="" className="bg-gray-800">Tutte le settimane</option>
-                  {settimane.map(settimana => (
-                    <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                      Settimana {settimana.numero}/{settimana.anno}
+                  <option value="" className="bg-gray-800">Tutti i poli</option> {/* ← CAMBIATO */}
+                  {poli.map(polo => ( // ← CAMBIATO: da settimane a poli
+                    <option key={polo._id} value={polo._id} className="bg-gray-800">
+                      {polo.nome} {/* ← CAMBIATO: mostra nome polo */}
                     </option>
                   ))}
                 </select>
@@ -1889,7 +1889,7 @@ const openNavigation = (postazione) => {
           </div>
         </div>
 
-        {/* Tabella Postazioni - UGUALE */}
+        {/* Tabella Postazioni - AGGIORNATA PER POLI */}
         <div className="glass-postazioni-card rounded-3xl overflow-hidden">
           <div className="glass-table-header px-6 py-4">
             <h3 className="text-lg font-semibold text-white">Lista Postazioni</h3>
@@ -1901,16 +1901,14 @@ const openNavigation = (postazione) => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              {/* Tabella uguale al codice originale */}
               <table className="min-w-full">
-                {/* Header uguale */}
                 <thead>
                   <tr className="glass-table-header-row">
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Nome
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Settimana
+                      Polo {/* ← CAMBIATO: da Settimana a Polo */}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Capacità
@@ -1936,7 +1934,6 @@ const openNavigation = (postazione) => {
                     
                     return (
                       <tr key={postazione._id} className="glass-table-row hover:bg-white/5 transition-colors">
-                        {/* Contenuto uguale al codice originale */}
                         <td className="px-6 py-4">
                           {isEditing ? (
                             <div className="glass-input-container">
@@ -1960,20 +1957,20 @@ const openNavigation = (postazione) => {
                             <div className="glass-input-container">
                               <select
                                 className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
-                                value={editForm.settimanaId}
-                                onChange={(e) => setEditForm({ ...editForm, settimanaId: e.target.value })}
+                                value={editForm.poloId} // ← CAMBIATO
+                                onChange={(e) => setEditForm({ ...editForm, poloId: e.target.value })} // ← CAMBIATO
                               >
                                 <option value="" className="bg-gray-800">Seleziona</option>
-                                {settimane.map(s => (
-                                  <option key={s._id} value={s._id} className="bg-gray-800">
-                                    Sett. {s.numero}/{s.anno}
+                                {poli.map(polo => ( // ← CAMBIATO: da settimane a poli
+                                  <option key={polo._id} value={polo._id} className="bg-gray-800">
+                                    {polo.nome} {/* ← CAMBIATO: mostra nome polo */}
                                   </option>
                                 ))}
                               </select>
                             </div>
                           ) : (
                             <div className="text-sm text-white">
-                              Settimana {postazione.settimanaId?.numero}/{postazione.settimanaId?.anno}
+                              {postazione.poloId?.nome || 'N/A'} {/* ← CAMBIATO: mostra nome polo */}
                             </div>
                           )}
                         </td>
@@ -2132,7 +2129,7 @@ const openNavigation = (postazione) => {
               {/* Debug info se necessario */}
               {filters.searchTerm && (
                 <div className="px-6 py-2 text-xs text-white/50 border-t border-white/10">
-                  💡 Ricerca in: nome, descrizione, indirizzo, note, attrezzature, settimana
+                  💡 Ricerca in: nome, descrizione, indirizzo, note, attrezzature, polo {/* ← CAMBIATO: da settimana a polo */}
                 </div>
               )}
             </div>
