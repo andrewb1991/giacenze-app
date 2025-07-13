@@ -1411,6 +1411,42 @@ const PostazioniManagement = () => {
       attrezzature: form.attrezzature.filter((_, i) => i !== index)
     });
   };
+// Funzione per aprire Google Maps
+const openInGoogleMaps = (postazione) => {
+  let url = 'https://www.google.com/maps/search/';
+  
+  // Se ha coordinate GPS, usa quelle (più preciso)
+  if (postazione.coordinate?.lat && postazione.coordinate?.lng) {
+    url += `${postazione.coordinate.lat},${postazione.coordinate.lng}`;
+  } 
+  // Altrimenti usa l'indirizzo testuale
+  else if (postazione.indirizzo) {
+    url += encodeURIComponent(postazione.indirizzo);
+  }
+  // Fallback: cerca per nome postazione
+  else {
+    url += encodeURIComponent(postazione.nome + ' Milano'); // Aggiungi città di default
+  }
+  
+  // Apri in nuova tab
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+const openNavigation = (postazione) => {
+  let destination = '';
+  
+  if (postazione.coordinate?.lat && postazione.coordinate?.lng) {
+    destination = `${postazione.coordinate.lat},${postazione.coordinate.lng}`;
+  } else if (postazione.indirizzo) {
+    destination = encodeURIComponent(postazione.indirizzo);
+  } else {
+    destination = encodeURIComponent(postazione.nome + ' Milano');
+  }
+  
+  // URL per navigazione da posizione corrente
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
 
   return (
     <>
