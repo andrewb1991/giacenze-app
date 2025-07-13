@@ -137,6 +137,26 @@ const ricaricaGiacenzaSchema = new mongoose.Schema({
   eseguitoDa: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
+const postazioneSchema = new mongoose.Schema({
+  nome: { type: String, required: true, trim: true },
+  descrizione: { type: String, trim: true },
+  settimanaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Settimana', required: true },
+  indirizzo: { type: String, trim: true },
+  coordinate: {
+    lat: { type: Number },
+    lng: { type: Number }
+  },
+  capacitaPersone: { type: Number, default: 1 },
+  attrezzature: [{ type: String, trim: true }],
+  note: { type: String, trim: true },
+  attiva: { type: Boolean, default: true },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+}, { timestamps: true });
+
+// Indice composito per evitare duplicati nome-settimana
+postazioneSchema.index({ nome: 1, settimanaId: 1 }, { unique: true });
+
+
 // Modelli
 const User = mongoose.model('User', userSchema);
 const Product = mongoose.model('Product', productSchema);
@@ -148,7 +168,7 @@ const GiacenzaUtente = mongoose.model('GiacenzaUtente', giacenzaUtenteSchema);
 const Utilizzo = mongoose.model('Utilizzo', utilizzoSchema);
 const Aggiunta = mongoose.model('Aggiunta', aggiuntaSchema);
 const RicaricaGiacenza = mongoose.model('RicaricaGiacenza', ricaricaGiacenzaSchema);
-
+const Postazione = mongoose.model('postazioneSchema', postazioneSchema);
 // Middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -2042,16 +2062,243 @@ app.get('/api/test', (req, res) => {
 });
 
 // Script di inizializzazione dati di test
+// async function initTestData() {
+//   try {
+//     // Verifica se ci sono già dati
+//     const userCount = await User.countDocuments();
+//     if (userCount > 0) {
+//       console.log('Dati già presenti nel database');
+//       return;
+//     }
+
+//     console.log('Inizializzazione dati di test...');
+
+//     // Crea utenti
+//     const adminPassword = await bcrypt.hash('password123', 10);
+//     const userPassword = await bcrypt.hash('password123', 10);
+
+//     const admin = await User.create({
+//       username: 'admin',
+//       password: adminPassword,
+//       email: 'admin@test.com',
+//       role: 'admin'
+//     });
+
+//     const user1 = await User.create({
+//       username: 'operatore1',
+//       password: userPassword,
+//       email: 'operatore1@test.com',
+//       role: 'user'
+//     });
+
+//     const user2 = await User.create({
+//       username: 'operatore2',
+//       password: userPassword,
+//       email: 'operatore2@test.com',
+//       role: 'user'
+//     });
+
+//     // Crea prodotti
+//     const prodotti = [
+//       { nome: 'Guanti in lattice', categoria: 'DPI', unita: 'paia', descrizione: 'Guanti monouso' },
+//       { nome: 'Mascherine FFP2', categoria: 'DPI', unita: 'pz', descrizione: 'Mascherine protettive' },
+//       { nome: 'Gel igienizzante', categoria: 'Igiene', unita: 'flaconi', descrizione: '500ml' },
+//       { nome: 'Sacchi spazzatura', categoria: 'Pulizia', unita: 'pz', descrizione: '70x110cm' },
+//       { nome: 'Detergente pavimenti', categoria: 'Pulizia', unita: 'litri', descrizione: 'Detergente universale' }
+//     ];
+
+//     const createdProducts = [];
+//     for (const prod of prodotti) {
+//       const product = await Product.create(prod);
+//       createdProducts.push(product);
+//     }
+
+//     // Crea poli
+//     const poli = await Polo.create([
+//       { nome: 'Polo Nord', descrizione: 'Area nord della città' },
+//       { nome: 'Polo Sud', descrizione: 'Area sud della città' },
+//       { nome: 'Polo Centro', descrizione: 'Centro città' }
+//     ]);
+
+//     // Crea mezzi
+//     const mezzi = await Mezzo.create([
+//       { nome: 'Furgone 1', descrizione: 'Fiat Ducato' },
+//       { nome: 'Furgone 2', descrizione: 'Iveco Daily' },
+//       { nome: 'Auto 1', descrizione: 'Fiat Panda' }
+//     ]);
+
+//     // Crea settimane
+//     const currentDate = new Date();
+//     const settimane = [];
+    
+//     for (let i = 0; i < 4; i++) {
+//       const startDate = new Date(currentDate);
+//       startDate.setDate(startDate.getDate() - (7 * i));
+//       startDate.setHours(0, 0, 0, 0);
+      
+//       const endDate = new Date(startDate);
+//       endDate.setDate(endDate.getDate() + 6);
+//       endDate.setHours(23, 59, 59, 999);
+      
+//       const weekNumber = Math.ceil((startDate.getDate() + startDate.getDay()) / 7);
+      
+//       const settimana = await Settimana.create({
+//         numero: weekNumber,
+//         anno: startDate.getFullYear(),
+//         dataInizio: startDate,
+//         dataFine: endDate
+//       });
+//       settimane.push(settimana);
+//     }
+
+//     // Crea assegnazioni
+//     await Assegnazione.create({
+//       userId: user1._id,
+//       poloId: poli[0]._id,
+//       mezzoId: mezzi[0]._id,
+//       settimanaId: settimane[0]._id,
+//       createdBy: admin._id
+//     });
+
+//     await Assegnazione.create({
+//       userId: user1._id,
+//       poloId: poli[1]._id,
+//       mezzoId: mezzi[1]._id,
+//       settimanaId: settimane[1]._id,
+//       createdBy: admin._id
+//     });
+
+//     // Crea alcune giacenze globali di esempio
+//     for (const user of [user1, user2]) {
+//       for (let i = 0; i < 3; i++) {
+//         await GiacenzaUtente.create({
+//           userId: user._id,
+//           productId: createdProducts[i]._id,
+//           quantitaAssegnata: 100,
+//           quantitaDisponibile: 100,
+//           quantitaMinima: 20,
+//           assegnatoDa: admin._id,
+//           isGlobale: true,
+//           note: 'Giacenza iniziale'
+//         });
+//       }
+//     }
+    
+// const postazioni = [];
+// for (let i = 0; i < settimane.length; i++) {
+//   const settimana = settimane[i];
+  
+//   // Crea 3-5 postazioni per settimana
+//   const numPostazioni = Math.floor(Math.random() * 3) + 3; // 3-5 postazioni
+  
+//   for (let j = 1; j <= numPostazioni; j++) {
+//     const postazione = await Postazione.create({
+//       nome: `Postazione ${String.fromCharCode(64 + j)}`,
+//       descrizione: `Postazione di lavoro ${j} per settimana ${settimana.numero}`,
+//       settimanaId: settimana._id,
+//       indirizzo: `Via Roma ${j * 10}, Milano`,
+//       coordinate: {
+//         lat: 45.464664 + (Math.random() - 0.5) * 0.1,
+//         lng: 9.188540 + (Math.random() - 0.5) * 0.1
+//       },
+//       capacitaPersone: Math.floor(Math.random() * 4) + 1, // 1-4 persone
+//       attrezzature: [
+//         'Computer portatile',
+//         'Telefono',
+//         Math.random() > 0.5 ? 'Stampante' : 'Scanner',
+//         Math.random() > 0.7 ? 'Proiettore' : 'Lavagna'
+//       ].filter(Boolean),
+//       note: `Postazione creata automaticamente per test`,
+//       createdBy: admin._id
+//     });
+//     postazioni.push(postazione);
+//   }
+// }
+
+// console.log(`✅ Create ${postazioni.length} postazioni di esempio`);
+//     console.log('✅ Dati di test inizializzati con successo!');
+//     console.log('📋 Utenti creati:');
+//     console.log('   - admin / password123');
+//     console.log('   - operatore1 / password123');
+//     console.log('   - operatore2 / password123');
+    
+//   } catch (error) {
+//     console.error('❌ Errore inizializzazione dati:', error);
+//   }
+
+
+// }
 async function initTestData() {
   try {
     // Verifica se ci sono già dati
     const userCount = await User.countDocuments();
+    
     if (userCount > 0) {
-      console.log('Dati già presenti nel database');
-      return;
+      console.log('Dati utenti già presenti nel database');
+      
+      // ================================
+      // AGGIORNA SOLO LE POSTAZIONI SE MANCANO
+      // ================================
+      
+      const postazioniCount = await Postazione.countDocuments();
+      
+      if (postazioniCount === 0) {
+        console.log('🏢 Creazione postazioni di esempio...');
+        
+        // Trova admin esistente
+        const admin = await User.findOne({ role: 'admin' });
+        if (!admin) {
+          console.log('❌ Admin non trovato per creare postazioni');
+          return;
+        }
+        
+        // Trova settimane esistenti
+        const settimane = await Settimana.find().sort({ anno: -1, numero: -1 });
+        if (settimane.length === 0) {
+          console.log('❌ Nessuna settimana trovata per creare postazioni');
+          return;
+        }
+        
+        const postazioni = [];
+        for (let i = 0; i < settimane.length; i++) {
+          const settimana = settimane[i];
+          
+          // Crea 3-5 postazioni per settimana
+          const numPostazioni = Math.floor(Math.random() * 3) + 3; // 3-5 postazioni
+          
+          for (let j = 1; j <= numPostazioni; j++) {
+            const postazione = await Postazione.create({
+              nome: `Postazione ${String.fromCharCode(64 + j)}`,
+              descrizione: `Postazione di lavoro ${j} per settimana ${settimana.numero}/${settimana.anno}`,
+              settimanaId: settimana._id,
+              indirizzo: `Via Roma ${j * 10}, Milano`,
+              coordinate: {
+                lat: 45.464664 + (Math.random() - 0.5) * 0.1,
+                lng: 9.188540 + (Math.random() - 0.5) * 0.1
+              },
+              capacitaPersone: Math.floor(Math.random() * 4) + 1, // 1-4 persone
+              attrezzature: [
+                'Computer portatile',
+                'Telefono',
+                Math.random() > 0.5 ? 'Stampante' : 'Scanner',
+                Math.random() > 0.7 ? 'Proiettore' : 'Lavagna'
+              ].filter(Boolean),
+              note: `Postazione creata automaticamente per test`,
+              createdBy: admin._id
+            });
+            postazioni.push(postazione);
+          }
+        }
+        
+        console.log(`✅ Create ${postazioni.length} postazioni di esempio per ${settimane.length} settimane`);
+      } else {
+        console.log(`🏢 Postazioni già presenti: ${postazioniCount}`);
+      }
+      
+      return; // Esce qui se i dati principali esistono già
     }
 
-    console.log('Inizializzazione dati di test...');
+    console.log('Inizializzazione completa dati di test...');
 
     // Crea utenti
     const adminPassword = await bcrypt.hash('password123', 10);
@@ -2163,7 +2410,43 @@ async function initTestData() {
         });
       }
     }
+    
+    // ================================
+    // CREA POSTAZIONI (INIZIALIZZAZIONE COMPLETA)
+    // ================================
+    
+    const postazioni = [];
+    for (let i = 0; i < settimane.length; i++) {
+      const settimana = settimane[i];
+      
+      // Crea 3-5 postazioni per settimana
+      const numPostazioni = Math.floor(Math.random() * 3) + 3; // 3-5 postazioni
+      
+      for (let j = 1; j <= numPostazioni; j++) {
+        const postazione = await Postazione.create({
+          nome: `Postazione ${String.fromCharCode(64 + j)}`,
+          descrizione: `Postazione di lavoro ${j} per settimana ${settimana.numero}/${settimana.anno}`,
+          settimanaId: settimana._id,
+          indirizzo: `Via Roma ${j * 10}, Milano`,
+          coordinate: {
+            lat: 45.464664 + (Math.random() - 0.5) * 0.1,
+            lng: 9.188540 + (Math.random() - 0.5) * 0.1
+          },
+          capacitaPersone: Math.floor(Math.random() * 4) + 1, // 1-4 persone
+          attrezzature: [
+            'Computer portatile',
+            'Telefono',
+            Math.random() > 0.5 ? 'Stampante' : 'Scanner',
+            Math.random() > 0.7 ? 'Proiettore' : 'Lavagna'
+          ].filter(Boolean),
+          note: `Postazione creata automaticamente per test`,
+          createdBy: admin._id
+        });
+        postazioni.push(postazione);
+      }
+    }
 
+    console.log(`✅ Create ${postazioni.length} postazioni di esempio per ${settimane.length} settimane`);
     console.log('✅ Dati di test inizializzati con successo!');
     console.log('📋 Utenti creati:');
     console.log('   - admin / password123');
@@ -2173,10 +2456,84 @@ async function initTestData() {
   } catch (error) {
     console.error('❌ Errore inizializzazione dati:', error);
   }
-
-
 }
 
+// ================================
+// FUNZIONE HELPER PER FORZARE CREAZIONE POSTAZIONI
+// ================================
+
+// Aggiungi anche questa funzione helper che puoi chiamare manualmente se necessario
+async function forceCreatePostazioni() {
+  try {
+    console.log('🔄 Forzatura creazione postazioni...');
+    
+    // Elimina postazioni esistenti (opzionale)
+    const deletedCount = await Postazione.deleteMany({});
+    console.log(`🗑️  Eliminate ${deletedCount.deletedCount} postazioni esistenti`);
+    
+    // Trova admin e settimane
+    const admin = await User.findOne({ role: 'admin' });
+    const settimane = await Settimana.find().sort({ anno: -1, numero: -1 });
+    
+    if (!admin || settimane.length === 0) {
+      console.log('❌ Admin o settimane non trovati');
+      return;
+    }
+    
+    const postazioni = [];
+    for (let i = 0; i < settimane.length; i++) {
+      const settimana = settimane[i];
+      
+      // Crea 4 postazioni per settimana (numero fisso per test)
+      for (let j = 1; j <= 4; j++) {
+        const postazione = await Postazione.create({
+          nome: `Postazione ${String.fromCharCode(64 + j)}`,
+          descrizione: `Postazione di lavoro ${j} per settimana ${settimana.numero}/${settimana.anno}`,
+          settimanaId: settimana._id,
+          indirizzo: `Via Roma ${j * 10}, Milano`,
+          coordinate: {
+            lat: 45.464664 + (Math.random() - 0.5) * 0.1,
+            lng: 9.188540 + (Math.random() - 0.5) * 0.1
+          },
+          capacitaPersone: Math.floor(Math.random() * 4) + 1,
+          attrezzature: [
+            'Computer portatile',
+            'Telefono',
+            Math.random() > 0.5 ? 'Stampante' : 'Scanner',
+            Math.random() > 0.7 ? 'Proiettore' : 'Lavagna'
+          ].filter(Boolean),
+          note: `Postazione creata forzatamente per test - ${new Date().toLocaleString()}`,
+          createdBy: admin._id
+        });
+        postazioni.push(postazione);
+      }
+    }
+    
+    console.log(`✅ Forza-create ${postazioni.length} postazioni per ${settimane.length} settimane`);
+    return postazioni;
+    
+  } catch (error) {
+    console.error('❌ Errore forzatura postazioni:', error);
+  }
+}
+
+// ================================
+// ENDPOINT PER TESTARE POSTAZIONI (AGGIUNGILO TEMPORANEAMENTE)
+// ================================
+
+// Aggiungi questo endpoint temporaneo per testare la creazione delle postazioni
+app.post('/api/test/force-postazioni', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const result = await forceCreatePostazioni();
+    res.json({
+      message: 'Postazioni create forzatamente',
+      count: result ? result.length : 0,
+      postazioni: result
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 // ================================
 // ENDPOINT GESTIONE UTENTI (ADMIN)
 // ================================
@@ -2588,6 +2945,496 @@ app.patch('/api/admin/products/:id/toggle', authenticateToken, requireAdmin, asy
   }
 });
 
+app.get('/api/postazioni', authenticateToken, async (req, res) => {
+  try {
+    const { 
+      settimanaId, 
+      attiva, 
+      searchTerm,
+      capacitaMin,
+      capacitaMax
+    } = req.query;
+    
+    const filter = {};
+    
+    // Filtri base
+    if (settimanaId) filter.settimanaId = settimanaId;
+    if (attiva !== undefined) filter.attiva = attiva === 'true';
+    
+    console.log('🏢 Filtri postazioni:', filter);
+    
+    const postazioni = await Postazione.find(filter)
+      .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('createdBy', 'username')
+      .sort({ 'settimanaId.anno': -1, 'settimanaId.numero': -1, nome: 1 });
+
+    let filteredPostazioni = postazioni;
+
+    // Filtro ricerca libera
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filteredPostazioni = filteredPostazioni.filter(p => 
+        p.nome.toLowerCase().includes(term) ||
+        p.descrizione?.toLowerCase().includes(term) ||
+        p.indirizzo?.toLowerCase().includes(term) ||
+        p.note?.toLowerCase().includes(term) ||
+        p.attrezzature?.some(att => att.toLowerCase().includes(term))
+      );
+    }
+
+    // Filtri numerici per capacità
+    if (capacitaMin) {
+      const min = parseInt(capacitaMin);
+      filteredPostazioni = filteredPostazioni.filter(p => p.capacitaPersone >= min);
+    }
+    
+    if (capacitaMax) {
+      const max = parseInt(capacitaMax);
+      filteredPostazioni = filteredPostazioni.filter(p => p.capacitaPersone <= max);
+    }
+
+    console.log(`📊 Postazioni risultati: ${filteredPostazioni.length} di ${postazioni.length}`);
+
+    res.json(filteredPostazioni);
+  } catch (error) {
+    console.error('❌ Errore caricamento postazioni:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - Postazione singola per ID
+app.get('/api/postazioni/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const postazione = await Postazione.findById(id)
+      .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('createdBy', 'username email');
+
+    if (!postazione) {
+      return res.status(404).json({ message: 'Postazione non trovata' });
+    }
+
+    res.json(postazione);
+  } catch (error) {
+    console.error('❌ Errore caricamento postazione:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - Postazioni per settimana specifica
+app.get('/api/postazioni/settimana/:settimanaId', authenticateToken, async (req, res) => {
+  try {
+    const { settimanaId } = req.params;
+    const { attiva = 'true' } = req.query;
+    
+    const filter = { settimanaId };
+    if (attiva !== undefined) filter.attiva = attiva === 'true';
+    
+    const postazioni = await Postazione.find(filter)
+      .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('createdBy', 'username')
+      .sort({ nome: 1 });
+
+    res.json(postazioni);
+  } catch (error) {
+    console.error('❌ Errore caricamento postazioni per settimana:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Crea nuova postazione (Admin)
+app.post('/api/postazioni', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { 
+      nome, 
+      descrizione, 
+      settimanaId, 
+      indirizzo,
+      coordinate,
+      capacitaPersone = 1,
+      attrezzature = [],
+      note,
+      attiva = true
+    } = req.body;
+
+    // Validazioni
+    if (!nome || !settimanaId) {
+      return res.status(400).json({ message: 'Nome e settimanaId sono obbligatori' });
+    }
+
+    // Verifica che la settimana esista
+    const settimana = await Settimana.findById(settimanaId);
+    if (!settimana) {
+      return res.status(404).json({ message: 'Settimana non trovata' });
+    }
+
+    // Verifica se postazione con stesso nome esiste già per questa settimana
+    const existingPostazione = await Postazione.findOne({ 
+      nome: { $regex: new RegExp('^' + nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+      settimanaId
+    });
+
+    if (existingPostazione) {
+      return res.status(400).json({ 
+        message: 'Postazione con questo nome già esistente per questa settimana' 
+      });
+    }
+
+    // Crea postazione
+    const newPostazione = new Postazione({
+      nome: nome.trim(),
+      descrizione: descrizione ? descrizione.trim() : '',
+      settimanaId,
+      indirizzo: indirizzo ? indirizzo.trim() : '',
+      coordinate: coordinate || {},
+      capacitaPersone: parseInt(capacitaPersone) || 1,
+      attrezzature: Array.isArray(attrezzature) ? attrezzature.map(a => a.trim()).filter(Boolean) : [],
+      note: note ? note.trim() : '',
+      attiva: Boolean(attiva),
+      createdBy: req.user.userId
+    });
+
+    await newPostazione.save();
+    
+    // Popola per risposta
+    const postazioneCompleta = await Postazione.findById(newPostazione._id)
+      .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('createdBy', 'username');
+    
+    res.status(201).json({
+      message: 'Postazione creata con successo',
+      postazione: postazioneCompleta
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        message: 'Postazione con questo nome già esistente per questa settimana'
+      });
+    }
+    console.error('❌ Errore creazione postazione:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// PUT - Modifica postazione (Admin)
+app.put('/api/postazioni/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      nome, 
+      descrizione, 
+      settimanaId, 
+      indirizzo,
+      coordinate,
+      capacitaPersone,
+      attrezzature,
+      note,
+      attiva
+    } = req.body;
+
+    // Validazioni
+    if (!nome || !settimanaId) {
+      return res.status(400).json({ message: 'Nome e settimanaId sono obbligatori' });
+    }
+
+    // Verifica se la postazione esiste
+    const postazione = await Postazione.findById(id);
+    if (!postazione) {
+      return res.status(404).json({ message: 'Postazione non trovata' });
+    }
+
+    // Verifica che la settimana esista
+    const settimana = await Settimana.findById(settimanaId);
+    if (!settimana) {
+      return res.status(404).json({ message: 'Settimana non trovata' });
+    }
+
+    // Verifica se nome è già usato da altra postazione nella stessa settimana
+    const existingPostazione = await Postazione.findOne({
+      _id: { $ne: id },
+      nome: { $regex: new RegExp('^' + nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+      settimanaId
+    });
+
+    if (existingPostazione) {
+      return res.status(400).json({ 
+        message: 'Un\'altra postazione ha già questo nome per questa settimana' 
+      });
+    }
+
+    // Aggiorna postazione
+    const updatedPostazione = await Postazione.findByIdAndUpdate(
+      id,
+      {
+        nome: nome.trim(),
+        descrizione: descrizione ? descrizione.trim() : '',
+        settimanaId,
+        indirizzo: indirizzo ? indirizzo.trim() : '',
+        coordinate: coordinate || postazione.coordinate,
+        capacitaPersone: capacitaPersone !== undefined ? parseInt(capacitaPersone) || 1 : postazione.capacitaPersone,
+        attrezzature: Array.isArray(attrezzature) ? attrezzature.map(a => a.trim()).filter(Boolean) : postazione.attrezzature,
+        note: note !== undefined ? (note ? note.trim() : '') : postazione.note,
+        attiva: attiva !== undefined ? Boolean(attiva) : postazione.attiva
+      },
+      { new: true }
+    )
+    .populate('settimanaId', 'numero anno dataInizio dataFine')
+    .populate('createdBy', 'username');
+
+    res.json({
+      message: 'Postazione aggiornata con successo',
+      postazione: updatedPostazione
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        message: 'Una postazione con questo nome esiste già per questa settimana'
+      });
+    }
+    console.error('❌ Errore aggiornamento postazione:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// DELETE - Elimina postazione (Admin)
+app.delete('/api/postazioni/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verifica se la postazione esiste
+    const postazione = await Postazione.findById(id)
+      .populate('settimanaId', 'numero anno');
+
+    if (!postazione) {
+      return res.status(404).json({ message: 'Postazione non trovata' });
+    }
+
+    // Verifica se ci sono assegnazioni associate (se implementate in futuro)
+    // const assegnazioniCount = await Assegnazione.countDocuments({ postazioneId: id });
+    // if (assegnazioniCount > 0) {
+    //   return res.status(400).json({ 
+    //     message: 'Impossibile eliminare: ci sono ' + assegnazioniCount + ' assegnazioni associate a questa postazione.'
+    //   });
+    // }
+
+    // Elimina postazione
+    await Postazione.findByIdAndDelete(id);
+
+    res.json({
+      message: 'Postazione eliminata con successo',
+      deletedPostazione: {
+        id: postazione._id,
+        nome: postazione.nome,
+        settimana: postazione.settimanaId ? 
+          `${postazione.settimanaId.numero}/${postazione.settimanaId.anno}` : 
+          'N/A'
+      }
+    });
+  } catch (error) {
+    console.error('❌ Errore eliminazione postazione:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// PATCH - Toggle stato attivo postazione (Admin)
+app.patch('/api/postazioni/:id/toggle', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { attiva } = req.body;
+
+    // Verifica se la postazione esiste
+    const postazione = await Postazione.findById(id);
+    if (!postazione) {
+      return res.status(404).json({ message: 'Postazione non trovata' });
+    }
+
+    // Aggiorna stato
+    const updatedPostazione = await Postazione.findByIdAndUpdate(
+      id,
+      { attiva: Boolean(attiva) },
+      { new: true }
+    )
+    .populate('settimanaId', 'numero anno dataInizio dataFine')
+    .populate('createdBy', 'username');
+
+    res.json({
+      message: 'Postazione ' + (attiva ? 'attivata' : 'disattivata') + ' con successo',
+      postazione: updatedPostazione
+    });
+  } catch (error) {
+    console.error('❌ Errore toggle postazione:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - Statistiche postazioni (bonus)
+app.get('/api/postazioni/stats', authenticateToken, async (req, res) => {
+  try {
+    const { settimanaId } = req.query;
+    
+    const filter = {};
+    if (settimanaId) filter.settimanaId = settimanaId;
+    
+    const postazioni = await Postazione.find(filter);
+    
+    const stats = {
+      totalePostazioni: postazioni.length,
+      postazioniAttive: postazioni.filter(p => p.attiva).length,
+      postazioniInattive: postazioni.filter(p => !p.attiva).length,
+      capacitaTotale: postazioni.reduce((sum, p) => sum + (p.capacitaPersone || 0), 0),
+      capacitaMedia: postazioni.length > 0 ? 
+        Math.round(postazioni.reduce((sum, p) => sum + (p.capacitaPersone || 0), 0) / postazioni.length * 100) / 100 : 0,
+      attrezzatureUniche: [...new Set(postazioni.flatMap(p => p.attrezzature || []))],
+      postazioniConCoordinate: postazioni.filter(p => p.coordinate?.lat && p.coordinate?.lng).length
+    };
+    
+    // Statistiche per settimana
+    const statsByWeek = {};
+    for (const postazione of postazioni) {
+      if (postazione.settimanaId) {
+        const settimana = await Settimana.findById(postazione.settimanaId);
+        if (settimana) {
+          const key = `${settimana.numero}/${settimana.anno}`;
+          if (!statsByWeek[key]) {
+            statsByWeek[key] = {
+              totale: 0,
+              attive: 0,
+              capacitaTotale: 0
+            };
+          }
+          statsByWeek[key].totale++;
+          if (postazione.attiva) statsByWeek[key].attive++;
+          statsByWeek[key].capacitaTotale += postazione.capacitaPersone || 0;
+        }
+      }
+    }
+    
+    res.json({
+      ...stats,
+      perSettimana: statsByWeek
+    });
+  } catch (error) {
+    console.error('❌ Errore statistiche postazioni:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Copia postazioni da una settimana all'altra (Admin)
+app.post('/api/postazioni/copy', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { fromSettimanaId, toSettimanaId } = req.body;
+    
+    if (!fromSettimanaId || !toSettimanaId) {
+      return res.status(400).json({ 
+        message: 'fromSettimanaId e toSettimanaId sono richiesti' 
+      });
+    }
+    
+    // Verifica che entrambe le settimane esistano
+    const fromSettimana = await Settimana.findById(fromSettimanaId);
+    const toSettimana = await Settimana.findById(toSettimanaId);
+    
+    if (!fromSettimana || !toSettimana) {
+      return res.status(404).json({ message: 'Una o entrambe le settimane non esistono' });
+    }
+    
+    // Trova postazioni della settimana di origine
+    const sourcePostazioni = await Postazione.find({
+      settimanaId: fromSettimanaId,
+      attiva: true
+    });
+    
+    const copiedPostazioni = [];
+    const skippedPostazioni = [];
+    
+    for (const sourcePostazione of sourcePostazioni) {
+      // Verifica se esiste già nella settimana di destinazione
+      const existingPostazione = await Postazione.findOne({
+        nome: { $regex: new RegExp('^' + sourcePostazione.nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+        settimanaId: toSettimanaId
+      });
+      
+      if (!existingPostazione) {
+        // Crea nuova postazione
+        const newPostazione = new Postazione({
+          nome: sourcePostazione.nome,
+          descrizione: sourcePostazione.descrizione,
+          settimanaId: toSettimanaId,
+          indirizzo: sourcePostazione.indirizzo,
+          coordinate: sourcePostazione.coordinate,
+          capacitaPersone: sourcePostazione.capacitaPersone,
+          attrezzature: [...(sourcePostazione.attrezzature || [])],
+          note: `Copiata da settimana ${fromSettimana.numero}/${fromSettimana.anno}`,
+          attiva: true,
+          createdBy: req.user.userId
+        });
+        
+        await newPostazione.save();
+        copiedPostazioni.push(newPostazione);
+      } else {
+        skippedPostazioni.push(sourcePostazione.nome);
+      }
+    }
+    
+    res.json({
+      message: `Operazione completata`,
+      copiate: copiedPostazioni.length,
+      saltate: skippedPostazioni.length,
+      dettagli: {
+        copiate: copiedPostazioni.map(p => p.nome),
+        saltate: skippedPostazioni,
+        daSettimana: `${fromSettimana.numero}/${fromSettimana.anno}`,
+        aSettimana: `${toSettimana.numero}/${toSettimana.anno}`
+      }
+    });
+  } catch (error) {
+    console.error('❌ Errore copia postazioni:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// ================================
+// AGGIORNAMENTO DATI TEST - Aggiungi questa funzione nell'initTestData esistente
+// ================================
+
+// Nella funzione initTestData, aggiungi dopo la creazione delle settimane:
+
+/*
+// Crea postazioni di esempio
+const postazioni = [];
+for (let i = 0; i < settimane.length; i++) {
+  const settimana = settimane[i];
+  
+  // Crea 3-5 postazioni per settimana
+  const numPostazioni = Math.floor(Math.random() * 3) + 3; // 3-5 postazioni
+  
+  for (let j = 1; j <= numPostazioni; j++) {
+    const postazione = await Postazione.create({
+      nome: `Postazione ${String.fromCharCode(64 + j)}`,
+      descrizione: `Postazione di lavoro ${j} per settimana ${settimana.numero}`,
+      settimanaId: settimana._id,
+      indirizzo: `Via Roma ${j * 10}, Milano`,
+      coordinate: {
+        lat: 45.464664 + (Math.random() - 0.5) * 0.1,
+        lng: 9.188540 + (Math.random() - 0.5) * 0.1
+      },
+      capacitaPersone: Math.floor(Math.random() * 4) + 1, // 1-4 persone
+      attrezzature: [
+        'Computer portatile',
+        'Telefono',
+        Math.random() > 0.5 ? 'Stampante' : 'Scanner',
+        Math.random() > 0.7 ? 'Proiettore' : 'Lavagna'
+      ].filter(Boolean),
+      note: `Postazione creata automaticamente per test`,
+      createdBy: admin._id
+    });
+    postazioni.push(postazione);
+  }
+}
+
+console.log(`✅ Create ${postazioni.length} postazioni di esempio`);
+*/
 // Avvia il server
 app.listen(process.env.PORT, '0.0.0.0', async () => {
   console.log(`🚀 Server giacenze multi-settimana su porta ${PORT}`);

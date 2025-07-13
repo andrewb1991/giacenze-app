@@ -111,6 +111,7 @@ import Navigation from '../shared/Navigation';
 import UserGiacenzeView from './UserGiacenzeView';
 import GiacenzeManagement from './GiacenzeManagement';
 import AssignmentsManagement from './AssigmentsManagement';
+import PostazioniManagement from './PostazioniManagement';
 import AdminStats from './AdminStats';
 import UtilizziManagement from './UtilizziManagement';
 import OperatoriManagement from './OperatoriManagement';
@@ -141,6 +142,7 @@ const AdminPage = () => {
     { id: 'assegnazioni', label: 'Assegnazioni', icon: '📋' },
     { id: 'utilizzi', label: 'Gestione Utilizzi', icon: '📊' },
     { id: 'operatori', label: 'Gestione Operatori', icon: '👥' },
+    { id: 'postazioni', label: 'Gestione Postazioni', icon: '🏢' },
     { id: 'prodotti', label: 'Gestione Prodotti', icon: '🏷️' },
     {id: 'reports', label: 'Genera Report', icon:'📑'}
   ];
@@ -166,9 +168,9 @@ const AdminPage = () => {
         </div>
 
         <div className="relative z-10">
-          <Navigation title="Amministrazione Giacenze" />
+          <Navigation title="Amministrazione Giacenze" fixed="true"/>
 
-          <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 pt-20">
             {adminView === 'user-giacenze' ? (
               <UserGiacenzeView />
             ) : (
@@ -200,6 +202,7 @@ const AdminPage = () => {
                   {activeTab === 'utilizzi' && <UtilizziManagement />}
                   {activeTab === 'operatori' && <OperatoriManagement />}
                   {activeTab === 'prodotti' && <ProdottiManagement />}
+                  {activeTab === 'postazioni' && <PostazioniManagement />}
                   {activeTab === 'reports' && <ReportsPage/>}
 
                   {/* Statistiche Admin */}

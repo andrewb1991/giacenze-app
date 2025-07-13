@@ -482,7 +482,7 @@
 
 // components/admin/OperatoriManagement.js
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, Users, Mail, UserCheck, UserX, Eye, EyeOff, Shield, Clock } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Users, Mail, UserCheck, UserX, Eye, EyeOff, Shield, Clock, Building } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { apiCall } from '../../services/api';
 import { formatDate } from '../../utils/formatters';
@@ -493,6 +493,7 @@ const OperatoriManagement = () => {
   // Stati per dati
   const [operatori, setOperatori] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [postazioni, setPostazioni] = useState([]);
   
   // Stati per form nuovo operatore
   const [showAddForm, setShowAddForm] = useState(false);
@@ -513,7 +514,18 @@ const OperatoriManagement = () => {
 
   // Stati per UI
   const [showPasswords, setShowPasswords] = useState({});
-
+useEffect(() => {
+  const loadPostazioni = async () => {
+    try {
+      const data = await apiCall('/postazioni', {}, token);
+      setPostazioni(data || []);
+    } catch (err) {
+      console.error('Errore caricamento postazioni:', err);
+    }
+  };
+  
+  loadPostazioni();
+}, []);
   // Carica operatori
   const loadOperatori = async () => {
     try {
@@ -785,6 +797,15 @@ const OperatoriManagement = () => {
                 <div className="text-2xl font-bold text-white">{operatori.length}</div>
                 <div className="text-sm text-white/70">Totale Utenti</div>
               </div>
+              <div className="glass-stat-icon p-3 rounded-xl bg-gradient-to-r from-teal-400 to-teal-600 mr-4">
+      <Building className="w-6 h-6 text-white" />
+    </div>
+    <div>
+      <div className="text-2xl font-bold text-teal-400">
+        {postazioni.filter(p => p.attiva).length}
+      </div>
+      <div className="text-sm text-white/70">Postazioni Attive</div>
+    </div>
             </div>
           </div>
           <div className="glass-stat-card p-6 rounded-2xl">

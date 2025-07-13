@@ -968,13 +968,15 @@ import {
   Plus,
   Edit,
   Settings,
-  UserCheck
+  UserCheck,
+  Building
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
 import { apiCall } from '../../services/api';
 import { formatWeek } from '../../utils/formatters';
+import {PostazioniManagement} from '../admin/PostazioniManagement';
 
 const AssignmentsManagement = () => {
   const { token, setError } = useAuth();
@@ -982,6 +984,8 @@ const AssignmentsManagement = () => {
   const { state, dispatch } = useAppContext();
   const { assegnazioneForm, editAssignmentId, editForm } = state;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [postazioni, setPostazioni] = useState([]);
+
   
   // Stati per filtri
   const [filters, setFilters] = useState({
@@ -999,6 +1003,18 @@ const AssignmentsManagement = () => {
   const [loading, setLoading] = useState(false);
 
   // Mouse tracking
+  useEffect(() => {
+  const loadPostazioni = async () => {
+    try {
+      const data = await apiCall('/postazioni', {}, token);
+      setPostazioni(data || []);
+    } catch (err) {
+      console.error('Errore caricamento postazioni:', err);
+    }
+  };
+  
+  loadPostazioni();
+}, []);
   useEffect(() => {
     const handleMouseMove = (e) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
@@ -1345,6 +1361,26 @@ const AssignmentsManagement = () => {
               </select>
             </div>
 
+        {/* Filtro Postazione */}
+            <div>
+  <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
+    <Building className="w-4 h-4 mr-2" />
+    Postazione
+  </label>
+  <select
+    className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
+    value={filters.postazioneId || ''}
+    onChange={(e) => updateFilters({ postazioneId: e.target.value })}
+  >
+    <option value="" className="bg-gray-800">Tutte le postazioni</option>
+    {postazioni.filter(p => p.attiva).map(postazione => (
+      <option key={postazione._id} value={postazione._id} className="bg-gray-800">
+        {postazione.nome} - Sett. {postazione.settimanaId?.numero}
+      </option>
+    ))}
+  </select>
+</div>
+
             {/* Filtro Mezzo */}
             <div>
               <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
@@ -1454,6 +1490,9 @@ const AssignmentsManagement = () => {
                       Polo
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
+  Postazione
+</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Mezzo
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
@@ -1491,7 +1530,15 @@ const AssignmentsManagement = () => {
                           {assegnazione.poloId?.nome || 'N/A'}
                         </div>
                       </td>
-                      
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+  <div className="flex items-center">
+    <Building className="w-4 h-4 mr-2 text-orange-400" />
+    <div className="text-sm text-white">
+      {assegnazione.postazioneId?.nome || 'Non assegnata'}
+    </div>
+  </div>
+</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-white">
                           {assegnazione.mezzoId?.nome || 'N/A'}
