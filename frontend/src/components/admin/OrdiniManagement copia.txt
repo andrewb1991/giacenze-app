@@ -16,12 +16,8 @@ import {
   X,
   Check
 } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import { apiCall } from '../../services/api';
-import { formatDate } from '../../utils/formatters';
 
 const OrdiniManagement = () => {
-      const { token, setError } = useAuth();
   const [activeTab, setActiveTab] = useState('report');
   const [reportData, setReportData] = useState({
     utilizzi: [],
@@ -53,29 +49,30 @@ const OrdiniManagement = () => {
     fetchOrdiniStorico();
   }, [filtri]);
 
-  const fetchReportData = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams(filtri);
-      const response = await apiCall(`/api/reports/excel?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (!response.ok) throw new Error('Errore nel caricamento dati');
-      
-      setReportData(mockData);
-    } catch (error) {
-      console.error('Errore:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchReportData = async () => {
+  try {
+    setLoading(true);
+    const params = new URLSearchParams(filtri);
+    const response = await fetch(`/api/reports/json?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Errore nel caricamento dati');
+    
+    const data = await response.json();
+    setReportData(data);
+  } catch (error) {
+    console.error('Errore:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchSettimane = async () => {
     try {
-      const response = await apiCall('/api/settimane', {
+      const response = await fetch('/api/settimane', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -89,7 +86,7 @@ const OrdiniManagement = () => {
 
   const fetchOrdiniStorico = async () => {
     try {
-      const response = await apiCall('/api/ordini', {
+      const response = await fetch('/api/ordini', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -104,7 +101,7 @@ const OrdiniManagement = () => {
   const handleDownloadExcel = async () => {
     try {
       const params = new URLSearchParams(filtri);
-      const response = await apiCall(`/api/reports/excel?${params}`, {
+      const response = await fetch(`/api/reports/excel?${params}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -161,7 +158,7 @@ const OrdiniManagement = () => {
 
   const handleSubmitOrder = async () => {
     try {
-      const response = await apiCall('/api/ordini', {
+      const response = await fetch('/api/ordini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
