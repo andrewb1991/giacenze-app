@@ -9,6 +9,7 @@ import UtilizziPage from './components/utilizzi/UtilizziPage';
 import ReportsPage from './components/reports/ReportsPage';
 import AdminPage from './components/admin/AdminPage';
 import ErrorMessage from './components/shared/ErrorMessage';
+import OrdiniManagement from './components/admin/OrdiniManagement';
 
 // 🔄 Componente di Loading
   // const LoadingScreen = () => (
@@ -205,6 +206,8 @@ const AppContent = () => {
         return <UtilizziPage />;
       case 'reports':
         return <ReportsPage />;
+        case 'ordini':
+        return <OrdiniManagement />;
       case 'admin':
         return user?.role === 'admin' ? <AdminPage /> : <Dashboard />;
       default:

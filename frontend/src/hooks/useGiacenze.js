@@ -1,4 +1,3 @@
-// hooks/useGiacenze.js
 import { useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { useAuth } from './useAuth';

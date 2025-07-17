@@ -1,4 +1,3 @@
-// hooks/useAuth.js - Versione con persistenza del login
 import { useState, useEffect, createContext, useContext } from 'react';
 import { apiCall } from '../services/api';
 

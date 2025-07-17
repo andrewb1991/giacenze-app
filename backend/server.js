@@ -139,24 +139,7 @@ const ricaricaGiacenzaSchema = new mongoose.Schema({
   eseguitoDa: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
-// const postazioneSchema = new mongoose.Schema({
-//   nome: { type: String, required: true, trim: true },
-//   descrizione: { type: String, trim: true },
-//   settimanaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Settimana', required: true },
-//   indirizzo: { type: String, trim: true },
-//   coordinate: {
-//     lat: { type: Number },
-//     lng: { type: Number }
-//   },
-//   capacitaPersone: { type: Number, default: 1 },
-//   attrezzature: [{ type: String, trim: true }],
-//   note: { type: String, trim: true },
-//   attiva: { type: Boolean, default: true },
-//   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
-// }, { timestamps: true });
 
-// // Indice composito per evitare duplicati nome-settimana
-// postazioneSchema.index({ nome: 1, settimanaId: 1 }, { unique: true });
 
 const postazioneSchema = new mongoose.Schema({
   nome: { type: String, required: true, trim: true },
@@ -250,39 +233,6 @@ app.get('/api/products', authenticateToken, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
-// MODIFICATA: Giacenze personali dell'utente (con supporto multi-settimana)
-// modifica 12/07/2025
-// app.get('/api/my-giacenze', authenticateToken, async (req, res) => {
-//   try {
-//     const { settimanaId } = req.query;
-    
-//     let filter = { 
-//       userId: req.user.userId, 
-//       attiva: true 
-//     };
-    
-//     // Se specificata una settimana, cerca giacenze per quella settimana O globali
-//     if (settimanaId) {
-//       filter.$or = [
-//         { settimanaId: settimanaId },
-//         { isGlobale: true }
-//       ];
-//     }
-    
-//     const giacenze = await GiacenzaUtente.find(filter)
-//       .populate('productId', 'nome descrizione unita categoria')
-//       .populate('assegnatoDa', 'username')
-//       .populate('settimanaId', 'numero anno dataInizio dataFine')
-//       .sort({ 'productId.nome': 1 });
-
-//     res.json(giacenze);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
-// AGGIORNA l'endpoint esistente /api/my-giacenze nel server.js:
 
 app.get('/api/my-giacenze', authenticateToken, async (req, res) => {
   try {
@@ -815,32 +765,6 @@ app.post('/api/use-product', authenticateToken, async (req, res) => {
 });
 
 // Routes Admin per gestire giacenze
-// MODIFICA 12/07/205
-// app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res) => {
-//   try {
-//     const { userId, settimanaId } = req.query;
-    
-//     let filter = { attiva: true };
-//     if (userId) filter.userId = userId;
-//     if (settimanaId) {
-//       filter.$or = [
-//         { settimanaId: settimanaId },
-//         { isGlobale: true }
-//       ];
-//     }
-
-//     const giacenze = await GiacenzaUtente.find(filter)
-//       .populate('userId', 'username email')
-//       .populate('productId', 'nome categoria unita')
-//       .populate('assegnatoDa', 'username')
-//       .populate('settimanaId', 'numero anno dataInizio dataFine')
-//       .sort({ 'userId.username': 1, 'productId.nome': 1 });
-
-//     res.json(giacenze);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
 // AGGIORNA anche l'endpoint admin /api/admin/giacenze per coerenza:
 
 app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res) => {
@@ -1158,190 +1082,6 @@ app.get('/api/admin/utilizzi', authenticateToken, requireAdmin, async (req, res)
 });
 
 // // Report Excel
-// app.get('/api/reports/excel', authenticateToken, async (req, res) => {
-//   try {
-//     const { settimanaId, poloId, mezzoId, userId } = req.query;
-    
-//     const filter = {};
-//     if (settimanaId) filter.settimanaId = settimanaId;
-//     if (poloId) filter.poloId = poloId;
-//     if (mezzoId) filter.mezzoId = mezzoId;
-    
-//     // Se non è admin, può vedere solo i suoi utilizzi
-//     if (req.user.role !== 'admin') {
-//       filter.userId = req.user.userId;
-//     } else if (userId) {
-//       filter.userId = userId;
-//     }
-    
-//     const utilizzi = await Utilizzo.find(filter)
-//       .populate('userId', 'username')
-//       .populate('productId', 'nome categoria unita')
-//       .populate('giacenzaUtenteId')
-//       .populate('settimanaId', 'numero anno dataInizio dataFine')
-//       .populate('poloId', 'nome')
-//       .populate('mezzoId', 'nome');
-    
-//     // Aggrega dati per report
-//     const reportData = {};
-    
-//     utilizzi.forEach(utilizzo => {
-//       const key = `${utilizzo.userId._id}-${utilizzo.productId._id}-${utilizzo.settimanaId?._id || 'global'}`;
-      
-//       if (!reportData[key]) {
-//         let periodoSettimana = 'Non disponibile';
-//         if (utilizzo.settimanaId?.dataInizio && utilizzo.settimanaId?.dataFine) {
-//           const dataInizio = new Date(utilizzo.settimanaId.dataInizio);
-//           const dataFine = new Date(utilizzo.settimanaId.dataFine);
-//           periodoSettimana = `${dataInizio.toLocaleDateString('it-IT')} - ${dataFine.toLocaleDateString('it-IT')}`;
-//         }
-        
-//         const quantitaDisponibile = utilizzo.giacenzaUtenteId?.quantitaDisponibile || 0;
-//         const quantitaMinima = utilizzo.giacenzaUtenteId?.quantitaMinima || 0;
-//         const quantitaAssegnata = utilizzo.giacenzaUtenteId?.quantitaAssegnata || 0;
-        
-//         // Calcola quantità da ordinare
-//         let quantitaDaOrdinare = 0;
-//         if (quantitaDisponibile <= quantitaMinima) {
-//           // Se siamo sotto soglia, ordiniamo per tornare alla quantità assegnata
-//           quantitaDaOrdinare = quantitaAssegnata - quantitaDisponibile;
-//         }
-        
-//         reportData[key] = {
-//           'Utente': utilizzo.userId.username,
-//           'Prodotto': utilizzo.productId.nome,
-//           'Categoria': utilizzo.productId.categoria || 'N/A',
-//           'Quantità Totale Utilizzata': 0,
-//           'Unità': utilizzo.productId.unita,
-//           'Quantità Disponibile': quantitaDisponibile,
-//           'Quantità Assegnata': quantitaAssegnata,
-//           'Quantità Minima': quantitaMinima,
-//           'Quantità da Ordinare': quantitaDaOrdinare, // ← NUOVA COLONNA
-//           'Polo': utilizzo.poloId?.nome || 'N/A',
-//           'Mezzo': utilizzo.mezzoId?.nome || 'N/A',
-//           'Periodo': periodoSettimana
-//         };
-//       }
-      
-//       reportData[key]['Quantità Totale Utilizzata'] += utilizzo.quantitaUtilizzata;
-//     });
-    
-//     // Converti in array e calcola stato
-//     const dataArray = Object.values(reportData).map(item => {
-//       // Ricalcola quantità da ordinare dopo aver sommato tutti gli utilizzi
-//       const disponibile = item['Quantità Disponibile'];
-//       const minima = item['Quantità Minima'];
-//       const assegnata = item['Quantità Assegnata'];
-      
-//       let quantitaDaOrdinare = 0;
-//       if (disponibile <= minima && assegnata > 0) {
-//         quantitaDaOrdinare = assegnata - disponibile;
-//       }
-      
-//       return {
-//         ...item,
-//         'Quantità da Ordinare': quantitaDaOrdinare,
-//         'Da Ordinare': (disponibile <= minima) ? 'SÌ' : 'NO',
-//         'Stato Giacenza': disponibile <= minima ? 'CRITICO' : 'OK',
-//         'Percentuale Rimasta': assegnata > 0 ? Math.round((disponibile / assegnata) * 100) + '%' : '0%'
-//       };
-//     });
-    
-//     // Ordina per prodotti critici prima, poi per quantità da ordinare (decrescente)
-//     dataArray.sort((a, b) => {
-//       // Prima i prodotti critici (da ordinare = SÌ)
-//       if (a['Da Ordinare'] === 'SÌ' && b['Da Ordinare'] === 'NO') return -1;
-//       if (a['Da Ordinare'] === 'NO' && b['Da Ordinare'] === 'SÌ') return 1;
-      
-//       // Poi per quantità da ordinare (decrescente)
-//       if (a['Da Ordinare'] === 'SÌ' && b['Da Ordinare'] === 'SÌ') {
-//         return b['Quantità da Ordinare'] - a['Quantità da Ordinare'];
-//       }
-      
-//       // Infine per utente e prodotto
-//       return a['Utente'].localeCompare(b['Utente']) || a['Prodotto'].localeCompare(b['Prodotto']);
-//     });
-    
-//     // Crea Excel con colonne ottimizzate
-//     const wb = xlsx.utils.book_new();
-//     const ws = xlsx.utils.json_to_sheet(dataArray);
-    
-//     // Impostazioni colonne con larghezze ottimizzate
-//     ws['!cols'] = [
-//       { wch: 15 }, // Utente
-//       { wch: 25 }, // Prodotto
-//       { wch: 15 }, // Categoria
-//       { wch: 12 }, // Quantità Utilizzata
-//       { wch: 8 },  // Unità
-//       { wch: 12 }, // Disponibile
-//       { wch: 12 }, // Assegnata
-//       { wch: 12 }, // Minima
-//       { wch: 15 }, // Quantità da Ordinare ← NUOVA
-//       { wch: 15 }, // Polo
-//       { wch: 15 }, // Mezzo
-//       { wch: 20 }, // Periodo
-//       { wch: 12 }, // Da Ordinare
-//       { wch: 12 }, // Stato
-//       { wch: 12 }  // Percentuale Rimasta
-//     ];
-    
-//     // Formattazione condizionale per le righe critiche
-//     const range = xlsx.utils.decode_range(ws['!ref']);
-//     for (let row = 1; row <= range.e.r; row++) {
-//       const daOrdinareCell = ws[xlsx.utils.encode_cell({ r: row, c: 12 })]; // Colonna "Da Ordinare"
-//       if (daOrdinareCell && daOrdinareCell.v === 'SÌ') {
-//         // Evidenzia in rosso le righe critiche
-//         for (let col = 0; col <= range.e.c; col++) {
-//           const cellRef = xlsx.utils.encode_cell({ r: row, c: col });
-//           if (!ws[cellRef]) ws[cellRef] = {};
-//           ws[cellRef].s = {
-//             fill: { fgColor: { rgb: "FFE6E6" } }, // Sfondo rosso chiaro
-//             font: { bold: true }
-//           };
-//         }
-//       }
-//     }
-    
-//     xlsx.utils.book_append_sheet(wb, ws, 'Report Utilizzi');
-    
-//     // Aggiungi un secondo foglio con il riepilogo ordini
-//     const riepilogoOrdini = dataArray
-//       .filter(item => item['Da Ordinare'] === 'SÌ')
-//       .map(item => ({
-//         'Prodotto': item['Prodotto'],
-//         'Categoria': item['Categoria'],
-//         'Utente': item['Utente'],
-//         'Quantità da Ordinare': item['Quantità da Ordinare'],
-//         'Unità': item['Unità'],
-//         'Disponibile': item['Quantità Disponibile'],
-//         'Minima': item['Quantità Minima'],
-//         'Note': `Sotto soglia - Urgente`
-//       }));
-    
-//     if (riepilogoOrdini.length > 0) {
-//       const wsOrdini = xlsx.utils.json_to_sheet(riepilogoOrdini);
-//       wsOrdini['!cols'] = [
-//         { wch: 25 }, // Prodotto
-//         { wch: 15 }, // Categoria
-//         { wch: 15 }, // Utente
-//         { wch: 15 }, // Quantità da Ordinare
-//         { wch: 8 },  // Unità
-//         { wch: 12 }, // Disponibile
-//         { wch: 12 }, // Minima
-//         { wch: 20 }  // Note
-//       ];
-//       xlsx.utils.book_append_sheet(wb, wsOrdini, 'Lista Ordini');
-//     }
-    
-//     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    
-//     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-//     res.setHeader('Content-Disposition', `attachment; filename=report_giacenze_${Date.now()}.xlsx`);
-//     res.send(buffer);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
 
 app.get('/api/reports/excel', authenticateToken, async (req, res) => {
   try {
@@ -1728,19 +1468,6 @@ app.get('/api/settimane', authenticateToken, async (req, res) => {
   }
 });
 
-// app.get('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) => {
-//   try {
-//     const assegnazioni = await Assegnazione.find({ attiva: true })
-//       .populate('userId', 'username')
-//       .populate('poloId', 'nome')
-//       .populate('mezzoId', 'nome')
-//       .populate('settimanaId', 'numero anno dataInizio dataFine');
-//     res.json(assegnazioni);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
 app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
   try {
     const { 
@@ -1805,75 +1532,279 @@ app.get('/api/assegnazioni/my', authenticateToken, async (req, res) => {
   }
 });
 
+// POST - Crea nuova assegnazione (con validazioni multi-operatore)
 app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const assegnazione = new Assegnazione({
-      ...req.body,
-      createdBy: req.user.userId
+    const { userId, poloId, settimanaId, mezzoId } = req.body;
+
+    // 1. Controlli esistenti (operatore unico per settimana, max 2 per polo)
+    const existingUserAssignment = await Assegnazione.findOne({
+      userId, settimanaId, attiva: true
     });
+    if (existingUserAssignment) {
+      return res.status(400).json({ message: 'Operatore già assegnato per questa settimana' });
+    }
+
+    const existingPoloAssignments = await Assegnazione.find({
+      poloId, settimanaId, attiva: true
+    });
+    if (existingPoloAssignments.length >= 2) {
+      return res.status(400).json({ message: 'Polo al completo (max 2 operatori)' });
+    }
+
+    // ✅ NUOVO: Informazioni per mezzi condivisi
+    let sharedVehicleInfo = null;
+    if (existingPoloAssignments.length === 1) {
+      const existingMezzo = existingPoloAssignments[0].mezzoId;
+      if (existingMezzo.toString() === mezzoId) {
+        sharedVehicleInfo = {
+          shared: true,
+          sharedWith: existingPoloAssignments[0].userId.username,
+          vehicleName: (await Mezzo.findById(mezzoId)).nome
+        };
+      }
+    }
+
+    // Crea assegnazione
+    const assegnazione = new Assegnazione(req.body);
     await assegnazione.save();
     
     const populated = await Assegnazione.findById(assegnazione._id)
-      .populate('userId', 'username')
+      .populate('userId', 'username email')
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
       .populate('settimanaId', 'numero anno dataInizio dataFine');
     
-    res.status(201).json(populated);
+    res.status(201).json({
+      assegnazione: populated,
+      sharedVehicleInfo // Include info condivisione nella risposta
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
 
-
-
-// NUOVA: Modifica assegnazione
+// PUT - Modifica assegnazione esistente (con validazioni)
 app.put('/api/assegnazioni/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
-    
-    const assegnazione = await Assegnazione.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true }
-    )
-    .populate('userId', 'username')
-    .populate('poloId', 'nome')
-    .populate('mezzoId', 'nome')
-    .populate('settimanaId', 'numero anno dataInizio dataFine');
-    
-    if (!assegnazione) {
+    const { userId, poloId, settimanaId, mezzoId } = req.body;
+
+    // Trova l'assegnazione esistente
+    const existingAssegnazione = await Assegnazione.findById(id);
+    if (!existingAssegnazione) {
       return res.status(404).json({ message: 'Assegnazione non trovata' });
     }
+
+    // Se i dati non sono cambiati, procedi senza validazioni
+    const isUnchanged = 
+      existingAssegnazione.userId.toString() === userId &&
+      existingAssegnazione.poloId.toString() === poloId &&
+      existingAssegnazione.settimanaId.toString() === settimanaId &&
+      existingAssegnazione.mezzoId.toString() === mezzoId;
+
+    if (isUnchanged) {
+      // Aggiorna solo altri campi (es. postazione, note)
+      const updated = await Assegnazione.findByIdAndUpdate(
+        id,
+        req.body,
+        { new: true }
+      )
+      .populate('userId', 'username email')
+      .populate('poloId', 'nome descrizione')
+      .populate('mezzoId', 'nome descrizione')
+      .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('postazioneId', 'nome descrizione');
+
+      return res.json({
+        message: 'Assegnazione aggiornata con successo',
+        assegnazione: updated
+      });
+    }
+
+    // ✅ VALIDAZIONE 1: Se cambia l'operatore, controlla che il nuovo operatore non sia già assegnato
+    if (existingAssegnazione.userId.toString() !== userId) {
+      const conflictUserAssignment = await Assegnazione.findOne({
+        _id: { $ne: id }, // Escludi l'assegnazione corrente
+        userId,
+        settimanaId,
+        attiva: true
+      });
+
+      if (conflictUserAssignment) {
+        const conflict = await Assegnazione.findById(conflictUserAssignment._id)
+          .populate('poloId', 'nome')
+          .populate('mezzoId', 'nome');
+        
+        return res.status(400).json({ 
+          message: `Operatore già assegnato per questa settimana al ${conflict.poloId?.nome} con ${conflict.mezzoId?.nome}`,
+          conflictType: 'USER_ALREADY_ASSIGNED'
+        });
+      }
+    }
+
+    // ✅ VALIDAZIONE 2: Se cambia polo/settimana, controlla limite di 2 operatori
+    if (existingAssegnazione.poloId.toString() !== poloId || 
+        existingAssegnazione.settimanaId.toString() !== settimanaId) {
+      
+      const existingPoloAssignments = await Assegnazione.find({
+        _id: { $ne: id }, // Escludi l'assegnazione corrente
+        poloId,
+        settimanaId,
+        attiva: true
+      });
+
+      if (existingPoloAssignments.length >= 2) {
+        const assignments = await Assegnazione.find({
+          _id: { $ne: id },
+          poloId,
+          settimanaId,
+          attiva: true
+        }).populate('userId', 'username').populate('mezzoId', 'nome');
+
+        return res.status(400).json({ 
+          message: 'Polo già al completo per questa settimana (massimo 2 operatori)',
+          conflictType: 'POLO_FULL',
+          currentAssignments: assignments.map(a => ({
+            operatore: a.userId?.username,
+            mezzo: a.mezzoId?.nome
+          }))
+        });
+      }
+    }
+
+    // ✅ VALIDAZIONE 3: Se cambia il mezzo, controlla che non sia già assegnato
+    if (existingAssegnazione.mezzoId.toString() !== mezzoId) {
+      const conflictMezzoAssignment = await Assegnazione.findOne({
+        _id: { $ne: id }, // Escludi l'assegnazione corrente
+        mezzoId,
+        settimanaId,
+        attiva: true
+      });
+
+      if (conflictMezzoAssignment) {
+        const conflict = await Assegnazione.findById(conflictMezzoAssignment._id)
+          .populate('userId', 'username')
+          .populate('poloId', 'nome');
+        
+        return res.status(400).json({ 
+          message: `Mezzo già assegnato nella settimana a ${conflict.userId?.username} per il ${conflict.poloId?.nome}`,
+          conflictType: 'MEZZO_ALREADY_ASSIGNED'
+        });
+      }
+    }
+
+    // Se tutte le validazioni passano, aggiorna l'assegnazione
+    const updated = await Assegnazione.findByIdAndUpdate(
+      id,
+      req.body,
+      { new: true }
+    )
+    .populate('userId', 'username email')
+    .populate('poloId', 'nome descrizione')
+    .populate('mezzoId', 'nome descrizione')
+    .populate('settimanaId', 'numero anno dataInizio dataFine')
+    .populate('postazioneId', 'nome descrizione');
+
+    // Calcola informazioni sul polo aggiornato
+    const currentPoloAssignments = await Assegnazione.find({
+      poloId: updated.poloId._id,
+      settimanaId: updated.settimanaId._id,
+      attiva: true
+    });
+
+    res.json({
+      message: 'Assegnazione modificata con successo',
+      assegnazione: updated,
+      poloInfo: {
+        postiOccupati: currentPoloAssignments.length,
+        postiRimasti: 2 - currentPoloAssignments.length,
+        postiTotali: 2
+      }
+    });
     
-    res.json(assegnazione);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Errore modifica assegnazione:', error);
+    
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        message: 'Conflitto: questa combinazione esiste già',
+        conflictType: 'DUPLICATE_ASSIGNMENT'
+      });
+    }
+    
+    res.status(400).json({ 
+      message: 'Errore nella modifica dell\'assegnazione: ' + error.message 
+    });
   }
 });
 
-// NUOVA: Elimina assegnazione
-// app.delete('/api/assegnazioni/:id', authenticateToken, requireAdmin, async (req, res) => {
-//   try {
-//     const { id } = req.params;
+// ✅ BONUS: Endpoint per ottenere informazioni sui posti disponibili
+app.get('/api/assegnazioni/availability/:poloId/:settimanaId', authenticateToken, async (req, res) => {
+  try {
+    const { poloId, settimanaId } = req.params;
     
-//     // Soft delete - marca come non attiva
-//     const assegnazione = await Assegnazione.findByIdAndUpdate(
-//       id,
-//       { attiva: false },
-//       { new: true }
-//     );
+    const existingAssignments = await Assegnazione.find({
+      poloId,
+      settimanaId,
+      attiva: true
+    })
+    .populate('userId', 'username')
+    .populate('mezzoId', 'nome');
+
+    const availability = {
+      postiTotali: 2,
+      postiOccupati: existingAssignments.length,
+      postiRimasti: 2 - existingAssignments.length,
+      isCompleto: existingAssignments.length >= 2,
+      assegnazioniAttuali: existingAssignments.map(a => ({
+        id: a._id,
+        operatore: a.userId?.username,
+        mezzo: a.mezzoId?.nome
+      }))
+    };
+
+    res.json(availability);
+  } catch (error) {
+    console.error('Errore controllo disponibilità:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ✅ BONUS: Endpoint per ottenere statistiche generali
+app.get('/api/assegnazioni/stats', authenticateToken, async (req, res) => {
+  try {
+    const { settimanaId } = req.query;
     
-//     if (!assegnazione) {
-//       return res.status(404).json({ message: 'Assegnazione non trovata' });
-//     }
+    const filter = { attiva: true };
+    if (settimanaId) filter.settimanaId = settimanaId;
     
-//     res.json({ message: 'Assegnazione eliminata con successo' });
-//   } catch (error) {
-//     res.status(400).json({ message: error.message });
-//   }
-// });
+    const assegnazioni = await Assegnazione.find(filter);
+    
+    // Raggruppa per polo/settimana per calcolare occupazione
+    const occupazione = {};
+    assegnazioni.forEach(a => {
+      const key = `${a.poloId}-${a.settimanaId}`;
+      occupazione[key] = (occupazione[key] || 0) + 1;
+    });
+    
+    const stats = {
+      totaleAssegnazioni: assegnazioni.length,
+      operatoriAttivi: new Set(assegnazioni.map(a => a.userId.toString())).size,
+      poliOccupati: new Set(assegnazioni.map(a => a.poloId.toString())).size,
+      mezziInUso: new Set(assegnazioni.map(a => a.mezzoId.toString())).size,
+      poliCompleti: Object.values(occupazione).filter(count => count >= 2).length,
+      poliParziali: Object.values(occupazione).filter(count => count === 1).length,
+      mediaOperatoriPerPolo: assegnazioni.length > 0 ? 
+        (assegnazioni.length / new Set(assegnazioni.map(a => `${a.poloId}-${a.settimanaId}`)).size).toFixed(1) : 0
+    };
+    
+    res.json(stats);
+  } catch (error) {
+    console.error('Errore statistiche assegnazioni:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
 app.delete('/api/assegnazioni/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -2085,406 +2016,6 @@ app.get('/api/test', (req, res) => {
 });
 
 // Script di inizializzazione dati di test
-// async function initTestData() {
-//   try {
-//     // Verifica se ci sono già dati
-//     const userCount = await User.countDocuments();
-//     if (userCount > 0) {
-//       console.log('Dati già presenti nel database');
-//       return;
-//     }
-
-//     console.log('Inizializzazione dati di test...');
-
-//     // Crea utenti
-//     const adminPassword = await bcrypt.hash('password123', 10);
-//     const userPassword = await bcrypt.hash('password123', 10);
-
-//     const admin = await User.create({
-//       username: 'admin',
-//       password: adminPassword,
-//       email: 'admin@test.com',
-//       role: 'admin'
-//     });
-
-//     const user1 = await User.create({
-//       username: 'operatore1',
-//       password: userPassword,
-//       email: 'operatore1@test.com',
-//       role: 'user'
-//     });
-
-//     const user2 = await User.create({
-//       username: 'operatore2',
-//       password: userPassword,
-//       email: 'operatore2@test.com',
-//       role: 'user'
-//     });
-
-//     // Crea prodotti
-//     const prodotti = [
-//       { nome: 'Guanti in lattice', categoria: 'DPI', unita: 'paia', descrizione: 'Guanti monouso' },
-//       { nome: 'Mascherine FFP2', categoria: 'DPI', unita: 'pz', descrizione: 'Mascherine protettive' },
-//       { nome: 'Gel igienizzante', categoria: 'Igiene', unita: 'flaconi', descrizione: '500ml' },
-//       { nome: 'Sacchi spazzatura', categoria: 'Pulizia', unita: 'pz', descrizione: '70x110cm' },
-//       { nome: 'Detergente pavimenti', categoria: 'Pulizia', unita: 'litri', descrizione: 'Detergente universale' }
-//     ];
-
-//     const createdProducts = [];
-//     for (const prod of prodotti) {
-//       const product = await Product.create(prod);
-//       createdProducts.push(product);
-//     }
-
-//     // Crea poli
-//     const poli = await Polo.create([
-//       { nome: 'Polo Nord', descrizione: 'Area nord della città' },
-//       { nome: 'Polo Sud', descrizione: 'Area sud della città' },
-//       { nome: 'Polo Centro', descrizione: 'Centro città' }
-//     ]);
-
-//     // Crea mezzi
-//     const mezzi = await Mezzo.create([
-//       { nome: 'Furgone 1', descrizione: 'Fiat Ducato' },
-//       { nome: 'Furgone 2', descrizione: 'Iveco Daily' },
-//       { nome: 'Auto 1', descrizione: 'Fiat Panda' }
-//     ]);
-
-//     // Crea settimane
-//     const currentDate = new Date();
-//     const settimane = [];
-    
-//     for (let i = 0; i < 4; i++) {
-//       const startDate = new Date(currentDate);
-//       startDate.setDate(startDate.getDate() - (7 * i));
-//       startDate.setHours(0, 0, 0, 0);
-      
-//       const endDate = new Date(startDate);
-//       endDate.setDate(endDate.getDate() + 6);
-//       endDate.setHours(23, 59, 59, 999);
-      
-//       const weekNumber = Math.ceil((startDate.getDate() + startDate.getDay()) / 7);
-      
-//       const settimana = await Settimana.create({
-//         numero: weekNumber,
-//         anno: startDate.getFullYear(),
-//         dataInizio: startDate,
-//         dataFine: endDate
-//       });
-//       settimane.push(settimana);
-//     }
-
-//     // Crea assegnazioni
-//     await Assegnazione.create({
-//       userId: user1._id,
-//       poloId: poli[0]._id,
-//       mezzoId: mezzi[0]._id,
-//       settimanaId: settimane[0]._id,
-//       createdBy: admin._id
-//     });
-
-//     await Assegnazione.create({
-//       userId: user1._id,
-//       poloId: poli[1]._id,
-//       mezzoId: mezzi[1]._id,
-//       settimanaId: settimane[1]._id,
-//       createdBy: admin._id
-//     });
-
-//     // Crea alcune giacenze globali di esempio
-//     for (const user of [user1, user2]) {
-//       for (let i = 0; i < 3; i++) {
-//         await GiacenzaUtente.create({
-//           userId: user._id,
-//           productId: createdProducts[i]._id,
-//           quantitaAssegnata: 100,
-//           quantitaDisponibile: 100,
-//           quantitaMinima: 20,
-//           assegnatoDa: admin._id,
-//           isGlobale: true,
-//           note: 'Giacenza iniziale'
-//         });
-//       }
-//     }
-    
-// const postazioni = [];
-// for (let i = 0; i < settimane.length; i++) {
-//   const settimana = settimane[i];
-  
-//   // Crea 3-5 postazioni per settimana
-//   const numPostazioni = Math.floor(Math.random() * 3) + 3; // 3-5 postazioni
-  
-//   for (let j = 1; j <= numPostazioni; j++) {
-//     const postazione = await Postazione.create({
-//       nome: `Postazione ${String.fromCharCode(64 + j)}`,
-//       descrizione: `Postazione di lavoro ${j} per settimana ${settimana.numero}`,
-//       settimanaId: settimana._id,
-//       indirizzo: `Via Roma ${j * 10}, Milano`,
-//       coordinate: {
-//         lat: 45.464664 + (Math.random() - 0.5) * 0.1,
-//         lng: 9.188540 + (Math.random() - 0.5) * 0.1
-//       },
-//       capacitaPersone: Math.floor(Math.random() * 4) + 1, // 1-4 persone
-//       attrezzature: [
-//         'Computer portatile',
-//         'Telefono',
-//         Math.random() > 0.5 ? 'Stampante' : 'Scanner',
-//         Math.random() > 0.7 ? 'Proiettore' : 'Lavagna'
-//       ].filter(Boolean),
-//       note: `Postazione creata automaticamente per test`,
-//       createdBy: admin._id
-//     });
-//     postazioni.push(postazione);
-//   }
-// }
-
-// console.log(`✅ Create ${postazioni.length} postazioni di esempio`);
-//     console.log('✅ Dati di test inizializzati con successo!');
-//     console.log('📋 Utenti creati:');
-//     console.log('   - admin / password123');
-//     console.log('   - operatore1 / password123');
-//     console.log('   - operatore2 / password123');
-    
-//   } catch (error) {
-//     console.error('❌ Errore inizializzazione dati:', error);
-//   }
-
-
-// }
-// async function initTestData() {
-//   try {
-//     // Verifica se ci sono già dati
-//     const userCount = await User.countDocuments();
-    
-//     if (userCount > 0) {
-//       console.log('Dati utenti già presenti nel database');
-      
-//       // ================================
-//       // AGGIORNA SOLO LE POSTAZIONI SE MANCANO
-//       // ================================
-      
-//       const postazioniCount = await Postazione.countDocuments();
-      
-//       if (postazioniCount === 0) {
-//         console.log('🏢 Creazione postazioni di esempio...');
-        
-//         // Trova admin esistente
-//         const admin = await User.findOne({ role: 'admin' });
-//         if (!admin) {
-//           console.log('❌ Admin non trovato per creare postazioni');
-//           return;
-//         }
-        
-//         // Trova settimane esistenti
-//         const settimane = await Settimana.find().sort({ anno: -1, numero: -1 });
-//         if (settimane.length === 0) {
-//           console.log('❌ Nessuna settimana trovata per creare postazioni');
-//           return;
-//         }
-        
-//         const postazioni = [];
-//         for (let i = 0; i < settimane.length; i++) {
-//           const settimana = settimane[i];
-          
-//           // Crea 3-5 postazioni per settimana
-//           const numPostazioni = Math.floor(Math.random() * 3) + 3; // 3-5 postazioni
-          
-//           for (let j = 1; j <= numPostazioni; j++) {
-//             const postazione = await Postazione.create({
-//               nome: `Postazione ${String.fromCharCode(64 + j)}`,
-//               descrizione: `Postazione di lavoro ${j} per settimana ${settimana.numero}/${settimana.anno}`,
-//               settimanaId: settimana._id,
-//               indirizzo: `Via Roma ${j * 10}, Milano`,
-//               coordinate: {
-//                 lat: 45.464664 + (Math.random() - 0.5) * 0.1,
-//                 lng: 9.188540 + (Math.random() - 0.5) * 0.1
-//               },
-//               capacitaPersone: Math.floor(Math.random() * 4) + 1, // 1-4 persone
-//               attrezzature: [
-//                 'Computer portatile',
-//                 'Telefono',
-//                 Math.random() > 0.5 ? 'Stampante' : 'Scanner',
-//                 Math.random() > 0.7 ? 'Proiettore' : 'Lavagna'
-//               ].filter(Boolean),
-//               note: `Postazione creata automaticamente per test`,
-//               createdBy: admin._id
-//             });
-//             postazioni.push(postazione);
-//           }
-//         }
-        
-//         console.log(`✅ Create ${postazioni.length} postazioni di esempio per ${settimane.length} settimane`);
-//       } else {
-//         console.log(`🏢 Postazioni già presenti: ${postazioniCount}`);
-//       }
-      
-//       return; // Esce qui se i dati principali esistono già
-//     }
-
-//     console.log('Inizializzazione completa dati di test...');
-
-//     // Crea utenti
-//     const adminPassword = await bcrypt.hash('password123', 10);
-//     const userPassword = await bcrypt.hash('password123', 10);
-
-//     const admin = await User.create({
-//       username: 'admin',
-//       password: adminPassword,
-//       email: 'admin@test.com',
-//       role: 'admin'
-//     });
-
-//     const user1 = await User.create({
-//       username: 'operatore1',
-//       password: userPassword,
-//       email: 'operatore1@test.com',
-//       role: 'user'
-//     });
-
-//     const user2 = await User.create({
-//       username: 'operatore2',
-//       password: userPassword,
-//       email: 'operatore2@test.com',
-//       role: 'user'
-//     });
-
-//     // Crea prodotti
-//     const prodotti = [
-//       { nome: 'Guanti in lattice', categoria: 'DPI', unita: 'paia', descrizione: 'Guanti monouso' },
-//       { nome: 'Mascherine FFP2', categoria: 'DPI', unita: 'pz', descrizione: 'Mascherine protettive' },
-//       { nome: 'Gel igienizzante', categoria: 'Igiene', unita: 'flaconi', descrizione: '500ml' },
-//       { nome: 'Sacchi spazzatura', categoria: 'Pulizia', unita: 'pz', descrizione: '70x110cm' },
-//       { nome: 'Detergente pavimenti', categoria: 'Pulizia', unita: 'litri', descrizione: 'Detergente universale' }
-//     ];
-
-//     const createdProducts = [];
-//     for (const prod of prodotti) {
-//       const product = await Product.create(prod);
-//       createdProducts.push(product);
-//     }
-
-//     // Crea poli
-//     const poli = await Polo.create([
-//       { nome: 'Polo Nord', descrizione: 'Area nord della città' },
-//       { nome: 'Polo Sud', descrizione: 'Area sud della città' },
-//       { nome: 'Polo Centro', descrizione: 'Centro città' }
-//     ]);
-
-//     // Crea mezzi
-//     const mezzi = await Mezzo.create([
-//       { nome: 'Furgone 1', descrizione: 'Fiat Ducato' },
-//       { nome: 'Furgone 2', descrizione: 'Iveco Daily' },
-//       { nome: 'Auto 1', descrizione: 'Fiat Panda' }
-//     ]);
-
-//     // Crea settimane
-//     const currentDate = new Date();
-//     const settimane = [];
-    
-//     for (let i = 0; i < 4; i++) {
-//       const startDate = new Date(currentDate);
-//       startDate.setDate(startDate.getDate() - (7 * i));
-//       startDate.setHours(0, 0, 0, 0);
-      
-//       const endDate = new Date(startDate);
-//       endDate.setDate(endDate.getDate() + 6);
-//       endDate.setHours(23, 59, 59, 999);
-      
-//       const weekNumber = Math.ceil((startDate.getDate() + startDate.getDay()) / 7);
-      
-//       const settimana = await Settimana.create({
-//         numero: weekNumber,
-//         anno: startDate.getFullYear(),
-//         dataInizio: startDate,
-//         dataFine: endDate
-//       });
-//       settimane.push(settimana);
-//     }
-
-//     // Crea assegnazioni
-//     await Assegnazione.create({
-//       userId: user1._id,
-//       poloId: poli[0]._id,
-//       mezzoId: mezzi[0]._id,
-//       settimanaId: settimane[0]._id,
-//       createdBy: admin._id
-//     });
-
-//     await Assegnazione.create({
-//       userId: user1._id,
-//       poloId: poli[1]._id,
-//       mezzoId: mezzi[1]._id,
-//       settimanaId: settimane[1]._id,
-//       createdBy: admin._id
-//     });
-
-//     // Crea alcune giacenze globali di esempio
-//     for (const user of [user1, user2]) {
-//       for (let i = 0; i < 3; i++) {
-//         await GiacenzaUtente.create({
-//           userId: user._id,
-//           productId: createdProducts[i]._id,
-//           quantitaAssegnata: 100,
-//           quantitaDisponibile: 100,
-//           quantitaMinima: 20,
-//           assegnatoDa: admin._id,
-//           isGlobale: true,
-//           note: 'Giacenza iniziale'
-//         });
-//       }
-//     }
-    
-//     // ================================
-//     // CREA POSTAZIONI (INIZIALIZZAZIONE COMPLETA)
-//     // ================================
-    
-//    // Crea postazioni di esempio
-// const postazioni = [];
-// for (let i = 0; i < poli.length; i++) {
-//   const polo = poli[i];
-  
-//   // Crea 2-4 postazioni per polo
-//   const numPostazioni = Math.floor(Math.random() * 3) + 2; // 2-4 postazioni
-  
-//   for (let j = 1; j <= numPostazioni; j++) {
-//     const postazione = await Postazione.create({
-//       nome: `Postazione ${String.fromCharCode(64 + j)}`, // A, B, C, D
-//       descrizione: `Postazione di lavoro ${j} nel ${polo.nome}`,
-//       poloId: polo._id,
-//       indirizzo: `Via ${polo.nome} ${j * 10}, Milano`,
-//       coordinate: {
-//         lat: 45.464664 + (Math.random() - 0.5) * 0.1,
-//         lng: 9.188540 + (Math.random() - 0.5) * 0.1
-//       },
-//       capacitaPersone: Math.floor(Math.random() * 4) + 1, // 1-4 persone
-//       attrezzature: [
-//         'Computer portatile',
-//         'Telefono',
-//         Math.random() > 0.5 ? 'Stampante' : 'Scanner',
-//         Math.random() > 0.7 ? 'Proiettore' : 'Lavagna'
-//       ].filter(Boolean),
-//       note: `Postazione creata automaticamente per test nel ${polo.nome}`,
-//       createdBy: admin._id
-//     });
-//     postazioni.push(postazione);
-//   }
-// }
-
-// console.log(`✅ Create ${postazioni.length} postazioni per ${poli.length} poli`);
-
-//     console.log('✅ Dati di test inizializzati con successo!');
-//     console.log('📋 Utenti creati:');
-//     console.log('   - admin / password123');
-//     console.log('   - operatore1 / password123');
-//     console.log('   - operatore2 / password123');
-    
-//   } catch (error) {
-//     console.error('❌ Errore inizializzazione dati:', error);
-//   }
-// }
-
-// Replace the initTestData function in your server.js with this corrected version:
-
 async function initTestData() {
   try {
     // Verifica se ci sono già dati
@@ -3708,498 +3239,6 @@ app.post('/api/postazioni/copy', authenticateToken, requireAdmin, async (req, re
     res.status(400).json({ message: error.message });
   }
 });
-
-
-// app.get('/api/postazioni', authenticateToken, async (req, res) => {
-//   try {
-//     const { 
-//       settimanaId, 
-//       attiva, 
-//       searchTerm,
-//       capacitaMin,
-//       capacitaMax
-//     } = req.query;
-    
-//     const filter = {};
-    
-//     // Filtri base
-//     if (settimanaId) filter.settimanaId = settimanaId;
-//     if (attiva !== undefined) filter.attiva = attiva === 'true';
-    
-//     console.log('🏢 Filtri postazioni:', filter);
-    
-//     const postazioni = await Postazione.find(filter)
-//       .populate('settimanaId', 'numero anno dataInizio dataFine')
-//       .populate('createdBy', 'username')
-//       .sort({ 'settimanaId.anno': -1, 'settimanaId.numero': -1, nome: 1 });
-
-//     let filteredPostazioni = postazioni;
-
-//     // Filtro ricerca libera
-//     if (searchTerm) {
-//       const term = searchTerm.toLowerCase();
-//       filteredPostazioni = filteredPostazioni.filter(p => 
-//         p.nome.toLowerCase().includes(term) ||
-//         p.descrizione?.toLowerCase().includes(term) ||
-//         p.indirizzo?.toLowerCase().includes(term) ||
-//         p.note?.toLowerCase().includes(term) ||
-//         p.attrezzature?.some(att => att.toLowerCase().includes(term))
-//       );
-//     }
-
-//     // Filtri numerici per capacità
-//     if (capacitaMin) {
-//       const min = parseInt(capacitaMin);
-//       filteredPostazioni = filteredPostazioni.filter(p => p.capacitaPersone >= min);
-//     }
-    
-//     if (capacitaMax) {
-//       const max = parseInt(capacitaMax);
-//       filteredPostazioni = filteredPostazioni.filter(p => p.capacitaPersone <= max);
-//     }
-
-//     console.log(`📊 Postazioni risultati: ${filteredPostazioni.length} di ${postazioni.length}`);
-
-//     res.json(filteredPostazioni);
-//   } catch (error) {
-//     console.error('❌ Errore caricamento postazioni:', error);
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
-// // GET - Postazione singola per ID
-// app.get('/api/postazioni/:id', authenticateToken, async (req, res) => {
-//   try {
-//     const { id } = req.params;
-    
-//     const postazione = await Postazione.findById(id)
-//       .populate('settimanaId', 'numero anno dataInizio dataFine')
-//       .populate('createdBy', 'username email');
-
-//     if (!postazione) {
-//       return res.status(404).json({ message: 'Postazione non trovata' });
-//     }
-
-//     res.json(postazione);
-//   } catch (error) {
-//     console.error('❌ Errore caricamento postazione:', error);
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
-// // GET - Postazioni per settimana specifica
-// app.get('/api/postazioni/settimana/:settimanaId', authenticateToken, async (req, res) => {
-//   try {
-//     const { settimanaId } = req.params;
-//     const { attiva = 'true' } = req.query;
-    
-//     const filter = { settimanaId };
-//     if (attiva !== undefined) filter.attiva = attiva === 'true';
-    
-//     const postazioni = await Postazione.find(filter)
-//       .populate('settimanaId', 'numero anno dataInizio dataFine')
-//       .populate('createdBy', 'username')
-//       .sort({ nome: 1 });
-
-//     res.json(postazioni);
-//   } catch (error) {
-//     console.error('❌ Errore caricamento postazioni per settimana:', error);
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
-// // POST - Crea nuova postazione (Admin)
-// app.post('/api/postazioni', authenticateToken, requireAdmin, async (req, res) => {
-//   try {
-//     const { 
-//       nome, 
-//       descrizione, 
-//       settimanaId, 
-//       indirizzo,
-//       coordinate,
-//       capacitaPersone = 1,
-//       attrezzature = [],
-//       note,
-//       attiva = true
-//     } = req.body;
-
-//     // Validazioni
-//     if (!nome || !settimanaId) {
-//       return res.status(400).json({ message: 'Nome e settimanaId sono obbligatori' });
-//     }
-
-//     // Verifica che la settimana esista
-//     const settimana = await Settimana.findById(settimanaId);
-//     if (!settimana) {
-//       return res.status(404).json({ message: 'Settimana non trovata' });
-//     }
-
-//     // Verifica se postazione con stesso nome esiste già per questa settimana
-//     const existingPostazione = await Postazione.findOne({ 
-//       nome: { $regex: new RegExp('^' + nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
-//       settimanaId
-//     });
-
-//     if (existingPostazione) {
-//       return res.status(400).json({ 
-//         message: 'Postazione con questo nome già esistente per questa settimana' 
-//       });
-//     }
-
-//     // Crea postazione
-//     const newPostazione = new Postazione({
-//       nome: nome.trim(),
-//       descrizione: descrizione ? descrizione.trim() : '',
-//       settimanaId,
-//       indirizzo: indirizzo ? indirizzo.trim() : '',
-//       coordinate: coordinate || {},
-//       capacitaPersone: parseInt(capacitaPersone) || 1,
-//       attrezzature: Array.isArray(attrezzature) ? attrezzature.map(a => a.trim()).filter(Boolean) : [],
-//       note: note ? note.trim() : '',
-//       attiva: Boolean(attiva),
-//       createdBy: req.user.userId
-//     });
-
-//     await newPostazione.save();
-    
-//     // Popola per risposta
-//     const postazioneCompleta = await Postazione.findById(newPostazione._id)
-//       .populate('settimanaId', 'numero anno dataInizio dataFine')
-//       .populate('createdBy', 'username');
-    
-//     res.status(201).json({
-//       message: 'Postazione creata con successo',
-//       postazione: postazioneCompleta
-//     });
-//   } catch (error) {
-//     if (error.code === 11000) {
-//       return res.status(400).json({ 
-//         message: 'Postazione con questo nome già esistente per questa settimana'
-//       });
-//     }
-//     console.error('❌ Errore creazione postazione:', error);
-//     res.status(400).json({ message: error.message });
-//   }
-// });
-
-// // PUT - Modifica postazione (Admin)
-// app.put('/api/postazioni/:id', authenticateToken, requireAdmin, async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const { 
-//       nome, 
-//       descrizione, 
-//       settimanaId, 
-//       indirizzo,
-//       coordinate,
-//       capacitaPersone,
-//       attrezzature,
-//       note,
-//       attiva
-//     } = req.body;
-
-//     // Validazioni
-//     if (!nome || !settimanaId) {
-//       return res.status(400).json({ message: 'Nome e settimanaId sono obbligatori' });
-//     }
-
-//     // Verifica se la postazione esiste
-//     const postazione = await Postazione.findById(id);
-//     if (!postazione) {
-//       return res.status(404).json({ message: 'Postazione non trovata' });
-//     }
-
-//     // Verifica che la settimana esista
-//     const settimana = await Settimana.findById(settimanaId);
-//     if (!settimana) {
-//       return res.status(404).json({ message: 'Settimana non trovata' });
-//     }
-
-//     // Verifica se nome è già usato da altra postazione nella stessa settimana
-//     const existingPostazione = await Postazione.findOne({
-//       _id: { $ne: id },
-//       nome: { $regex: new RegExp('^' + nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
-//       settimanaId
-//     });
-
-//     if (existingPostazione) {
-//       return res.status(400).json({ 
-//         message: 'Un\'altra postazione ha già questo nome per questa settimana' 
-//       });
-//     }
-
-//     // Aggiorna postazione
-//     const updatedPostazione = await Postazione.findByIdAndUpdate(
-//       id,
-//       {
-//         nome: nome.trim(),
-//         descrizione: descrizione ? descrizione.trim() : '',
-//         settimanaId,
-//         indirizzo: indirizzo ? indirizzo.trim() : '',
-//         coordinate: coordinate || postazione.coordinate,
-//         capacitaPersone: capacitaPersone !== undefined ? parseInt(capacitaPersone) || 1 : postazione.capacitaPersone,
-//         attrezzature: Array.isArray(attrezzature) ? attrezzature.map(a => a.trim()).filter(Boolean) : postazione.attrezzature,
-//         note: note !== undefined ? (note ? note.trim() : '') : postazione.note,
-//         attiva: attiva !== undefined ? Boolean(attiva) : postazione.attiva
-//       },
-//       { new: true }
-//     )
-//     .populate('settimanaId', 'numero anno dataInizio dataFine')
-//     .populate('createdBy', 'username');
-
-//     res.json({
-//       message: 'Postazione aggiornata con successo',
-//       postazione: updatedPostazione
-//     });
-//   } catch (error) {
-//     if (error.code === 11000) {
-//       return res.status(400).json({ 
-//         message: 'Una postazione con questo nome esiste già per questa settimana'
-//       });
-//     }
-//     console.error('❌ Errore aggiornamento postazione:', error);
-//     res.status(400).json({ message: error.message });
-//   }
-// });
-
-// // DELETE - Elimina postazione (Admin)
-// app.delete('/api/postazioni/:id', authenticateToken, requireAdmin, async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     // Verifica se la postazione esiste
-//     const postazione = await Postazione.findById(id)
-//       .populate('settimanaId', 'numero anno');
-
-//     if (!postazione) {
-//       return res.status(404).json({ message: 'Postazione non trovata' });
-//     }
-
-//     // Verifica se ci sono assegnazioni associate (se implementate in futuro)
-//     // const assegnazioniCount = await Assegnazione.countDocuments({ postazioneId: id });
-//     // if (assegnazioniCount > 0) {
-//     //   return res.status(400).json({ 
-//     //     message: 'Impossibile eliminare: ci sono ' + assegnazioniCount + ' assegnazioni associate a questa postazione.'
-//     //   });
-//     // }
-
-//     // Elimina postazione
-//     await Postazione.findByIdAndDelete(id);
-
-//     res.json({
-//       message: 'Postazione eliminata con successo',
-//       deletedPostazione: {
-//         id: postazione._id,
-//         nome: postazione.nome,
-//         settimana: postazione.settimanaId ? 
-//           `${postazione.settimanaId.numero}/${postazione.settimanaId.anno}` : 
-//           'N/A'
-//       }
-//     });
-//   } catch (error) {
-//     console.error('❌ Errore eliminazione postazione:', error);
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
-// // PATCH - Toggle stato attivo postazione (Admin)
-// app.patch('/api/postazioni/:id/toggle', authenticateToken, requireAdmin, async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const { attiva } = req.body;
-
-//     // Verifica se la postazione esiste
-//     const postazione = await Postazione.findById(id);
-//     if (!postazione) {
-//       return res.status(404).json({ message: 'Postazione non trovata' });
-//     }
-
-//     // Aggiorna stato
-//     const updatedPostazione = await Postazione.findByIdAndUpdate(
-//       id,
-//       { attiva: Boolean(attiva) },
-//       { new: true }
-//     )
-//     .populate('settimanaId', 'numero anno dataInizio dataFine')
-//     .populate('createdBy', 'username');
-
-//     res.json({
-//       message: 'Postazione ' + (attiva ? 'attivata' : 'disattivata') + ' con successo',
-//       postazione: updatedPostazione
-//     });
-//   } catch (error) {
-//     console.error('❌ Errore toggle postazione:', error);
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
-// // GET - Statistiche postazioni (bonus)
-// app.get('/api/postazioni/stats', authenticateToken, async (req, res) => {
-//   try {
-//     const { settimanaId } = req.query;
-    
-//     const filter = {};
-//     if (settimanaId) filter.settimanaId = settimanaId;
-    
-//     const postazioni = await Postazione.find(filter);
-    
-//     const stats = {
-//       totalePostazioni: postazioni.length,
-//       postazioniAttive: postazioni.filter(p => p.attiva).length,
-//       postazioniInattive: postazioni.filter(p => !p.attiva).length,
-//       capacitaTotale: postazioni.reduce((sum, p) => sum + (p.capacitaPersone || 0), 0),
-//       capacitaMedia: postazioni.length > 0 ? 
-//         Math.round(postazioni.reduce((sum, p) => sum + (p.capacitaPersone || 0), 0) / postazioni.length * 100) / 100 : 0,
-//       attrezzatureUniche: [...new Set(postazioni.flatMap(p => p.attrezzature || []))],
-//       postazioniConCoordinate: postazioni.filter(p => p.coordinate?.lat && p.coordinate?.lng).length
-//     };
-    
-//     // Statistiche per settimana
-//     const statsByWeek = {};
-//     for (const postazione of postazioni) {
-//       if (postazione.settimanaId) {
-//         const settimana = await Settimana.findById(postazione.settimanaId);
-//         if (settimana) {
-//           const key = `${settimana.numero}/${settimana.anno}`;
-//           if (!statsByWeek[key]) {
-//             statsByWeek[key] = {
-//               totale: 0,
-//               attive: 0,
-//               capacitaTotale: 0
-//             };
-//           }
-//           statsByWeek[key].totale++;
-//           if (postazione.attiva) statsByWeek[key].attive++;
-//           statsByWeek[key].capacitaTotale += postazione.capacitaPersone || 0;
-//         }
-//       }
-//     }
-    
-//     res.json({
-//       ...stats,
-//       perSettimana: statsByWeek
-//     });
-//   } catch (error) {
-//     console.error('❌ Errore statistiche postazioni:', error);
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
-// // POST - Copia postazioni da una settimana all'altra (Admin)
-// app.post('/api/postazioni/copy', authenticateToken, requireAdmin, async (req, res) => {
-//   try {
-//     const { fromSettimanaId, toSettimanaId } = req.body;
-    
-//     if (!fromSettimanaId || !toSettimanaId) {
-//       return res.status(400).json({ 
-//         message: 'fromSettimanaId e toSettimanaId sono richiesti' 
-//       });
-//     }
-    
-//     // Verifica che entrambe le settimane esistano
-//     const fromSettimana = await Settimana.findById(fromSettimanaId);
-//     const toSettimana = await Settimana.findById(toSettimanaId);
-    
-//     if (!fromSettimana || !toSettimana) {
-//       return res.status(404).json({ message: 'Una o entrambe le settimane non esistono' });
-//     }
-    
-//     // Trova postazioni della settimana di origine
-//     const sourcePostazioni = await Postazione.find({
-//       settimanaId: fromSettimanaId,
-//       attiva: true
-//     });
-    
-//     const copiedPostazioni = [];
-//     const skippedPostazioni = [];
-    
-//     for (const sourcePostazione of sourcePostazioni) {
-//       // Verifica se esiste già nella settimana di destinazione
-//       const existingPostazione = await Postazione.findOne({
-//         nome: { $regex: new RegExp('^' + sourcePostazione.nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
-//         settimanaId: toSettimanaId
-//       });
-      
-//       if (!existingPostazione) {
-//         // Crea nuova postazione
-//         const newPostazione = new Postazione({
-//           nome: sourcePostazione.nome,
-//           descrizione: sourcePostazione.descrizione,
-//           settimanaId: toSettimanaId,
-//           indirizzo: sourcePostazione.indirizzo,
-//           coordinate: sourcePostazione.coordinate,
-//           capacitaPersone: sourcePostazione.capacitaPersone,
-//           attrezzature: [...(sourcePostazione.attrezzature || [])],
-//           note: `Copiata da settimana ${fromSettimana.numero}/${fromSettimana.anno}`,
-//           attiva: true,
-//           createdBy: req.user.userId
-//         });
-        
-//         await newPostazione.save();
-//         copiedPostazioni.push(newPostazione);
-//       } else {
-//         skippedPostazioni.push(sourcePostazione.nome);
-//       }
-//     }
-    
-//     res.json({
-//       message: `Operazione completata`,
-//       copiate: copiedPostazioni.length,
-//       saltate: skippedPostazioni.length,
-//       dettagli: {
-//         copiate: copiedPostazioni.map(p => p.nome),
-//         saltate: skippedPostazioni,
-//         daSettimana: `${fromSettimana.numero}/${fromSettimana.anno}`,
-//         aSettimana: `${toSettimana.numero}/${toSettimana.anno}`
-//       }
-//     });
-//   } catch (error) {
-//     console.error('❌ Errore copia postazioni:', error);
-//     res.status(400).json({ message: error.message });
-//   }
-// });
-
-// ================================
-// AGGIORNAMENTO DATI TEST - Aggiungi questa funzione nell'initTestData esistente
-// ================================
-
-// Nella funzione initTestData, aggiungi dopo la creazione delle settimane:
-
-/*
-// Crea postazioni di esempio
-const postazioni = [];
-for (let i = 0; i < settimane.length; i++) {
-  const settimana = settimane[i];
-  
-  // Crea 3-5 postazioni per settimana
-  const numPostazioni = Math.floor(Math.random() * 3) + 3; // 3-5 postazioni
-  
-  for (let j = 1; j <= numPostazioni; j++) {
-    const postazione = await Postazione.create({
-      nome: `Postazione ${String.fromCharCode(64 + j)}`,
-      descrizione: `Postazione di lavoro ${j} per settimana ${settimana.numero}`,
-      settimanaId: settimana._id,
-      indirizzo: `Via Roma ${j * 10}, Milano`,
-      coordinate: {
-        lat: 45.464664 + (Math.random() - 0.5) * 0.1,
-        lng: 9.188540 + (Math.random() - 0.5) * 0.1
-      },
-      capacitaPersone: Math.floor(Math.random() * 4) + 1, // 1-4 persone
-      attrezzature: [
-        'Computer portatile',
-        'Telefono',
-        Math.random() > 0.5 ? 'Stampante' : 'Scanner',
-        Math.random() > 0.7 ? 'Proiettore' : 'Lavagna'
-      ].filter(Boolean),
-      note: `Postazione creata automaticamente per test`,
-      createdBy: admin._id
-    });
-    postazioni.push(postazione);
-  }
-}
-
-console.log(`✅ Create ${postazioni.length} postazioni di esempio`);
-*/
 // Avvia il server
 app.listen(process.env.PORT, '0.0.0.0', async () => {
   console.log(`🚀 Server giacenze multi-settimana su porta ${PORT}`);
