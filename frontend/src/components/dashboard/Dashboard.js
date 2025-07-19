@@ -22,7 +22,6 @@ const Dashboard = () => {
   const { user, setCurrentPage } = useAuth();
   const { myGiacenze, myAssignments, selectedAssignment, setSelectedAssignment } = useGiacenze();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
   // Mouse tracking per effetti interattivi
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -371,3 +370,5 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+
