@@ -3034,7 +3034,7 @@
 // components/admin/AssignmentsManagement.js
 // components/admin/AssignmentsManagement.js
 // components/admin/AssignmentsManagement.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   Filter, 
@@ -3066,7 +3066,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
 import { apiCall } from '../../services/api';
-import { formatWeek } from '../../utils/formatters';
+import { formatWeek, sortAssignmentsByCurrentWeekFirst, sortWeeksChronologically, getCurrentWeekIndex, getCurrentWeekFromList } from '../../utils/formatters';
 
 const AssignmentsManagement = () => {
   const { token, setError } = useAuth();
@@ -3116,6 +3116,29 @@ const AssignmentsManagement = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  // Set default current week for assignment form (only when form is empty)
+  useEffect(() => {
+    if (settimane.length > 0 && (!assegnazioneForm.settimanaId || assegnazioneForm.settimanaId === '')) {
+      const currentWeek = getCurrentWeekFromList(settimane);
+      if (currentWeek) {
+        updateAssegnazioneForm({ settimanaId: currentWeek._id });
+      }
+    }
+  }, [settimane]);
+
+  // Set default current week for filters (only on first load)
+  useEffect(() => {
+    if (settimane.length > 0 && filters.settimanaId === '') {
+      const currentWeek = getCurrentWeekFromList(settimane);
+      if (currentWeek) {
+        updateFilters({ settimanaId: currentWeek._id });
+      }
+    }
+  }, [settimane]);
+
+  // Sort weeks chronologically for dropdowns
+  const sortedSettimane = sortWeeksChronologically(settimane);
 
   const updateAssegnazioneForm = (updates) => {
     dispatch({ type: 'SET_ASSEGNAZIONE_FORM', payload: updates });
@@ -3515,7 +3538,7 @@ const AssignmentsManagement = () => {
                   onChange={(e) => updateAssegnazioneForm({ settimanaId: e.target.value })}
                 >
                   <option value="" className="bg-gray-800">Seleziona settimana</option>
-                  {settimane.map(settimana => {
+                  {sortedSettimane.map(settimana => {
                     const count = getAssignmentCountForPoloWeek(assegnazioneForm.poloId, settimana._id);
                     const isPoloSelected = assegnazioneForm.poloId;
                     const remainingSlots = isPoloSelected ? 2 - count : 2;
@@ -3770,13 +3793,21 @@ const AssignmentsManagement = () => {
                 value={filters.settimanaId}
                 onChange={(e) => updateFilters({ settimanaId: e.target.value })}
               >
-                <option value="" className="bg-gray-800">Tutte le settimane</option>
-                {settimane.map(settimana => (
+                <option value="" className="bg-gray-800">🌍 Tutte le settimane</option>
+                {sortedSettimane.map(settimana => (
                   <option key={settimana._id} value={settimana._id} className="bg-gray-800">
                     Settimana {settimana.numero}/{settimana.anno}
                   </option>
                 ))}
               </select>
+              {filters.settimanaId && (
+                <button
+                  onClick={() => updateFilters({ settimanaId: '' })}
+                  className="mt-2 text-xs text-blue-300 hover:text-blue-200 transition-colors"
+                >
+                  📅 Mostra tutte le settimane
+                </button>
+              )}
             </div>
 
             {/* ✅ NUOVO FILTRO: Ordine */}
@@ -4442,10 +4473,34 @@ const CalendarView = ({ assegnazioni, poli, settimane, onBackToList }) => {
   const [filteredPoli, setFilteredPoli] = useState(poli);
   const [filteredSettimane, setFilteredSettimane] = useState(settimane);
   
-  // Ordina settimane per data
-  const sortedSettimane = [...filteredSettimane].sort((a, b) => 
-    new Date(a.dataInizio) - new Date(b.dataInizio)
-  );
+  // Ordina settimane cronologicamente
+  const sortedSettimane = sortWeeksChronologically(filteredSettimane);
+  
+  // Trova l'indice della settimana corrente per lo scroll automatico
+  const currentWeekIndex = getCurrentWeekIndex(sortedSettimane);
+  
+  // Ref per lo scroll automatico alla settimana corrente
+  const tableRef = useRef(null);
+  const currentWeekRef = useRef(null);
+  
+  // Scroll alla settimana corrente quando il componente si monta
+  useEffect(() => {
+    if (currentWeekRef.current && tableRef.current) {
+      // Scroll orizzontale alla settimana corrente
+      const currentWeekColumn = currentWeekRef.current;
+      const table = tableRef.current;
+      
+      // Calcola la posizione dello scroll per centrare la settimana corrente
+      const columnRect = currentWeekColumn.getBoundingClientRect();
+      const tableRect = table.getBoundingClientRect();
+      const scrollLeft = currentWeekColumn.offsetLeft - (tableRect.width / 2) + (columnRect.width / 2);
+      
+      table.scrollTo({
+        left: Math.max(0, scrollLeft),
+        behavior: 'smooth'
+      });
+    }
+  }, [sortedSettimane, currentWeekIndex]);
   
   // Funzione per ottenere assegnazioni per polo/settimana
   const getAssignmentsForCell = (poloId, settimanaId) => {
@@ -4483,22 +4538,38 @@ const CalendarView = ({ assegnazioni, poli, settimane, onBackToList }) => {
 
       {/* Calendario */}
       <div className="glass-card-large rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" ref={tableRef}>
           <table className="w-full">
             <thead className="glass-table-header">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider sticky left-0 bg-gray-800/50 backdrop-blur-md">
                   Polo
                 </th>
-                {sortedSettimane.map(settimana => (
-                  <th key={settimana._id} className="px-3 py-3 text-center text-xs font-medium text-white/80 uppercase tracking-wider min-w-[200px]">
-                    <div>Sett. {settimana.numero}/{settimana.anno}</div>
-                    <div className="text-xs text-white/50 font-normal">
-                      {new Date(settimana.dataInizio).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })} - 
-                      {new Date(settimana.dataFine).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
-                    </div>
-                  </th>
-                ))}
+                {sortedSettimane.map((settimana, index) => {
+                  const isCurrentWeek = index === currentWeekIndex;
+                  return (
+                    <th 
+                      key={settimana._id} 
+                      ref={isCurrentWeek ? currentWeekRef : null}
+                      className={`px-3 py-3 text-center text-xs font-medium uppercase tracking-wider min-w-[200px] ${
+                        isCurrentWeek 
+                          ? 'bg-blue-600/30 text-blue-200 border-blue-400/50 border-2' 
+                          : 'text-white/80'
+                      }`}
+                    >
+                      <div className={isCurrentWeek ? 'font-bold' : ''}>
+                        Sett. {settimana.numero}/{settimana.anno}
+                        {isCurrentWeek && <span className="ml-1">📅</span>}
+                      </div>
+                      <div className={`text-xs font-normal ${
+                        isCurrentWeek ? 'text-blue-200/80' : 'text-white/50'
+                      }`}>
+                        {new Date(settimana.dataInizio).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })} - 
+                        {new Date(settimana.dataFine).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>

@@ -1,15 +1,20 @@
 // components/utilizzi/UtilizziPage.js
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, ArrowLeft, FileText, Calendar, Package, ChevronRight, BarChart3, Clock, User, Eye, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, FileText, Calendar, Package, ChevronRight, BarChart3, Clock, User, Eye, X, MapPin } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { BackButton } from '../shared/Navigation';
-import { formatWeek, formatDateTime } from '../../utils/formatters';
+import { formatWeek, formatDateTime, getCurrentWeekAssignment, sortAssignmentsByCurrentWeekFirst } from '../../utils/formatters';
+import { apiCall } from '../../services/api';
 
 const UtilizziPage = () => {
   const { setCurrentPage } = useAuth();
   const { myAssignments, myUtilizzi, selectedAssignment, loadUtilizzi } = useGiacenze();
+  const { token } = useAuth();
   const [selectedWeek, setSelectedWeek] = useState('');
+  const [selectedPostazione, setSelectedPostazione] = useState('');
+  const [availablePostazioni, setAvailablePostazioni] = useState([]);
+  const [loadingPostazioni, setLoadingPostazioni] = useState(false);
   const [debugData, setDebugData] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   
@@ -31,6 +36,16 @@ const UtilizziPage = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // Set default week to current week when assignments are loaded
+  useEffect(() => {
+    if (myAssignments.length > 0 && !selectedWeek) {
+      const currentAssignment = getCurrentWeekAssignment(myAssignments);
+      if (currentAssignment) {
+        setSelectedWeek(currentAssignment._id);
+      }
+    }
+  }, [myAssignments, selectedWeek]);
+
   useEffect(() => {
     if (!selectedWeek && selectedAssignment?._id) {
       setSelectedWeek(selectedAssignment._id);
@@ -40,8 +55,47 @@ const UtilizziPage = () => {
   useEffect(() => {
     if (selectedWeek) {
       loadUtilizzi(selectedWeek);
+      loadPostazioni(selectedWeek);
     }
   }, [selectedWeek]);
+
+  // Ricarica utilizzi quando cambia la postazione selezionata
+  useEffect(() => {
+    if (selectedWeek && selectedPostazione) {
+      console.log('📍 Caricamento utilizzi per postazione:', selectedPostazione);
+      loadUtilizzi(selectedWeek, selectedPostazione);
+    }
+  }, [selectedPostazione]);
+
+  // Carica postazioni filtrate per polo della settimana selezionata
+  const loadPostazioni = async (weekId) => {
+    try {
+      setLoadingPostazioni(true);
+      setSelectedPostazione(''); // Reset postazione selezionata
+      
+      // Trova l'assegnazione per ottenere il polo
+      const assignment = myAssignments.find(a => a._id === weekId);
+      if (!assignment || !assignment.poloId?._id) {
+        console.log('🏢 Nessun polo trovato per questa settimana');
+        setAvailablePostazioni([]);
+        return;
+      }
+
+      console.log('🔍 Caricamento postazioni per polo:', assignment.poloId.nome);
+      
+      // Carica postazioni del polo
+      const postazioni = await apiCall(`/postazioni/polo/${assignment.poloId._id}`, {}, token);
+      
+      console.log('🏢 Postazioni caricate:', postazioni.length);
+      setAvailablePostazioni(postazioni || []);
+      
+    } catch (error) {
+      console.error('❌ Errore caricamento postazioni:', error);
+      setAvailablePostazioni([]);
+    } finally {
+      setLoadingPostazioni(false);
+    }
+  };
 
   // Raggruppa utilizzi per prodotto
   useEffect(() => {
@@ -106,6 +160,9 @@ const UtilizziPage = () => {
     setSelectedGroup(null);
     setModalUtilizzi([]);
   };
+
+  // Sort assignments with current week first
+  const sortedAssignments = sortAssignmentsByCurrentWeekFirst(myAssignments);
 
   // Trova la settimana selezionata per il display
   const selectedAssignmentInfo = myAssignments.find(a => a._id === selectedWeek);
@@ -179,7 +236,7 @@ const UtilizziPage = () => {
               onChange={(e) => setSelectedWeek(e.target.value)}
             >
               <option value="" className="bg-gray-800">Seleziona una settimana</option>
-              {myAssignments.map(assignment => (
+              {sortedAssignments.map(assignment => (
                 <option key={assignment._id} value={assignment._id} className="bg-gray-800">
                   {formatWeek(assignment.settimanaId)} - {assignment.poloId?.nome} - {assignment.mezzoId?.nome}
                 </option>
@@ -199,8 +256,79 @@ const UtilizziPage = () => {
           </div>
         )}
 
+        {/* Selettore Postazione */}
+        {selectedWeek && (
+          <div className="glass-card p-6 rounded-2xl">
+            <label className="block text-sm font-medium text-white/80 mb-3 flex items-center">
+              <MapPin className="w-4 h-4 mr-2" />
+              Seleziona Postazione
+              {loadingPostazioni && (
+                <div className="ml-2 w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              )}
+            </label>
+            
+            {availablePostazioni.length > 0 ? (
+              <>
+                <select
+                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                  value={selectedPostazione}
+                  onChange={(e) => setSelectedPostazione(e.target.value)}
+                  disabled={loadingPostazioni}
+                >
+                  <option value="" className="bg-gray-800">Seleziona una postazione</option>
+                  <option value="all" className="bg-gray-800">🌐 Tutte le postazioni</option>
+                  {availablePostazioni.map(postazione => (
+                    <option key={postazione._id} value={postazione._id} className="bg-gray-800">
+                      {postazione.nome} - {postazione.indirizzo || 'Nessun indirizzo'}
+                    </option>
+                  ))}
+                </select>
+                
+                {/* Info postazione selezionata */}
+                {selectedPostazione && (
+                  <div className="mt-4 glass-info-display p-3 rounded-xl">
+                    <div className="text-sm text-white/80">
+                      {selectedPostazione === 'all' ? (
+                        <div className="flex items-center space-x-4">
+                          <span>🌐 <strong>Tutte le postazioni</strong></span>
+                          <span>📊 Visualizzando utilizzi da tutte le postazioni del polo</span>
+                        </div>
+                      ) : (() => {
+                        const postazione = availablePostazioni.find(p => p._id === selectedPostazione);
+                        return postazione ? (
+                          <div className="flex items-center space-x-4">
+                            <span>🏢 <strong>{postazione.nome}</strong></span>
+                            {postazione.indirizzo && <span>📍 {postazione.indirizzo}</span>}
+                            {postazione.capacitaPersone && <span>👥 {postazione.capacitaPersone} persone</span>}
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : loadingPostazioni ? (
+              <div className="glass-info-display p-4 rounded-xl text-center">
+                <div className="text-white/70">Caricamento postazioni...</div>
+              </div>
+            ) : (
+              <div className="glass-warning-card p-4 rounded-xl">
+                <div className="flex items-center text-yellow-200">
+                  <AlertTriangle className="w-5 h-5 mr-2" />
+                  <div>
+                    <div className="font-medium">Nessuna postazione disponibile</div>
+                    <div className="text-sm text-yellow-200/70">
+                      Non ci sono postazioni configurate per il polo di questa settimana.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Tabella Utilizzi Raggruppati */}
-        {selectedWeek && groupedUtilizzi.length > 0 ? (
+        {selectedWeek && selectedPostazione && groupedUtilizzi.length > 0 ? (
           <div className="glass-card-large rounded-2xl overflow-hidden">
             <div className="px-6 py-4 border-b border-white/10">
               <h3 className="text-lg font-semibold text-white flex items-center">
@@ -315,13 +443,27 @@ const UtilizziPage = () => {
               </table>
             </div>
           </div>
-        ) : selectedWeek ? (
+        ) : selectedWeek && selectedPostazione ? (
           <div className="glass-warning-card p-6 rounded-2xl">
             <div className="flex items-center justify-center text-yellow-200">
               <AlertTriangle className="w-6 h-6 mr-3" />
               <div>
                 <div className="font-medium">Nessun utilizzo registrato</div>
-                <div className="text-sm text-yellow-200/70">Non hai ancora utilizzato prodotti in questa settimana.</div>
+                <div className="text-sm text-yellow-200/70">
+                  Non hai ancora utilizzato prodotti in questa postazione per la settimana selezionata.
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : selectedWeek ? (
+          <div className="glass-warning-card p-6 rounded-2xl">
+            <div className="flex items-center justify-center text-yellow-200">
+              <AlertTriangle className="w-6 h-6 mr-3" />
+              <div>
+                <div className="font-medium">Seleziona una postazione</div>
+                <div className="text-sm text-yellow-200/70">
+                  Scegli una postazione dal menu sopra per visualizzare i tuoi utilizzi.
+                </div>
               </div>
             </div>
           </div>
@@ -331,7 +473,9 @@ const UtilizziPage = () => {
               <AlertTriangle className="w-6 h-6 mr-3" />
               <div>
                 <div className="font-medium">Seleziona una settimana</div>
-                <div className="text-sm text-yellow-200/70">Scegli una settimana dal menu sopra per visualizzare i tuoi utilizzi.</div>
+                <div className="text-sm text-yellow-200/70">
+                  Scegli una settimana dal menu sopra per iniziare.
+                </div>
               </div>
             </div>
           </div>

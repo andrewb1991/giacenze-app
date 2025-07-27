@@ -4,7 +4,7 @@ import { Edit, Trash2, Save, X, Search, Filter, Eye, User, Package, Calendar, Ch
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { apiCall } from '../../services/api';
-import { formatWeek, formatDateTime } from '../../utils/formatters';
+import { formatWeek, formatDateTime, getCurrentWeekFromList, sortWeeksChronologically } from '../../utils/formatters';
 
 const UtilizziManagement = () => {
   const { token, setError } = useAuth();
@@ -44,6 +44,19 @@ const UtilizziManagement = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  // Set default current week for filters (only on first load)
+  useEffect(() => {
+    if (settimane.length > 0 && filters.settimanaId === '') {
+      const currentWeek = getCurrentWeekFromList(settimane);
+      if (currentWeek) {
+        setFilters(prev => ({ ...prev, settimanaId: currentWeek._id }));
+      }
+    }
+  }, [settimane]);
+
+  // Sort weeks chronologically for dropdown
+  const sortedSettimane = sortWeeksChronologically(settimane);
 
   // Carica tutti gli utilizzi
   const loadAllUtilizzi = async () => {
@@ -309,13 +322,21 @@ const UtilizziManagement = () => {
                 value={filters.settimanaId}
                 onChange={(e) => updateFilters({ settimanaId: e.target.value })}
               >
-                <option value="" className="bg-gray-800">Tutte le settimane</option>
-                {settimane.map(settimana => (
+                <option value="" className="bg-gray-800">🌍 Tutte le settimane</option>
+                {sortedSettimane.map(settimana => (
                   <option key={settimana._id} value={settimana._id} className="bg-gray-800">
                     {formatWeek(settimana)}
                   </option>
                 ))}
               </select>
+              {filters.settimanaId && (
+                <button
+                  onClick={() => updateFilters({ settimanaId: '' })}
+                  className="mt-2 text-xs text-blue-300 hover:text-blue-200 transition-colors"
+                >
+                  📅 Mostra tutte le settimane
+                </button>
+              )}
             </div>
 
             {/* Ricerca per Nome */}

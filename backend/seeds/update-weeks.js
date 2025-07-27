@@ -57,23 +57,23 @@ async function updateWeeks() {
     
     // Crea nuove settimane con date corrette
     const settimane = [];
-    const currentYear = new Date().getFullYear();
     
-    // Crea settimane per l'anno corrente e quello successivo
-    for (let year = currentYear; year <= currentYear + 1; year++) {
+    // Definisci gli anni per cui creare le settimane
+    const yearsToGenerate = [2024, 2025, 2026, 2027, 2028];
+    console.log(`📅 Generazione settimane per gli anni: ${yearsToGenerate.join(', ')}`);
+    
+    // Crea settimane per tutti gli anni specificati
+    for (let year of yearsToGenerate) {
       for (let weekNumber = 1; weekNumber <= 52; weekNumber++) {
         const { monday, friday } = getWeekDates(year, weekNumber);
         
-        // Solo se la settimana ha senso (non troppo nel futuro)
-        if (monday.getFullYear() <= currentYear + 1) {
-          settimane.push({
-            numero: weekNumber,
-            anno: year,
-            dataInizio: monday,
-            dataFine: friday,
-            attiva: true
-          });
-        }
+        settimane.push({
+          numero: weekNumber,
+          anno: year,
+          dataInizio: monday,
+          dataFine: friday,
+          attiva: true
+        });
       }
     }
     
@@ -81,13 +81,23 @@ async function updateWeeks() {
     const settimaneCreate = await Settimana.insertMany(settimane);
     console.log('✅ Settimane create:', settimaneCreate.length);
     
-    // Mostra alcune settimane di esempio
+    // Mostra statistiche per anno
+    console.log('\n📊 Statistiche settimane create per anno:');
+    yearsToGenerate.forEach(year => {
+      const countForYear = settimaneCreate.filter(s => s.anno === year).length;
+      console.log(`   ${year}: ${countForYear} settimane`);
+    });
+    
+    // Mostra alcune settimane di esempio per ogni anno
     console.log('\n📋 Esempi di settimane create:');
-    const esempi = settimaneCreate.slice(0, 5);
-    esempi.forEach(settimana => {
-      const dataInizio = settimana.dataInizio.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
-      const dataFine = settimana.dataFine.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
-      console.log(`   ${dataInizio} - ${dataFine} ${settimana.anno} (Settimana ${settimana.numero})`);
+    yearsToGenerate.slice(0, 3).forEach(year => {
+      const settimaneAnno = settimaneCreate.filter(s => s.anno === year);
+      if (settimaneAnno.length > 0) {
+        const esempio = settimaneAnno[0]; // Prima settimana dell'anno
+        const dataInizio = esempio.dataInizio.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+        const dataFine = esempio.dataFine.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+        console.log(`   ${year}: ${dataInizio} - ${dataFine} ${esempio.anno} (Settimana ${esempio.numero})`);
+      }
     });
     
     console.log('\n🎉 Aggiornamento completato!');
@@ -107,9 +117,10 @@ function testFormat() {
   console.log('\n🧪 Test formattazione date:');
   
   const esempi = [
-    { anno: 2025, numero: 1 },
+    { anno: 2024, numero: 1 },
     { anno: 2025, numero: 25 },
-    { anno: 2025, numero: 52 }
+    { anno: 2026, numero: 52 },
+    { anno: 2027, numero: 1 }
   ];
   
   esempi.forEach(({ anno, numero }) => {

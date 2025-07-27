@@ -15,13 +15,19 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import Navigation, { BackButton } from '../shared/Navigation';
-import { formatWeek, calculatePercentage, getProgressBarColor } from '../../utils/formatters';
+import { formatWeek, calculatePercentage, getProgressBarColor, getCurrentWeekAssignment, sortAssignmentsByCurrentWeekFirst } from '../../utils/formatters';
+import { apiCall } from '../../services/api';
 
 const GiacenzePage = () => {
-  const { setCurrentPage } = useAuth();
+  const { setCurrentPage, token } = useAuth();
   const { myGiacenze, myAssignments, selectedAssignment, setSelectedAssignment, useProduct, addProduct } = useGiacenze();
   const [searchTerm, setSearchTerm] = useState('');
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  
+  // Stati per postazioni
+  const [selectedPostazione, setSelectedPostazione] = useState('');
+  const [availablePostazioni, setAvailablePostazioni] = useState([]);
+  const [loadingPostazioni, setLoadingPostazioni] = useState(false);
 
   // Mouse tracking per effetti interattivi
   useEffect(() => {
@@ -33,9 +39,61 @@ const GiacenzePage = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const filteredGiacenze = myGiacenze.filter(giacenza =>
-    giacenza.productId?.nome.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Set default assignment to current week when assignments are loaded
+  useEffect(() => {
+    if (myAssignments.length > 0 && !selectedAssignment) {
+      const currentAssignment = getCurrentWeekAssignment(myAssignments);
+      if (currentAssignment) {
+        setSelectedAssignment(currentAssignment);
+      }
+    }
+  }, [myAssignments, selectedAssignment, setSelectedAssignment]);
+
+  // Carica postazioni quando cambia l'assegnazione selezionata
+  useEffect(() => {
+    if (selectedAssignment) {
+      loadPostazioni();
+    }
+  }, [selectedAssignment]);
+
+  // Carica postazioni filtrate per polo dell'assegnazione selezionata
+  const loadPostazioni = async () => {
+    try {
+      setLoadingPostazioni(true);
+      setSelectedPostazione(''); // Reset postazione selezionata
+      
+      if (!selectedAssignment || !selectedAssignment.poloId?._id) {
+        console.log('🏢 Nessun polo trovato per questa settimana');
+        setAvailablePostazioni([]);
+        return;
+      }
+
+      console.log('🔍 Caricamento postazioni per polo:', selectedAssignment.poloId.nome);
+      
+      // Carica postazioni del polo
+      const postazioni = await apiCall(`/postazioni/polo/${selectedAssignment.poloId._id}`, {}, token);
+      
+      console.log('🏢 Postazioni caricate:', postazioni.length);
+      setAvailablePostazioni(postazioni || []);
+      
+    } catch (error) {
+      console.error('❌ Errore caricamento postazioni:', error);
+      setAvailablePostazioni([]);
+    } finally {
+      setLoadingPostazioni(false);
+    }
+  };
+
+  // Sort assignments with current week first
+  const sortedAssignments = sortAssignmentsByCurrentWeekFirst(myAssignments);
+
+  // Filtra giacenze per ricerca e postazione selezionata
+  const filteredGiacenze = myGiacenze.filter(giacenza => {
+    const matchesSearch = giacenza.productId?.nome.toLowerCase().includes(searchTerm.toLowerCase());
+    // Per ora mostriamo tutte le giacenze se non è selezionata una postazione
+    // In futuro si potrebbe filtrare per postazione se le giacenze avessero questo campo
+    return matchesSearch;
+  });
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
@@ -93,12 +151,77 @@ const GiacenzePage = () => {
               }}
             >
               <option value="" className="bg-gray-800">Seleziona una settimana</option>
-              {myAssignments.map(assignment => (
+              {sortedAssignments.map(assignment => (
                 <option key={assignment._id} value={assignment._id} className="bg-gray-800">
                   {formatWeek(assignment.settimanaId)} - {assignment.poloId?.nome} - {assignment.mezzoId?.nome}
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {/* Selettore Postazione */}
+        {selectedAssignment && (
+          <div className="glass-card p-6 rounded-2xl">
+            <label className="block text-sm font-medium text-white/80 mb-3 flex items-center">
+              <MapPin className="w-4 h-4 mr-2" />
+              Seleziona Postazione
+              {loadingPostazioni && (
+                <div className="ml-2 w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              )}
+            </label>
+            
+            {availablePostazioni.length > 0 ? (
+              <>
+                <select
+                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                  value={selectedPostazione}
+                  onChange={(e) => setSelectedPostazione(e.target.value)}
+                  disabled={loadingPostazioni}
+                >
+                  <option value="" className="bg-gray-800">Seleziona una postazione</option>
+                  {availablePostazioni.map(postazione => (
+                    <option key={postazione._id} value={postazione._id} className="bg-gray-800">
+                      {postazione.nome} - {postazione.indirizzo || 'Nessun indirizzo'}
+                    </option>
+                  ))}
+                </select>
+                
+                {/* Info postazione selezionata */}
+                {selectedPostazione && (
+                  <div className="mt-4 glass-info-card p-3 rounded-xl">
+                    <div className="text-sm text-white/80">
+                      {(() => {
+                        const postazione = availablePostazioni.find(p => p._id === selectedPostazione);
+                        return postazione ? (
+                          <div className="flex items-center space-x-4">
+                            <span>🏢 <strong>{postazione.nome}</strong></span>
+                            {postazione.indirizzo && <span>📍 {postazione.indirizzo}</span>}
+                            {postazione.capacitaPersone && <span>👥 {postazione.capacitaPersone} persone</span>}
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : loadingPostazioni ? (
+              <div className="glass-info-card p-4 rounded-xl text-center">
+                <div className="text-white/70">Caricamento postazioni...</div>
+              </div>
+            ) : (
+              <div className="glass-warning-card p-4 rounded-xl">
+                <div className="flex items-center text-yellow-200">
+                  <AlertTriangle className="w-5 h-5 mr-2" />
+                  <div>
+                    <div className="font-medium">Nessuna postazione disponibile</div>
+                    <div className="text-sm text-yellow-200/70">
+                      Non ci sono postazioni configurate per il polo di questa settimana.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -111,12 +234,12 @@ const GiacenzePage = () => {
           </div>
         )}
 
-        {selectedAssignment && (
+        {selectedAssignment && selectedPostazione && (
           <>
-            {/* Info Settimana Selezionata */}
+            {/* Info Settimana e Postazione Selezionate */}
             <div className="glass-info-card p-6 rounded-2xl">
-              <h3 className="font-semibold text-white mb-4">Settimana Selezionata:</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-white/90">
+              <h3 className="font-semibold text-white mb-4">Informazioni Selezione:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-white/90">
                 <div className="flex items-center space-x-2">
                   <Calendar className="w-4 h-4 text-blue-300" />
                   <span>{formatWeek(selectedAssignment.settimanaId)}</span>
@@ -128,6 +251,10 @@ const GiacenzePage = () => {
                 <div className="flex items-center space-x-2">
                   <Truck className="w-4 h-4 text-purple-300" />
                   <span>{selectedAssignment.mezzoId?.nome}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Package2 className="w-4 h-4 text-orange-300" />
+                  <span>{availablePostazioni.find(p => p._id === selectedPostazione)?.nome}</span>
                 </div>
               </div>
             </div>
@@ -160,8 +287,8 @@ const GiacenzePage = () => {
                     giacenza={giacenza}
                     isSottoSoglia={isSottoSoglia}
                     percentualeRimasta={percentualeRimasta}
-                    onUseProduct={useProduct}
-                    onAddProduct={addProduct}
+                    onUseProduct={(productId, quantity) => useProduct(productId, quantity, selectedPostazione)}
+                    onAddProduct={(productId, quantity) => addProduct(productId, quantity, selectedPostazione)}
                   />
                 );
               })}
@@ -173,11 +300,25 @@ const GiacenzePage = () => {
                   <Package2 className="w-8 h-8 text-white/50" />
                 </div>
                 <p className="text-white/70 text-lg">
-                  {searchTerm ? 'Nessun prodotto trovato con i criteri di ricerca' : 'Nessun prodotto assegnato per questa settimana'}
+                  {searchTerm ? 'Nessun prodotto trovato con i criteri di ricerca' : 'Nessun prodotto assegnato per questa settimana e postazione'}
                 </p>
               </div>
             )}
           </>
+        )}
+
+        {selectedAssignment && !selectedPostazione && availablePostazioni.length > 0 && (
+          <div className="glass-warning-card p-6 rounded-2xl">
+            <div className="flex items-center justify-center text-yellow-200">
+              <AlertTriangle className="w-6 h-6 mr-3" />
+              <div>
+                <div className="font-medium">Seleziona una postazione</div>
+                <div className="text-sm text-yellow-200/70">
+                  Scegli una postazione dal menu sopra per visualizzare e gestire le tue giacenze.
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -290,7 +431,6 @@ const GiacenzePage = () => {
 
 const GiacenzaCard = ({ giacenza, isSottoSoglia, percentualeRimasta, onUseProduct, onAddProduct }) => {
   const canAdd = giacenza.quantitaDisponibile < giacenza.quantitaAssegnata;
-  const maxAddable = giacenza.quantitaAssegnata - giacenza.quantitaDisponibile;
 
   return (
     <div className="glass-card-interactive p-6 rounded-2xl">

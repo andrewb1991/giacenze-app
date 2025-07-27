@@ -74,7 +74,7 @@ export const useGiacenze = () => {
     }
   };
 
-  const useProduct = async (productId, quantity = 1) => {
+  const useProduct = async (productId, quantity = 1, postazioneId = null) => {
     if (!selectedAssignment) {
       setError('Seleziona un\'assegnazione attiva');
       return;
@@ -82,13 +82,20 @@ export const useGiacenze = () => {
 
     try {
       setError('');
+      const body = {
+        productId,
+        quantitaUtilizzata: quantity,
+        assegnazioneId: selectedAssignment._id
+      };
+      
+      // Aggiungi postazioneId se fornito
+      if (postazioneId) {
+        body.postazioneId = postazioneId;
+      }
+
       const result = await apiCall('/use-product', {
         method: 'POST',
-        body: JSON.stringify({
-          productId,
-          quantitaUtilizzata: quantity,
-          assegnazioneId: selectedAssignment._id
-        })
+        body: JSON.stringify(body)
       }, token);
 
       // Ricarica giacenze personali
@@ -106,7 +113,7 @@ export const useGiacenze = () => {
     }
   };
 
-  const addProduct = async (productId, quantity = 1) => {
+  const addProduct = async (productId, quantity = 1, postazioneId = null) => {
     if (!selectedAssignment) {
       setError('Seleziona un\'assegnazione attiva');
       return;
@@ -153,7 +160,7 @@ export const useGiacenze = () => {
     }
   };
 
-  const loadUtilizzi = async (assignmentId) => {
+  const loadUtilizzi = async (assignmentId, postazioneId = null) => {
     try {
       setError('');
       const assignment = myAssignments.find(a => a._id === assignmentId);
@@ -164,7 +171,13 @@ export const useGiacenze = () => {
         return;
       }
 
-      const data = await apiCall(`/utilizzi/my?settimanaId=${settimanaId}`, {}, token);
+      let url = `/utilizzi/my?settimanaId=${settimanaId}`;
+      if (postazioneId) {
+        url += `&postazioneId=${postazioneId}`;
+      }
+
+      console.log('🔗 Loading utilizzi with URL:', url);
+      const data = await apiCall(url, {}, token);
       dispatch({ type: 'SET_MY_UTILIZZI', payload: Array.isArray(data) ? data : [data] });
     } catch (err) {
       console.error('Errore nel caricamento utilizzi:', err);

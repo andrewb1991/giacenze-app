@@ -6,7 +6,7 @@ import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
 import { BackButton } from '../shared/Navigation';
 import { downloadExcelReport } from '../../services/api';
-import { formatWeek } from '../../utils/formatters';
+import { formatWeek, getCurrentWeekFromList, sortWeeksChronologically } from '../../utils/formatters';
 
 const ReportsPage = () => {
   const { user, token, setCurrentPage, setError } = useAuth();
@@ -24,6 +24,19 @@ const ReportsPage = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  // Set default current week for reports (only on first load)
+  useEffect(() => {
+    if (settimane.length > 0 && reportFilters.settimanaId === undefined) {
+      const currentWeek = getCurrentWeekFromList(settimane);
+      if (currentWeek) {
+        updateReportFilters({ settimanaId: currentWeek._id });
+      }
+    }
+  }, [settimane]);
+
+  // Sort weeks chronologically for dropdown
+  const sortedSettimane = sortWeeksChronologically(settimane);
 
   const updateReportFilters = (updates) => {
     dispatch({ type: 'SET_REPORT_FILTERS', payload: updates });
@@ -99,9 +112,9 @@ const ReportsPage = () => {
                 value={reportFilters.settimanaId}
                 onChange={(e) => updateReportFilters({ settimanaId: e.target.value })}
               >
-                <option value="" className="bg-gray-800">Tutte le settimane</option>
-                {settimane.length > 0 ? (
-                  settimane.map(settimana => (
+                <option value="" className="bg-gray-800">🌍 Tutte le settimane</option>
+                {sortedSettimane.length > 0 ? (
+                  sortedSettimane.map(settimana => (
                     <option key={settimana._id} value={settimana._id} className="bg-gray-800">
                       {formatWeek(settimana)}
                     </option>
@@ -110,6 +123,14 @@ const ReportsPage = () => {
                   <option disabled className="bg-gray-800">Caricamento settimane...</option>
                 )}
               </select>
+              {reportFilters.settimanaId && (
+                <button
+                  onClick={() => updateReportFilters({ settimanaId: '' })}
+                  className="mt-2 text-xs text-blue-300 hover:text-blue-200 transition-colors"
+                >
+                  📅 Mostra tutte le settimane
+                </button>
+              )}
             </div>
 
             <div>

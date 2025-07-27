@@ -3,6 +3,16 @@ import { Plus, Edit, Trash2, Save, X, Building, MapPin, Download, Upload, FileSp
 import { useAuth } from '../../hooks/useAuth';
 import { apiCall } from '../../services/api';
 
+// Get API base URL helper
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  return process.env.NODE_ENV === 'production' 
+    ? 'https://giacenze-app-production.up.railway.app/api'
+    : 'http://localhost:7070/api';
+};
+
 const PostazioniManagement = () => {
   const { token, setError } = useAuth();
   
@@ -186,7 +196,11 @@ const PostazioniManagement = () => {
     try {
       setError('');
       
-      const response = await fetch('/api/postazioni/template', {
+      // Usa l'API base URL corretto
+      const API_BASE = getApiBaseUrl();
+      console.log('📥 Download template:', `${API_BASE}/postazioni/template`);
+      
+      const response = await fetch(`${API_BASE}/postazioni/template`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -228,11 +242,16 @@ const PostazioniManagement = () => {
     try {
       setUploading(true);
       setError('');
+      console.log('📤 Inizio upload file:', file.name);
 
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/postazioni/import', {
+      // Usa l'API base URL corretto
+      const API_BASE = getApiBaseUrl();
+      console.log('🔗 URL upload:', `${API_BASE}/postazioni/import`);
+
+      const response = await fetch(`${API_BASE}/postazioni/import`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -240,20 +259,27 @@ const PostazioniManagement = () => {
         body: formData,
       });
 
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+
       const result = await response.json();
+      console.log('📦 Response data:', result);
 
       if (!response.ok) {
+        console.error('❌ Upload failed:', result);
         throw new Error(result.message || 'Errore nell\'upload del file');
       }
 
       await loadData(); // Ricarica i dati
       setError(`Import completato: ${result.created} postazioni create, ${result.updated} aggiornate, ${result.errors} errori`);
+      console.log('✅ Import completato con successo');
       
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (err) {
+      console.error('❌ Upload error:', err);
       setError('Errore nell\'import: ' + err.message);
     } finally {
       setUploading(false);
@@ -293,10 +319,19 @@ const PostazioniManagement = () => {
                   type="file"
                   accept=".xlsx,.xls"
                   onChange={handleFileUpload}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="hidden"
                   disabled={uploading}
                 />
                 <button
+                  onClick={() => {
+                    console.log('🖱️ Import button clicked');
+                    if (fileInputRef.current) {
+                      console.log('📁 Triggering file input');
+                      fileInputRef.current.click();
+                    } else {
+                      console.error('❌ File input ref not found');
+                    }
+                  }}
                   className="glass-button-secondary flex items-center gap-2 px-4 py-3 rounded-2xl hover:scale-105 transition-all duration-300"
                   disabled={uploading}
                   title="Carica file Excel"

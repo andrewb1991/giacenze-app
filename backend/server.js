@@ -961,7 +961,7 @@ app.get('/api/admin/utilizzi/stats', authenticateToken, requireAdmin, async (req
 });// MODIFICATA: Usa prodotto con supporto multi-settimana
 app.post('/api/use-product', authenticateToken, async (req, res) => {
   try {
-    const { productId, quantitaUtilizzata, assegnazioneId } = req.body;
+    const { productId, quantitaUtilizzata, assegnazioneId, postazioneId } = req.body;
     
     // Verifica assegnazione
     const assegnazione = await Assegnazione.findOne({
@@ -1016,7 +1016,8 @@ app.post('/api/use-product', authenticateToken, async (req, res) => {
       quantitaRimasta: quantitaPrecedente - quantitaUtilizzata,
       settimanaId: assegnazione.settimanaId,
       poloId: assegnazione.poloId,
-      mezzoId: assegnazione.mezzoId
+      mezzoId: assegnazione.mezzoId,
+      postazioneId: postazioneId || null
     });
 
     await utilizzo.save();
@@ -1531,18 +1532,23 @@ app.delete('/api/admin/giacenze/:id', authenticateToken, requireAdmin, async (re
 // Utilizzi Routes
 app.get('/api/utilizzi/my', authenticateToken, async (req, res) => {
   try {
-    const { settimanaId } = req.query;
+    const { settimanaId, postazioneId } = req.query;
     const filter = { userId: req.user.userId };
     
     if (settimanaId) filter.settimanaId = settimanaId;
+    if (postazioneId && postazioneId !== 'all') filter.postazioneId = postazioneId;
+    
+    console.log('🔍 Filtro utilizzi:', filter);
     
     const utilizzi = await Utilizzo.find(filter)
       .populate('productId', 'nome unita categoria')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
+      .populate('postazioneId', 'nome indirizzo')
       .sort({ createdAt: -1 });
     
+    console.log(`📊 Trovati ${utilizzi.length} utilizzi`);
     res.json(utilizzi);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -3707,6 +3713,175 @@ app.get('/api/postazioni', authenticateToken, async (req, res) => {
   }
 });
 
+// =====================================================
+// EXCEL IMPORT/EXPORT ROUTES - Must be before /:id route
+// =====================================================
+
+// GET - Download template Excel per postazioni
+app.get('/api/postazioni/template', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    // Carica i poli per il template
+    const poli = await Polo.find({}, 'nome').sort({ nome: 1 });
+    
+    // Crea dati di esempio per il template
+    const templateData = [
+      {
+        nome: 'Postazione Esempio 1',
+        polo: poli.length > 0 ? poli[0].nome : 'Polo Nord',
+        indirizzo: 'Via Roma 123, Milano',
+        latitudine: 45.464664,
+        longitudine: 9.188540
+      },
+      {
+        nome: 'Postazione Esempio 2', 
+        polo: poli.length > 1 ? poli[1].nome : 'Polo Sud',
+        indirizzo: 'Via Dante 456, Milano',
+        latitudine: 45.466797,
+        longitudine: 9.190544
+      }
+    ];
+
+    // Crea workbook Excel
+    const workbook = xlsx.utils.book_new();
+    const worksheet = xlsx.utils.json_to_sheet(templateData);
+    
+    // Imposta larghezza delle colonne
+    worksheet['!cols'] = [
+      { wch: 20 }, // nome
+      { wch: 15 }, // polo
+      { wch: 30 }, // indirizzo  
+      { wch: 12 }, // latitudine
+      { wch: 12 }  // longitudine
+    ];
+
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Postazioni');
+    
+    // Genera buffer Excel
+    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=template_postazioni.xlsx');
+    res.send(buffer);
+    
+    console.log('✅ Template Excel scaricato con successo');
+    
+  } catch (error) {
+    console.error('❌ Errore download template:', error);
+    res.status(500).json({ message: 'Errore nel download del template' });
+  }
+});
+
+// POST - Import Excel postazioni
+app.post('/api/postazioni/import', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    console.log('📁 Inizio import Excel postazioni');
+    
+    if (!req.files || !req.files.file) {
+      return res.status(400).json({ message: 'Nessun file caricato' });
+    }
+
+    const file = req.files.file;
+    console.log('📁 File ricevuto:', file.name, 'Size:', file.size);
+    
+    // Verifica che sia un file Excel
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      return res.status(400).json({ message: 'Il file deve essere in formato Excel (.xlsx o .xls)' });
+    }
+
+    // Leggi il file Excel
+    const workbook = xlsx.read(file.data, { type: 'buffer' });
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(worksheet);
+
+    console.log('📊 Dati letti da Excel:', data.length, 'righe');
+
+    if (!data || data.length === 0) {
+      return res.status(400).json({ message: 'Il file Excel è vuoto o non contiene dati validi' });
+    }
+
+    let created = 0;
+    let updated = 0;
+    let errors = 0;
+    const errorMessages = [];
+
+    // Carica tutti i poli per la ricerca
+    const poli = await Polo.find({});
+    const poliMap = {};
+    poli.forEach(polo => {
+      poliMap[polo.nome.toLowerCase()] = polo._id;
+    });
+
+    console.log('🏢 Poli disponibili:', Object.keys(poliMap));
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const rowNum = i + 2; // +2 perché Excel inizia da 1 e abbiamo header
+      
+      try {
+        // Validazione campi obbligatori
+        if (!row.nome || !row.polo) {
+          throw new Error(`Riga ${rowNum}: Nome e polo sono obbligatori`);
+        }
+
+        // Trova il polo
+        const poloId = poliMap[row.polo.toLowerCase()];
+        if (!poloId) {
+          throw new Error(`Riga ${rowNum}: Polo "${row.polo}" non trovato`);
+        }
+
+        // Prepara i dati della postazione
+        const postazioneData = {
+          nome: row.nome.trim(),
+          poloId: poloId,
+          indirizzo: row.indirizzo ? row.indirizzo.trim() : '',
+          coordinate: {
+            lat: row.latitudine ? parseFloat(row.latitudine) : '',
+            lng: row.longitudine ? parseFloat(row.longitudine) : ''
+          }
+        };
+
+        // Verifica se la postazione esiste già (stesso nome e polo)
+        const existingPostazione = await Postazione.findOne({
+          nome: postazioneData.nome,
+          poloId: poloId
+        });
+
+        if (existingPostazione) {
+          // Aggiorna postazione esistente
+          await Postazione.findByIdAndUpdate(existingPostazione._id, postazioneData);
+          updated++;
+          console.log(`✏️  Aggiornata: ${postazioneData.nome}`);
+        } else {
+          // Crea nuova postazione
+          const newPostazione = new Postazione(postazioneData);
+          await newPostazione.save();
+          created++;
+          console.log(`➕ Creata: ${postazioneData.nome}`);
+        }
+
+      } catch (error) {
+        errors++;
+        errorMessages.push(error.message);
+        console.error(`❌ Errore riga ${rowNum}:`, error.message);
+      }
+    }
+
+    console.log(`📊 Import completato: ${created} create, ${updated} aggiornate, ${errors} errori`);
+    
+    res.json({
+      message: 'Import completato',
+      created,
+      updated,
+      errors,
+      errorMessages: errorMessages.slice(0, 10) // Limita a 10 errori per evitare risposte troppo grandi
+    });
+
+  } catch (error) {
+    console.error('❌ Errore import Excel:', error);
+    res.status(500).json({ message: 'Errore nell\'import del file Excel' });
+  }
+});
+
 // GET - Postazione singola per ID
 app.get('/api/postazioni/:id', authenticateToken, async (req, res) => {
   try {
@@ -4094,164 +4269,6 @@ app.post('/api/postazioni/copy', authenticateToken, requireAdmin, async (req, re
   } catch (error) {
     console.error('❌ Errore copia postazioni:', error);
     res.status(400).json({ message: error.message });
-  }
-});
-
-// =====================================================
-// ROTTE API PER EXCEL IMPORT/EXPORT POSTAZIONI
-// =====================================================
-
-// GET - Download template Excel per postazioni
-app.get('/api/postazioni/template', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    // Carica i poli per il template
-    const poli = await Polo.find({}, 'nome').sort({ nome: 1 });
-    
-    // Crea dati di esempio per il template
-    const templateData = [
-      {
-        nome: 'Postazione Esempio 1',
-        polo: poli.length > 0 ? poli[0].nome : 'Polo Nord',
-        indirizzo: 'Via Roma 123, Milano',
-        latitudine: 45.464664,
-        longitudine: 9.188540
-      },
-      {
-        nome: 'Postazione Esempio 2', 
-        polo: poli.length > 1 ? poli[1].nome : 'Polo Sud',
-        indirizzo: 'Via Dante 456, Milano',
-        latitudine: 45.466797,
-        longitudine: 9.190544
-      }
-    ];
-
-    // Crea workbook Excel
-    const workbook = xlsx.utils.book_new();
-    const worksheet = xlsx.utils.json_to_sheet(templateData);
-    
-    // Imposta larghezza delle colonne
-    worksheet['!cols'] = [
-      { wch: 20 }, // nome
-      { wch: 15 }, // polo
-      { wch: 30 }, // indirizzo  
-      { wch: 12 }, // latitudine
-      { wch: 12 }  // longitudine
-    ];
-
-    xlsx.utils.book_append_sheet(workbook, worksheet, 'Postazioni');
-    
-    // Genera buffer Excel
-    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-    
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=template_postazioni.xlsx');
-    res.send(buffer);
-    
-  } catch (error) {
-    console.error('❌ Errore download template:', error);
-    res.status(500).json({ message: 'Errore nel download del template' });
-  }
-});
-
-// POST - Import Excel postazioni
-app.post('/api/postazioni/import', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    if (!req.files || !req.files.file) {
-      return res.status(400).json({ message: 'Nessun file caricato' });
-    }
-
-    const file = req.files.file;
-    
-    // Verifica che sia un file Excel
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-      return res.status(400).json({ message: 'Il file deve essere in formato Excel (.xlsx o .xls)' });
-    }
-
-    // Leggi il file Excel
-    const workbook = xlsx.read(file.data, { type: 'buffer' });
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = xlsx.utils.sheet_to_json(worksheet);
-
-    if (!data || data.length === 0) {
-      return res.status(400).json({ message: 'Il file Excel è vuoto o non contiene dati validi' });
-    }
-
-    let created = 0;
-    let updated = 0;
-    let errors = 0;
-    const errorMessages = [];
-
-    // Carica tutti i poli per la ricerca
-    const poli = await Polo.find({});
-    const poliMap = {};
-    poli.forEach(polo => {
-      poliMap[polo.nome.toLowerCase()] = polo._id;
-    });
-
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i];
-      const rowNum = i + 2; // +2 perché Excel inizia da 1 e abbiamo header
-      
-      try {
-        // Validazione campi obbligatori
-        if (!row.nome || !row.polo) {
-          throw new Error(`Riga ${rowNum}: Nome e polo sono obbligatori`);
-        }
-
-        // Trova il polo
-        const poloId = poliMap[row.polo.toLowerCase()];
-        if (!poloId) {
-          throw new Error(`Riga ${rowNum}: Polo "${row.polo}" non trovato`);
-        }
-
-        // Prepara i dati della postazione
-        const postazioneData = {
-          nome: row.nome.trim(),
-          poloId: poloId,
-          indirizzo: row.indirizzo ? row.indirizzo.trim() : '',
-          coordinate: {
-            lat: row.latitudine ? parseFloat(row.latitudine) : '',
-            lng: row.longitudine ? parseFloat(row.longitudine) : ''
-          }
-        };
-
-        // Verifica se la postazione esiste già (stesso nome e polo)
-        const existingPostazione = await Postazione.findOne({
-          nome: postazioneData.nome,
-          poloId: poloId
-        });
-
-        if (existingPostazione) {
-          // Aggiorna postazione esistente
-          await Postazione.findByIdAndUpdate(existingPostazione._id, postazioneData);
-          updated++;
-        } else {
-          // Crea nuova postazione
-          const newPostazione = new Postazione(postazioneData);
-          await newPostazione.save();
-          created++;
-        }
-
-      } catch (error) {
-        errors++;
-        errorMessages.push(error.message);
-        console.error(`❌ Errore riga ${rowNum}:`, error.message);
-      }
-    }
-
-    console.log(`📊 Import completato: ${created} create, ${updated} aggiornate, ${errors} errori`);
-    
-    res.json({
-      message: 'Import completato',
-      created,
-      updated,
-      errors,
-      errorMessages: errorMessages.slice(0, 10) // Limita a 10 errori per evitare risposte troppo grandi
-    });
-
-  } catch (error) {
-    console.error('❌ Errore import Excel:', error);
-    res.status(500).json({ message: 'Errore nell\'import del file Excel' });
   }
 });
 
