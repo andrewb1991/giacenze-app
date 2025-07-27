@@ -1,15 +1,30 @@
 // components/admin/GiacenzeManagement.js
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, ChevronRight, Package2, UserPlus, AlertCircle, Filter, Search, User, Calendar, Package, BarChart3 } from 'lucide-react';
+import { Plus, Users, ChevronRight, Package2, UserPlus, AlertCircle, Filter, Search, User, Calendar, Package, BarChart3, Edit, X, Save, Trash2, Check } from 'lucide-react';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
 import { calculatePercentage, formatDate } from '../../utils/formatters';
 
 const GiacenzeManagement = () => {
-  const { users, allProducts, allGiacenze, assegnazioni, assignGiacenza } = useGiacenze();
+  const { users, allProducts, allGiacenze, assegnazioni, assignGiacenza, updateGiacenza, deleteGiacenza } = useGiacenze();
   const { state, dispatch } = useAppContext();
   const { selectedUser, giacenzeForm } = state;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // Stati per edit modal
+  const [editingGiacenza, setEditingGiacenza] = useState(null);
+  const [editForm, setEditForm] = useState({
+    quantitaAssegnata: '',
+    quantitaDisponibile: '',
+    quantitaMinima: '',
+    note: ''
+  });
+
+  // Stati per delete confirmation
+  const [deletingGiacenza, setDeletingGiacenza] = useState(null);
+
+  // Stati per toast notifications
+  const [toast, setToast] = useState(null);
 
   // Stati per filtri
   const [filters, setFilters] = useState({
@@ -140,6 +155,66 @@ const GiacenzeManagement = () => {
       quantitaMin: '',
       quantitaMax: ''
     });
+  };
+
+  // Toast functions
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // Funzioni per edit modal
+  const openEditModal = (giacenza) => {
+    setEditingGiacenza(giacenza);
+    setEditForm({
+      quantitaAssegnata: giacenza.quantitaAssegnata.toString(),
+      quantitaDisponibile: giacenza.quantitaDisponibile.toString(),
+      quantitaMinima: giacenza.quantitaMinima.toString(),
+      note: giacenza.note || ''
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditingGiacenza(null);
+    setEditForm({
+      quantitaAssegnata: '',
+      quantitaDisponibile: '',
+      quantitaMinima: '',
+      note: ''
+    });
+  };
+
+  const handleUpdateGiacenza = async () => {
+    if (!editingGiacenza) return;
+
+    const success = await updateGiacenza(editingGiacenza._id, editForm);
+    if (success) {
+      closeEditModal();
+      showToast('Giacenza aggiornata con successo!', 'success');
+    } else {
+      showToast('Errore nell\'aggiornamento della giacenza', 'error');
+    }
+  };
+
+  // Funzioni per delete
+  const openDeleteModal = (giacenza) => {
+    setDeletingGiacenza(giacenza);
+  };
+
+  const closeDeleteModal = () => {
+    setDeletingGiacenza(null);
+  };
+
+  const handleDeleteGiacenza = async () => {
+    if (!deletingGiacenza) return;
+
+    const success = await deleteGiacenza(deletingGiacenza._id);
+    if (success) {
+      closeDeleteModal();
+      showToast('Giacenza eliminata con successo!', 'success');
+    } else {
+      showToast('Errore nell\'eliminazione della giacenza', 'error');
+    }
   };
 
   return (
@@ -567,6 +642,9 @@ const GiacenzeManagement = () => {
                   <th className="px-8 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                     Data Assegnazione
                   </th>
+                  <th className="px-8 py-4 text-center text-xs font-medium text-white/80 uppercase tracking-wider">
+                    Azioni
+                  </th>
                 </tr>
               </thead>
               <tbody className="glass-table-body">
@@ -654,6 +732,24 @@ const GiacenzeManagement = () => {
                           da {giacenza.assegnatoDa?.username}
                         </div>
                       </td>
+                      <td className="px-8 py-6 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => openEditModal(giacenza)}
+                            className="glass-icon-button p-2 rounded-xl hover:scale-105 transition-all duration-300"
+                            title="Modifica giacenza"
+                          >
+                            <Edit className="w-4 h-4 text-white" />
+                          </button>
+                          <button
+                            onClick={() => openDeleteModal(giacenza)}
+                            className="glass-icon-button-danger p-2 rounded-xl hover:scale-105 transition-all duration-300"
+                            title="Elimina giacenza"
+                          >
+                            <Trash2 className="w-4 h-4 text-white" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -687,6 +783,256 @@ const GiacenzeManagement = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingGiacenza && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closeEditModal}
+          />
+          
+          {/* Modal */}
+          <div className="relative glass-management-card p-8 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="glass-icon p-3 rounded-2xl mr-4">
+                  <Edit className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-white">Modifica Giacenza</h2>
+                  <p className="text-white/60">
+                    {editingGiacenza.userId?.username} - {editingGiacenza.productId?.nome}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeEditModal}
+                className="glass-icon-button p-2 rounded-xl hover:scale-105 transition-all duration-300"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Quantità Assegnata */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Quantità Assegnata *
+                </label>
+                <div className="glass-input-container">
+                  <input
+                    type="number"
+                    min="0"
+                    className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                    value={editForm.quantitaAssegnata}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, quantitaAssegnata: e.target.value }))}
+                    placeholder="es. 100"
+                  />
+                </div>
+              </div>
+
+              {/* Quantità Disponibile */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Quantità Disponibile *
+                </label>
+                <div className="glass-input-container">
+                  <input
+                    type="number"
+                    min="0"
+                    className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                    value={editForm.quantitaDisponibile}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, quantitaDisponibile: e.target.value }))}
+                    placeholder="es. 80"
+                  />
+                </div>
+                <p className="text-xs text-white/50 mt-1">
+                  Valore originale: {editingGiacenza.quantitaDisponibile} {editingGiacenza.productId?.unita}
+                </p>
+              </div>
+
+              {/* Soglia Minima */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Soglia Minima
+                </label>
+                <div className="glass-input-container">
+                  <input
+                    type="number"
+                    min="0"
+                    className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                    value={editForm.quantitaMinima}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, quantitaMinima: e.target.value }))}
+                    placeholder="es. 20"
+                  />
+                </div>
+              </div>
+
+              {/* Note */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Note
+                </label>
+                <div className="glass-input-container">
+                  <textarea
+                    rows={3}
+                    className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50 resize-none"
+                    value={editForm.note}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, note: e.target.value }))}
+                    placeholder="Note opzionali"
+                  />
+                </div>
+              </div>
+
+              {/* Info giacenza */}
+              <div className="glass-stat-mini p-4 rounded-xl">
+                <h4 className="text-sm font-medium text-white/80 mb-3">Informazioni Giacenza</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-white/60">Utente:</span>
+                    <div className="text-white font-medium">{editingGiacenza.userId?.username}</div>
+                  </div>
+                  <div>
+                    <span className="text-white/60">Prodotto:</span>
+                    <div className="text-white font-medium">{editingGiacenza.productId?.nome}</div>
+                  </div>
+                  <div>
+                    <span className="text-white/60">Categoria:</span>
+                    <div className="text-white font-medium">{editingGiacenza.productId?.categoria}</div>
+                  </div>
+                  <div>
+                    <span className="text-white/60">Data Assegnazione:</span>
+                    <div className="text-white font-medium">{formatDate(editingGiacenza.dataAssegnazione)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex items-center justify-end gap-4 mt-8">
+              <button
+                onClick={closeEditModal}
+                className="glass-button-secondary px-6 py-3 rounded-2xl text-white hover:scale-105 transition-all duration-300"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleUpdateGiacenza}
+                disabled={!editForm.quantitaAssegnata || !editForm.quantitaDisponibile}
+                className="glass-button-primary flex items-center gap-3 px-6 py-3 rounded-2xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
+              >
+                <Save className="w-4 h-4" />
+                Salva Modifiche
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingGiacenza && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closeDeleteModal}
+          />
+          
+          {/* Modal */}
+          <div className="relative glass-management-card p-8 rounded-3xl max-w-md w-full">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="glass-icon-danger p-3 rounded-2xl mr-4">
+                  <Trash2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-white">Conferma Eliminazione</h2>
+                </div>
+              </div>
+              <button
+                onClick={closeDeleteModal}
+                className="glass-icon-button p-2 rounded-xl hover:scale-105 transition-all duration-300"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-white/80 mb-4">
+                Sei sicuro di voler eliminare questa giacenza?
+              </p>
+              <div className="glass-stat-mini p-4 rounded-xl">
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="text-white/60">Utente:</span>
+                    <span className="text-white font-medium ml-2">{deletingGiacenza.userId?.username}</span>
+                  </div>
+                  <div>
+                    <span className="text-white/60">Prodotto:</span>
+                    <span className="text-white font-medium ml-2">{deletingGiacenza.productId?.nome}</span>
+                  </div>
+                  <div>
+                    <span className="text-white/60">Quantità:</span>
+                    <span className="text-white font-medium ml-2">{deletingGiacenza.quantitaDisponibile} {deletingGiacenza.productId?.unita}</span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-red-300 text-sm mt-4">
+                ⚠️ Questa azione non può essere annullata.
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex items-center justify-end gap-4">
+              <button
+                onClick={closeDeleteModal}
+                className="glass-button-secondary px-6 py-3 rounded-2xl text-white hover:scale-105 transition-all duration-300"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleDeleteGiacenza}
+                className="glass-button-danger flex items-center gap-3 px-6 py-3 rounded-2xl hover:scale-105 transition-all duration-300"
+              >
+                <Trash2 className="w-4 h-4" />
+                Elimina
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className={`glass-toast p-4 rounded-2xl min-w-80 ${
+            toast.type === 'success' ? 'glass-toast-success' : 'glass-toast-error'
+          } animate-toast-in`}>
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-xl ${
+                toast.type === 'success' ? 'bg-green-500/20' : 'bg-red-500/20'
+              }`}>
+                {toast.type === 'success' ? (
+                  <Check className="w-5 h-5 text-green-400" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-white font-medium">{toast.message}</p>
+              </div>
+              <button
+                onClick={() => setToast(null)}
+                className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <X className="w-4 h-4 text-white/60" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Custom Styles */}
       <style jsx>{`
@@ -792,6 +1138,77 @@ const GiacenzeManagement = () => {
 
         .glass-button-secondary:hover {
           background: rgba(107, 114, 128, 0.4);
+        }
+
+        .glass-icon-button {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-icon-button:hover {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .glass-icon-button-danger {
+          background: rgba(239, 68, 68, 0.2);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .glass-icon-button-danger:hover {
+          background: rgba(239, 68, 68, 0.3);
+          border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        .glass-icon-danger {
+          background: rgba(239, 68, 68, 0.2);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .glass-button-danger {
+          background: rgba(239, 68, 68, 0.3);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(239, 68, 68, 0.4);
+          box-shadow: 0 8px 24px rgba(239, 68, 68, 0.2);
+          color: white;
+        }
+
+        .glass-button-danger:hover {
+          background: rgba(239, 68, 68, 0.4);
+          box-shadow: 0 12px 32px rgba(239, 68, 68, 0.3);
+        }
+
+        .glass-toast {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .glass-toast-success {
+          border-left: 4px solid #22c55e;
+        }
+
+        .glass-toast-error {
+          border-left: 4px solid #ef4444;
+        }
+
+        @keyframes toast-in {
+          from {
+            opacity: 0;
+            transform: translateX(100%) scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+
+        .animate-toast-in {
+          animation: toast-in 0.3s ease-out;
         }
 
         .glass-table-header {

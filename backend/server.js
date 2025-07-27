@@ -7,6 +7,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const xlsx = require('xlsx');
+const fileUpload = require('express-fileupload');
 
 const app = express();
 const PORT = process.env.PORT || 7070;
@@ -14,6 +15,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'giacenze-default-secret-key-molto-
 
 app.use(cors());
 app.use(express.json());
+app.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
+  abortOnLimit: true
+}));
 
 const corsOptions = {
   origin: [
@@ -70,15 +75,281 @@ const settimanaSchema = new mongoose.Schema({
   attiva: { type: Boolean, default: true }
 }, { timestamps: true });
 
+// const assegnazioneSchema = new mongoose.Schema({
+//   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+//   poloId: { type: mongoose.Schema.Types.ObjectId, ref: 'Polo', required: true },
+//   mezzoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Mezzo', required: true },
+//   settimanaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Settimana', required: true },
+//   postazioneId: { type: mongoose.Schema.Types.ObjectId, ref: 'Postazione' },
+//   attiva: { type: Boolean, default: true },
+//   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+// }, { timestamps: true });
+// // Indici e vincoli
+// assegnazioneSchema.index({ 
+//   userId: 1, 
+//   settimanaId: 1 
+// }, { 
+//   unique: true,
+//   partialFilterExpression: { attiva: true }
+// });
+// 19 luglio
+
+// const assegnazioneSchema = new mongoose.Schema({
+//   userId: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     ref: 'User', 
+//     required: true 
+//   },
+//   poloId: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     ref: 'Polo', 
+//     required: true 
+//   },
+//   mezzoId: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     ref: 'Mezzo', 
+//     required: true 
+//   },
+//   settimanaId: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     ref: 'Settimana', 
+//     required: true 
+//   },
+//   postazioneId: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     ref: 'Postazione' 
+//   },
+//   // Array di ordini assegnati
+//   ordini: [{
+//     ordineId: { 
+//       type: mongoose.Schema.Types.ObjectId, 
+//       ref: 'Ordine', 
+//       required: true 
+//     },
+//     dataAssegnazione: { 
+//       type: Date, 
+//       default: Date.now 
+//     },
+//     priorita: { 
+//       type: Number, 
+//       default: 1,
+//       min: 1
+//     },
+//     stato: { 
+//       type: String, 
+//       enum: ['ASSEGNATO', 'IN_CORSO', 'COMPLETATO', 'ANNULLATO'], 
+//       default: 'ASSEGNATO' 
+//     },
+//     note: { 
+//       type: String,
+//       trim: true
+//     },
+//     tempoStimato: { 
+//       type: Number, // override del tempo stimato dell'ordine
+//       min: 1
+//     },
+//     dataInizio: { type: Date },
+//     dataFine: { type: Date },
+//     kmPercorsi: { type: Number, min: 0 },
+//     costoCarburante: { type: Number, min: 0 }
+//   }],
+//   // Pianificazione
+//   programmazione: {
+//     oraInizio: { type: String }, // formato HH:MM
+//     oraFine: { type: String },   // formato HH:MM
+//     pausePianificate: [{
+//       oraInizio: { type: String },
+//       oraFine: { type: String },
+//       motivo: { type: String }
+//     }],
+//     percorsoOptimizzato: { type: Boolean, default: false },
+//     distanzaTotaleKm: { type: Number, min: 0 }
+//   },
+//   // Stato generale dell'assegnazione
+//   attiva: { 
+//     type: Boolean, 
+//     default: true 
+//   },
+//   // Statistiche calcolate automaticamente
+//   stats: {
+//     totaleOrdini: { type: Number, default: 0 },
+//     ordiniCompletati: { type: Number, default: 0 },
+//     ordiniInCorso: { type: Number, default: 0 },
+//     ordiniAnnullati: { type: Number, default: 0 },
+//     tempoTotaleStimato: { type: Number, default: 0 }, // in minuti
+//     tempoTotaleEffettivo: { type: Number, default: 0 }, // in minuti
+//     valoreCommercialeAssegnato: { type: Number, default: 0 },
+//     valoreCompletato: { type: Number, default: 0 },
+//     efficienzaPercentuale: { type: Number, default: 0 }, // completati/totali * 100
+//     mediaTempoPerOrdine: { type: Number, default: 0 }
+//   },
+//   createdBy: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     ref: 'User' 
+//   },
+//   lastModifiedBy: { 
+//     type: mongoose.Schema.Types.ObjectId, 
+//     ref: 'User' 
+//   }
+// }, { 
+//   timestamps: true 
+// });
+
+
 const assegnazioneSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  poloId: { type: mongoose.Schema.Types.ObjectId, ref: 'Polo', required: true },
-  mezzoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Mezzo', required: true },
-  settimanaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Settimana', required: true },
-  postazioneId: { type: mongoose.Schema.Types.ObjectId, ref: 'Postazione' },
-  attiva: { type: Boolean, default: true },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
-}, { timestamps: true });
+  userId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
+  poloId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Polo', 
+    required: true 
+  },
+  mezzoId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Mezzo', 
+    required: true 
+  },
+  settimanaId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Settimana', 
+    required: true 
+  },
+  postazioneId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Postazione' 
+  },
+  // ✅ NUOVI CAMPI AGGIUNTI
+  ordine: { 
+    type: String,
+    trim: true,
+    default: null
+  },
+  rdt: { 
+    type: String,
+    trim: true,
+    default: null
+  },
+  // CAMPI ESISTENTI
+  attiva: { 
+    type: Boolean, 
+    default: true 
+  },
+  createdBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  }
+}, { 
+  timestamps: true 
+});
+
+// Indici esistenti + nuovi per i campi aggiunti
+assegnazioneSchema.index({ 
+  userId: 1, 
+  settimanaId: 1 
+}, { 
+  unique: true,
+  partialFilterExpression: { attiva: true }
+});
+
+assegnazioneSchema.index({ poloId: 1, settimanaId: 1 });
+assegnazioneSchema.index({ mezzoId: 1, settimanaId: 1 });
+
+// ✅ NUOVI INDICI per ricerca per Ordine e RDT
+assegnazioneSchema.index({ ordine: 1 });
+assegnazioneSchema.index({ rdt: 1 });
+assegnazioneSchema.index({ ordine: 1, rdt: 1 });
+
+
+const ordineSchema = new mongoose.Schema({
+  numero: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    trim: true
+  },
+  cliente: { 
+    type: String, 
+    required: true,
+    trim: true
+  },
+  descrizione: { 
+    type: String,
+    trim: true
+  },
+  dataConsegna: { 
+    type: Date, 
+    required: true 
+  },
+  indirizzo: {
+    via: { type: String, required: true, trim: true },
+    citta: { type: String, required: true, trim: true },
+    cap: { type: String, required: true, trim: true },
+    provincia: { type: String, required: true, trim: true },
+    coordinate: {
+      lat: { type: Number },
+      lng: { type: Number }
+    }
+  },
+  priorita: { 
+    type: String, 
+    enum: ['BASSA', 'MEDIA', 'ALTA', 'URGENTE'], 
+    default: 'MEDIA' 
+  },
+  stato: { 
+    type: String, 
+    enum: ['CREATO', 'ASSEGNATO', 'IN_CORSO', 'COMPLETATO', 'ANNULLATO'], 
+    default: 'CREATO' 
+  },
+  note: { 
+    type: String,
+    trim: true
+  },
+  prodotti: [{
+    nome: { type: String, required: true, trim: true },
+    quantita: { type: Number, required: true, min: 0 },
+    unita: { type: String, default: 'pz', trim: true },
+    prezzo: { type: Number, min: 0 },
+    note: { type: String, trim: true }
+  }],
+  valore: { 
+    type: Number, 
+    default: 0,
+    min: 0
+  },
+  tempoStimato: { 
+    type: Number, // in minuti
+    default: 60,
+    min: 1
+  },
+  contatti: {
+    telefono: { type: String, trim: true },
+    email: { type: String, trim: true, lowercase: true },
+    referente: { type: String, trim: true }
+  },
+  documenti: [{
+    nome: { type: String, required: true },
+    url: { type: String, required: true },
+    tipo: { type: String, enum: ['CONTRATTO', 'FATTURA', 'DDT', 'ALTRO'], default: 'ALTRO' },
+    dataCaricamento: { type: Date, default: Date.now }
+  }],
+  attivo: { 
+    type: Boolean, 
+    default: true 
+  },
+  createdBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  },
+  lastModifiedBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  }
+}, { 
+  timestamps: true 
+});
 
 // MODIFICATO: Schema giacenze con riferimento alla settimana
 const giacenzaUtenteSchema = new mongoose.Schema({
@@ -173,6 +444,7 @@ const Assegnazione = mongoose.model('Assegnazione', assegnazioneSchema);
 const GiacenzaUtente = mongoose.model('GiacenzaUtente', giacenzaUtenteSchema);
 const Utilizzo = mongoose.model('Utilizzo', utilizzoSchema);
 const Aggiunta = mongoose.model('Aggiunta', aggiuntaSchema);
+const Ordine = mongoose.model('Ordine', ordineSchema);
 const RicaricaGiacenza = mongoose.model('RicaricaGiacenza', ricaricaGiacenzaSchema);
 const Postazione = mongoose.model('Postazione', postazioneSchema);
 // Middleware
@@ -767,6 +1039,115 @@ app.post('/api/use-product', authenticateToken, async (req, res) => {
 // Routes Admin per gestire giacenze
 // AGGIORNA anche l'endpoint admin /api/admin/giacenze per coerenza:
 
+// app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res) => {
+//   try {
+//     const { 
+//       userId, 
+//       settimanaId,
+//       productId,
+//       stato,
+//       searchTerm,
+//       quantitaAssegnataMin,
+//       quantitaAssegnataMax,
+//       quantitaDisponibileMin,
+//       quantitaDisponibileMax,
+//       sogliaMinimaMin,
+//       sogliaMinimaMax
+//     } = req.query;
+    
+//     let filter = { attiva: true };
+    
+//     // Filtri base
+//     if (userId) filter.userId = userId;
+//     if (productId) filter.productId = productId;
+    
+//     if (settimanaId) {
+//       filter.$or = [
+//         { settimanaId: settimanaId },
+//         { isGlobale: true }
+//       ];
+//     }
+
+//     console.log('🔍 Admin filtri:', filter);
+
+//     const giacenze = await GiacenzaUtente.find(filter)
+//       .populate('userId', 'username email')
+//       .populate('productId', 'nome categoria unita descrizione')
+//       .populate('assegnatoDa', 'username')
+//       .populate('settimanaId', 'numero anno dataInizio dataFine')
+//       .sort({ 'userId.username': 1, 'productId.nome': 1 });
+
+//     let filteredGiacenze = giacenze;
+
+//     // Applica filtri aggiuntivi
+//     if (stato) {
+//       if (stato === 'critico') {
+//         filteredGiacenze = filteredGiacenze.filter(g => 
+//           g.quantitaDisponibile <= g.quantitaMinima
+//         );
+//       } else if (stato === 'ok') {
+//         filteredGiacenze = filteredGiacenze.filter(g => 
+//           g.quantitaDisponibile > g.quantitaMinima
+//         );
+//       }
+//     }
+
+//     if (searchTerm) {
+//       const term = searchTerm.toLowerCase();
+//       filteredGiacenze = filteredGiacenze.filter(g => 
+//         g.userId?.username.toLowerCase().includes(term) ||
+//         g.userId?.email.toLowerCase().includes(term) ||
+//         g.productId?.nome.toLowerCase().includes(term) ||
+//         g.productId?.categoria.toLowerCase().includes(term) ||
+//         g.assegnatoDa?.username.toLowerCase().includes(term)
+//       );
+//     }
+
+//     // Filtri numerici (stessa logica dell'endpoint utente)
+//     if (quantitaAssegnataMin) {
+//       filteredGiacenze = filteredGiacenze.filter(g => 
+//         g.quantitaAssegnata >= parseInt(quantitaAssegnataMin)
+//       );
+//     }
+    
+//     if (quantitaAssegnataMax) {
+//       filteredGiacenze = filteredGiacenze.filter(g => 
+//         g.quantitaAssegnata <= parseInt(quantitaAssegnataMax)
+//       );
+//     }
+
+//     if (quantitaDisponibileMin) {
+//       filteredGiacenze = filteredGiacenze.filter(g => 
+//         g.quantitaDisponibile >= parseInt(quantitaDisponibileMin)
+//       );
+//     }
+    
+//     if (quantitaDisponibileMax) {
+//       filteredGiacenze = filteredGiacenze.filter(g => 
+//         g.quantitaDisponibile <= parseInt(quantitaDisponibileMax)
+//       );
+//     }
+
+//     if (sogliaMinimaMin) {
+//       filteredGiacenze = filteredGiacenze.filter(g => 
+//         g.quantitaMinima >= parseInt(sogliaMinimaMin)
+//       );
+//     }
+    
+//     if (sogliaMinimaMax) {
+//       filteredGiacenze = filteredGiacenze.filter(g => 
+//         g.quantitaMinima <= parseInt(sogliaMinimaMax)
+//       );
+//     }
+
+//     console.log(`📊 Admin risultati: ${filteredGiacenze.length} di ${giacenze.length} giacenze`);
+
+//     res.json(filteredGiacenze);
+//   } catch (error) {
+//     console.error('❌ Errore caricamento giacenze admin:', error);
+//     res.status(500).json({ message: error.message });
+//   }
+// });
 app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { 
@@ -783,12 +1164,15 @@ app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res)
       sogliaMinimaMax
     } = req.query;
     
+    console.log('🔍 Parametri ricevuti:', req.query);
+    
     let filter = { attiva: true };
     
-    // Filtri base
+    // ✅ FILTRI BASE
     if (userId) filter.userId = userId;
     if (productId) filter.productId = productId;
     
+    // ✅ FILTRO SETTIMANA - con logica globale
     if (settimanaId) {
       filter.$or = [
         { settimanaId: settimanaId },
@@ -796,8 +1180,9 @@ app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res)
       ];
     }
 
-    console.log('🔍 Admin filtri:', filter);
+    console.log('🔍 Filtro MongoDB:', filter);
 
+    // ✅ CARICA GIACENZE con populate
     const giacenze = await GiacenzaUtente.find(filter)
       .populate('userId', 'username email')
       .populate('productId', 'nome categoria unita descrizione')
@@ -806,9 +1191,11 @@ app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res)
       .sort({ 'userId.username': 1, 'productId.nome': 1 });
 
     let filteredGiacenze = giacenze;
+    console.log(`📦 Giacenze caricate: ${giacenze.length}`);
 
-    // Applica filtri aggiuntivi
+    // ✅ FILTRO STATO (post-query)
     if (stato) {
+      const beforeCount = filteredGiacenze.length;
       if (stato === 'critico') {
         filteredGiacenze = filteredGiacenze.filter(g => 
           g.quantitaDisponibile <= g.quantitaMinima
@@ -818,9 +1205,12 @@ app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res)
           g.quantitaDisponibile > g.quantitaMinima
         );
       }
+      console.log(`🎯 Filtro stato "${stato}": ${beforeCount} -> ${filteredGiacenze.length}`);
     }
 
+    // ✅ FILTRO RICERCA (post-query)
     if (searchTerm) {
+      const beforeCount = filteredGiacenze.length;
       const term = searchTerm.toLowerCase();
       filteredGiacenze = filteredGiacenze.filter(g => 
         g.userId?.username.toLowerCase().includes(term) ||
@@ -829,46 +1219,59 @@ app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res)
         g.productId?.categoria.toLowerCase().includes(term) ||
         g.assegnatoDa?.username.toLowerCase().includes(term)
       );
+      console.log(`🔍 Filtro ricerca "${searchTerm}": ${beforeCount} -> ${filteredGiacenze.length}`);
     }
 
-    // Filtri numerici (stessa logica dell'endpoint utente)
-    if (quantitaAssegnataMin) {
+    // ✅ FILTRI NUMERICI (con validazione)
+    if (quantitaAssegnataMin && !isNaN(quantitaAssegnataMin)) {
+      const beforeCount = filteredGiacenze.length;
       filteredGiacenze = filteredGiacenze.filter(g => 
         g.quantitaAssegnata >= parseInt(quantitaAssegnataMin)
       );
+      console.log(`📊 Filtro quantità assegnata min ${quantitaAssegnataMin}: ${beforeCount} -> ${filteredGiacenze.length}`);
     }
     
-    if (quantitaAssegnataMax) {
+    if (quantitaAssegnataMax && !isNaN(quantitaAssegnataMax)) {
+      const beforeCount = filteredGiacenze.length;
       filteredGiacenze = filteredGiacenze.filter(g => 
         g.quantitaAssegnata <= parseInt(quantitaAssegnataMax)
       );
+      console.log(`📊 Filtro quantità assegnata max ${quantitaAssegnataMax}: ${beforeCount} -> ${filteredGiacenze.length}`);
     }
 
-    if (quantitaDisponibileMin) {
+    if (quantitaDisponibileMin && !isNaN(quantitaDisponibileMin)) {
+      const beforeCount = filteredGiacenze.length;
       filteredGiacenze = filteredGiacenze.filter(g => 
         g.quantitaDisponibile >= parseInt(quantitaDisponibileMin)
       );
+      console.log(`📊 Filtro quantità disponibile min ${quantitaDisponibileMin}: ${beforeCount} -> ${filteredGiacenze.length}`);
     }
     
-    if (quantitaDisponibileMax) {
+    if (quantitaDisponibileMax && !isNaN(quantitaDisponibileMax)) {
+      const beforeCount = filteredGiacenze.length;
       filteredGiacenze = filteredGiacenze.filter(g => 
         g.quantitaDisponibile <= parseInt(quantitaDisponibileMax)
       );
+      console.log(`📊 Filtro quantità disponibile max ${quantitaDisponibileMax}: ${beforeCount} -> ${filteredGiacenze.length}`);
     }
 
-    if (sogliaMinimaMin) {
+    if (sogliaMinimaMin && !isNaN(sogliaMinimaMin)) {
+      const beforeCount = filteredGiacenze.length;
       filteredGiacenze = filteredGiacenze.filter(g => 
         g.quantitaMinima >= parseInt(sogliaMinimaMin)
       );
+      console.log(`📊 Filtro soglia minima min ${sogliaMinimaMin}: ${beforeCount} -> ${filteredGiacenze.length}`);
     }
     
-    if (sogliaMinimaMax) {
+    if (sogliaMinimaMax && !isNaN(sogliaMinimaMax)) {
+      const beforeCount = filteredGiacenze.length;
       filteredGiacenze = filteredGiacenze.filter(g => 
         g.quantitaMinima <= parseInt(sogliaMinimaMax)
       );
+      console.log(`📊 Filtro soglia minima max ${sogliaMinimaMax}: ${beforeCount} -> ${filteredGiacenze.length}`);
     }
 
-    console.log(`📊 Admin risultati: ${filteredGiacenze.length} di ${giacenze.length} giacenze`);
+    console.log(`✅ Risultati finali: ${filteredGiacenze.length} di ${giacenze.length} giacenze`);
 
     res.json(filteredGiacenze);
   } catch (error) {
@@ -876,6 +1279,7 @@ app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res)
     res.status(500).json({ message: error.message });
   }
 });
+
 // MODIFICATA: Assegna/Aggiorna giacenza con supporto multi-settimana
 app.post('/api/admin/assign-giacenza', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -1030,6 +1434,99 @@ async function createOrUpdateGiacenza(data) {
 
   return populated;
 }
+
+// PUT - Aggiorna giacenza esistente (Admin)
+app.put('/api/admin/giacenze/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      quantitaAssegnata, 
+      quantitaDisponibile, 
+      quantitaMinima, 
+      note, 
+      attiva = true 
+    } = req.body;
+
+    const giacenza = await GiacenzaUtente.findById(id);
+    if (!giacenza) {
+      return res.status(404).json({ message: 'Giacenza non trovata' });
+    }
+
+    // Registra la modifica se c'è un cambio di quantità
+    const quantitaPrecedente = giacenza.quantitaDisponibile;
+    
+    // Aggiorna i campi
+    if (quantitaAssegnata !== undefined) giacenza.quantitaAssegnata = parseInt(quantitaAssegnata);
+    if (quantitaDisponibile !== undefined) giacenza.quantitaDisponibile = parseInt(quantitaDisponibile);
+    if (quantitaMinima !== undefined) giacenza.quantitaMinima = parseInt(quantitaMinima);
+    if (note !== undefined) giacenza.note = note;
+    giacenza.attiva = attiva;
+    giacenza.dataModifica = new Date();
+
+    await giacenza.save();
+
+    // Registra la modifica nella storia se c'è stato un cambio di quantità
+    if (quantitaDisponibile !== undefined && quantitaPrecedente !== parseInt(quantitaDisponibile)) {
+      const ricarica = new RicaricaGiacenza({
+        giacenzaUtenteId: giacenza._id,
+        userId: giacenza.userId,
+        productId: giacenza.productId,
+        quantitaPrecedente,
+        quantitaAggiunta: parseInt(quantitaDisponibile) - quantitaPrecedente,
+        quantitaNuova: parseInt(quantitaDisponibile),
+        motivazione: note || 'Modifica da admin',
+        eseguitoDa: req.user.userId
+      });
+      await ricarica.save();
+    }
+
+    // Ritorna la giacenza aggiornata con populate
+    const updatedGiacenza = await GiacenzaUtente.findById(giacenza._id)
+      .populate('userId', 'username email')
+      .populate('productId', 'nome categoria unita')
+      .populate('assegnatoDa', 'username')
+      .populate('settimanaId', 'numero anno dataInizio dataFine');
+
+    res.json(updatedGiacenza);
+  } catch (error) {
+    console.error('❌ Errore aggiornamento giacenza:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// DELETE - Elimina giacenza (Admin)
+app.delete('/api/admin/giacenze/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const giacenza = await GiacenzaUtente.findById(id);
+    if (!giacenza) {
+      return res.status(404).json({ message: 'Giacenza non trovata' });
+    }
+
+    // Verifica se ci sono utilizzi associati a questa giacenza
+    const utilizziCount = await Utilizzo.countDocuments({ giacenzaUtenteId: id });
+    if (utilizziCount > 0) {
+      return res.status(400).json({ 
+        message: `Impossibile eliminare: ci sono ${utilizziCount} utilizzi associati a questa giacenza. Elimina prima gli utilizzi o disattiva la giacenza.`
+      });
+    }
+
+    // Elimina anche le ricariche associate
+    await RicaricaGiacenza.deleteMany({ giacenzaUtenteId: id });
+
+    // Elimina la giacenza
+    await GiacenzaUtente.findByIdAndDelete(id);
+
+    res.json({ 
+      message: 'Giacenza eliminata con successo',
+      deletedId: id
+    });
+  } catch (error) {
+    console.error('❌ Errore eliminazione giacenza:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
 
 // Utilizzi Routes
 app.get('/api/utilizzi/my', authenticateToken, async (req, res) => {
@@ -1468,6 +1965,9 @@ app.get('/api/settimane', authenticateToken, async (req, res) => {
   }
 });
 
+// ✅ ROTTE API AGGIORNATE per gestire campi Ordine e RDT
+
+// GET - Lista assegnazioni con filtri aggiornati
 app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
   try {
     const { 
@@ -1475,7 +1975,9 @@ app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
       poloId, 
       mezzoId, 
       settimanaId, 
-      attiva // può essere: 'true', 'false', o undefined
+      attiva,
+      ordine,    // ✅ NUOVO FILTRO
+      rdt        // ✅ NUOVO FILTRO
     } = req.query;
     
     const filter = {};
@@ -1486,16 +1988,15 @@ app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
     if (mezzoId) filter.mezzoId = mezzoId;
     if (settimanaId) filter.settimanaId = settimanaId;
     
-    // CORREZIONE: Filtro stato solo se specificato esplicitamente
+    // ✅ NUOVI FILTRI per Ordine e RDT
+    if (ordine) filter.ordine = { $regex: ordine, $options: 'i' };
+    if (rdt) filter.rdt = { $regex: rdt, $options: 'i' };
+    
+    // Filtro stato
     if (attiva === 'true') {
       filter.attiva = true;
-      console.log('🟢 Filtro: Solo ATTIVE');
     } else if (attiva === 'false') {
       filter.attiva = false;
-      console.log('🔴 Filtro: Solo INATTIVE');
-    } else {
-      // attiva è undefined - mostra TUTTO
-      console.log('🔵 Filtro: TUTTE (attive + inattive)');
     }
     
     console.log('📋 Filter applicato:', filter);
@@ -1505,6 +2006,7 @@ app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('postazioneId', 'nome')
       .sort({ createdAt: -1 });
     
     console.log(`📊 Risultati trovati: ${assegnazioni.length}`);
@@ -1516,28 +2018,20 @@ app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/assegnazioni/my', authenticateToken, async (req, res) => {
-  try {
-    const assegnazioni = await Assegnazione.find({ 
-      userId: req.user.userId, 
-      attiva: true 
-    })
-      .populate('poloId', 'nome')
-      .populate('mezzoId', 'nome')
-      .populate('settimanaId', 'numero anno dataInizio dataFine')
-      .sort({ 'settimanaId.anno': -1, 'settimanaId.numero': -1 });
-    res.json(assegnazioni);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// POST - Crea nuova assegnazione (con validazioni multi-operatore)
+// POST - Crea nuova assegnazione con campi aggiornati
 app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { userId, poloId, settimanaId, mezzoId } = req.body;
+    const { 
+      userId, 
+      poloId, 
+      settimanaId, 
+      mezzoId, 
+      postazioneId,
+      ordine,    // ✅ NUOVO CAMPO
+      rdt        // ✅ NUOVO CAMPO
+    } = req.body;
 
-    // 1. Controlli esistenti (operatore unico per settimana, max 2 per polo)
+    // Validazioni esistenti
     const existingUserAssignment = await Assegnazione.findOne({
       userId, settimanaId, attiva: true
     });
@@ -1552,7 +2046,35 @@ app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) 
       return res.status(400).json({ message: 'Polo al completo (max 2 operatori)' });
     }
 
-    // ✅ NUOVO: Informazioni per mezzi condivisi
+    // ✅ VALIDAZIONE OPZIONALE: Controllo unicità ordine (se fornito)
+    if (ordine && ordine.trim()) {
+      const existingOrdine = await Assegnazione.findOne({
+        ordine: ordine.trim(),
+        attiva: true
+      });
+      if (existingOrdine) {
+        return res.status(400).json({ 
+          message: `Ordine "${ordine}" già assegnato ad un altro operatore`,
+          conflictType: 'ORDINE_ALREADY_ASSIGNED'
+        });
+      }
+    }
+
+    // ✅ VALIDAZIONE OPZIONALE: Controllo unicità RDT (se fornito)
+    if (rdt && rdt.trim()) {
+      const existingRdt = await Assegnazione.findOne({
+        rdt: rdt.trim(),
+        attiva: true
+      });
+      if (existingRdt) {
+        return res.status(400).json({ 
+          message: `RDT "${rdt}" già assegnato ad un altro operatore`,
+          conflictType: 'RDT_ALREADY_ASSIGNED'
+        });
+      }
+    }
+
+    // Informazioni per mezzi condivisi
     let sharedVehicleInfo = null;
     if (existingPoloAssignments.length === 1) {
       const existingMezzo = existingPoloAssignments[0].mezzoId;
@@ -1565,30 +2087,51 @@ app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) 
       }
     }
 
-    // Crea assegnazione
-    const assegnazione = new Assegnazione(req.body);
+    // ✅ CREA ASSEGNAZIONE con nuovi campi
+    const assegnazione = new Assegnazione({
+      userId,
+      poloId,
+      mezzoId,
+      settimanaId,
+      postazioneId,
+      ordine: ordine?.trim() || null,  // ✅ NUOVO CAMPO
+      rdt: rdt?.trim() || null,        // ✅ NUOVO CAMPO
+      createdBy: req.user.userId
+    });
+    
     await assegnazione.save();
     
     const populated = await Assegnazione.findById(assegnazione._id)
       .populate('userId', 'username email')
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
-      .populate('settimanaId', 'numero anno dataInizio dataFine');
+      .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('postazioneId', 'nome');
     
     res.status(201).json({
+      message: 'Assegnazione creata con successo',
       assegnazione: populated,
-      sharedVehicleInfo // Include info condivisione nella risposta
+      sharedVehicleInfo
     });
   } catch (error) {
+    console.error('Errore creazione assegnazione:', error);
     res.status(400).json({ message: error.message });
   }
 });
 
-// PUT - Modifica assegnazione esistente (con validazioni)
+// PUT - Modifica assegnazione con nuovi campi
 app.put('/api/assegnazioni/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId, poloId, settimanaId, mezzoId } = req.body;
+    const { 
+      userId, 
+      poloId, 
+      settimanaId, 
+      mezzoId, 
+      postazioneId,
+      ordine,    // ✅ NUOVO CAMPO
+      rdt        // ✅ NUOVO CAMPO
+    } = req.body;
 
     // Trova l'assegnazione esistente
     const existingAssegnazione = await Assegnazione.findById(id);
@@ -1596,36 +2139,42 @@ app.put('/api/assegnazioni/:id', authenticateToken, requireAdmin, async (req, re
       return res.status(404).json({ message: 'Assegnazione non trovata' });
     }
 
-    // Se i dati non sono cambiati, procedi senza validazioni
-    const isUnchanged = 
-      existingAssegnazione.userId.toString() === userId &&
-      existingAssegnazione.poloId.toString() === poloId &&
-      existingAssegnazione.settimanaId.toString() === settimanaId &&
-      existingAssegnazione.mezzoId.toString() === mezzoId;
-
-    if (isUnchanged) {
-      // Aggiorna solo altri campi (es. postazione, note)
-      const updated = await Assegnazione.findByIdAndUpdate(
-        id,
-        req.body,
-        { new: true }
-      )
-      .populate('userId', 'username email')
-      .populate('poloId', 'nome descrizione')
-      .populate('mezzoId', 'nome descrizione')
-      .populate('settimanaId', 'numero anno dataInizio dataFine')
-      .populate('postazioneId', 'nome descrizione');
-
-      return res.json({
-        message: 'Assegnazione aggiornata con successo',
-        assegnazione: updated
+    // ✅ VALIDAZIONI per nuovi campi se cambiano
+    
+    // Controllo unicità ordine (se diverso da quello attuale)
+    if (ordine && ordine.trim() && ordine.trim() !== existingAssegnazione.ordine) {
+      const conflictOrdine = await Assegnazione.findOne({
+        _id: { $ne: id },
+        ordine: ordine.trim(),
+        attiva: true
       });
+      if (conflictOrdine) {
+        return res.status(400).json({ 
+          message: `Ordine "${ordine}" già assegnato ad un altro operatore`,
+          conflictType: 'ORDINE_ALREADY_ASSIGNED'
+        });
+      }
     }
 
-    // ✅ VALIDAZIONE 1: Se cambia l'operatore, controlla che il nuovo operatore non sia già assegnato
+    // Controllo unicità RDT (se diverso da quello attuale)
+    if (rdt && rdt.trim() && rdt.trim() !== existingAssegnazione.rdt) {
+      const conflictRdt = await Assegnazione.findOne({
+        _id: { $ne: id },
+        rdt: rdt.trim(),
+        attiva: true
+      });
+      if (conflictRdt) {
+        return res.status(400).json({ 
+          message: `RDT "${rdt}" già assegnato ad un altro operatore`,
+          conflictType: 'RDT_ALREADY_ASSIGNED'
+        });
+      }
+    }
+
+    // Validazioni esistenti per operatore, polo, mezzo...
     if (existingAssegnazione.userId.toString() !== userId) {
       const conflictUserAssignment = await Assegnazione.findOne({
-        _id: { $ne: id }, // Escludi l'assegnazione corrente
+        _id: { $ne: id },
         userId,
         settimanaId,
         attiva: true
@@ -1643,101 +2192,409 @@ app.put('/api/assegnazioni/:id', authenticateToken, requireAdmin, async (req, re
       }
     }
 
-    // ✅ VALIDAZIONE 2: Se cambia polo/settimana, controlla limite di 2 operatori
-    if (existingAssegnazione.poloId.toString() !== poloId || 
-        existingAssegnazione.settimanaId.toString() !== settimanaId) {
-      
-      const existingPoloAssignments = await Assegnazione.find({
-        _id: { $ne: id }, // Escludi l'assegnazione corrente
-        poloId,
-        settimanaId,
-        attiva: true
-      });
+    // ✅ AGGIORNA con tutti i campi inclusi i nuovi
+    const updateData = {
+      userId,
+      poloId,
+      mezzoId,
+      settimanaId,
+      postazioneId,
+      ordine: ordine?.trim() || null,  // ✅ NUOVO CAMPO
+      rdt: rdt?.trim() || null         // ✅ NUOVO CAMPO
+    };
 
-      if (existingPoloAssignments.length >= 2) {
-        const assignments = await Assegnazione.find({
-          _id: { $ne: id },
-          poloId,
-          settimanaId,
-          attiva: true
-        }).populate('userId', 'username').populate('mezzoId', 'nome');
-
-        return res.status(400).json({ 
-          message: 'Polo già al completo per questa settimana (massimo 2 operatori)',
-          conflictType: 'POLO_FULL',
-          currentAssignments: assignments.map(a => ({
-            operatore: a.userId?.username,
-            mezzo: a.mezzoId?.nome
-          }))
-        });
-      }
-    }
-
-    // ✅ VALIDAZIONE 3: Se cambia il mezzo, controlla che non sia già assegnato
-    if (existingAssegnazione.mezzoId.toString() !== mezzoId) {
-      const conflictMezzoAssignment = await Assegnazione.findOne({
-        _id: { $ne: id }, // Escludi l'assegnazione corrente
-        mezzoId,
-        settimanaId,
-        attiva: true
-      });
-
-      if (conflictMezzoAssignment) {
-        const conflict = await Assegnazione.findById(conflictMezzoAssignment._id)
-          .populate('userId', 'username')
-          .populate('poloId', 'nome');
-        
-        return res.status(400).json({ 
-          message: `Mezzo già assegnato nella settimana a ${conflict.userId?.username} per il ${conflict.poloId?.nome}`,
-          conflictType: 'MEZZO_ALREADY_ASSIGNED'
-        });
-      }
-    }
-
-    // Se tutte le validazioni passano, aggiorna l'assegnazione
     const updated = await Assegnazione.findByIdAndUpdate(
       id,
-      req.body,
+      updateData,
       { new: true }
     )
     .populate('userId', 'username email')
-    .populate('poloId', 'nome descrizione')
-    .populate('mezzoId', 'nome descrizione')
+    .populate('poloId', 'nome')
+    .populate('mezzoId', 'nome')
     .populate('settimanaId', 'numero anno dataInizio dataFine')
-    .populate('postazioneId', 'nome descrizione');
-
-    // Calcola informazioni sul polo aggiornato
-    const currentPoloAssignments = await Assegnazione.find({
-      poloId: updated.poloId._id,
-      settimanaId: updated.settimanaId._id,
-      attiva: true
-    });
+    .populate('postazioneId', 'nome');
 
     res.json({
       message: 'Assegnazione modificata con successo',
-      assegnazione: updated,
-      poloInfo: {
-        postiOccupati: currentPoloAssignments.length,
-        postiRimasti: 2 - currentPoloAssignments.length,
-        postiTotali: 2
-      }
+      assegnazione: updated
     });
     
   } catch (error) {
     console.error('Errore modifica assegnazione:', error);
-    
-    if (error.code === 11000) {
-      return res.status(400).json({ 
-        message: 'Conflitto: questa combinazione esiste già',
-        conflictType: 'DUPLICATE_ASSIGNMENT'
-      });
-    }
-    
     res.status(400).json({ 
       message: 'Errore nella modifica dell\'assegnazione: ' + error.message 
     });
   }
 });
+
+// ✅ NUOVO ENDPOINT: Ricerca per Ordine
+app.get('/api/assegnazioni/search/ordine/:ordine', authenticateToken, async (req, res) => {
+  try {
+    const { ordine } = req.params;
+    
+    const assegnazioni = await Assegnazione.find({
+      ordine: { $regex: ordine, $options: 'i' },
+      attiva: true
+    })
+    .populate('userId', 'username email')
+    .populate('poloId', 'nome')
+    .populate('mezzoId', 'nome')
+    .populate('settimanaId', 'numero anno dataInizio dataFine')
+    .populate('postazioneId', 'nome');
+
+    res.json({
+      ordine,
+      assegnazioni,
+      totale: assegnazioni.length
+    });
+  } catch (error) {
+    console.error('Errore ricerca ordine:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ✅ NUOVO ENDPOINT: Ricerca per RDT
+app.get('/api/assegnazioni/search/rdt/:rdt', authenticateToken, async (req, res) => {
+  try {
+    const { rdt } = req.params;
+    
+    const assegnazioni = await Assegnazione.find({
+      rdt: { $regex: rdt, $options: 'i' },
+      attiva: true
+    })
+    .populate('userId', 'username email')
+    .populate('poloId', 'nome')
+    .populate('mezzoId', 'nome')
+    .populate('settimanaId', 'numero anno dataInizio dataFine')
+    .populate('postazioneId', 'nome');
+
+    res.json({
+      rdt,
+      assegnazioni,
+      totale: assegnazioni.length
+    });
+  } catch (error) {
+    console.error('Errore ricerca RDT:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ✅ ENDPOINT per statistiche aggiornato con nuovi campi
+app.get('/api/assegnazioni/stats', authenticateToken, async (req, res) => {
+  try {
+    const { settimanaId } = req.query;
+    
+    const filter = { attiva: true };
+    if (settimanaId) filter.settimanaId = settimanaId;
+    
+    const assegnazioni = await Assegnazione.find(filter);
+    
+    // Raggruppa per polo/settimana per calcolare occupazione
+    const occupazione = {};
+    assegnazioni.forEach(a => {
+      const key = `${a.poloId}-${a.settimanaId}`;
+      occupazione[key] = (occupazione[key] || 0) + 1;
+    });
+    
+    // ✅ NUOVE STATISTICHE per Ordine e RDT
+    const ordiniAssegnati = assegnazioni.filter(a => a.ordine && a.ordine.trim()).length;
+    const rdtAssegnati = assegnazioni.filter(a => a.rdt && a.rdt.trim()).length;
+    
+    const stats = {
+      totaleAssegnazioni: assegnazioni.length,
+      operatoriAttivi: new Set(assegnazioni.map(a => a.userId.toString())).size,
+      poliOccupati: new Set(assegnazioni.map(a => a.poloId.toString())).size,
+      mezziInUso: new Set(assegnazioni.map(a => a.mezzoId.toString())).size,
+      poliCompleti: Object.values(occupazione).filter(count => count >= 2).length,
+      poliParziali: Object.values(occupazione).filter(count => count === 1).length,
+      mediaOperatoriPerPolo: assegnazioni.length > 0 ? 
+        (assegnazioni.length / new Set(assegnazioni.map(a => `${a.poloId}-${a.settimanaId}`)).size).toFixed(1) : 0,
+      // ✅ NUOVE STATISTICHE
+      ordiniAssegnati,
+      rdtAssegnati,
+      percentualeOrdini: assegnazioni.length > 0 ? Math.round((ordiniAssegnati / assegnazioni.length) * 100) : 0,
+      percentualeRdt: assegnazioni.length > 0 ? Math.round((rdtAssegnati / assegnazioni.length) * 100) : 0
+    };
+    
+    res.json(stats);
+  } catch (error) {
+    console.error('Errore statistiche assegnazioni:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 
+// 27 luglio
+// app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
+//   try {
+//     const { 
+//       userId, 
+//       poloId, 
+//       mezzoId, 
+//       settimanaId, 
+//       attiva // può essere: 'true', 'false', o undefined
+//     } = req.query;
+    
+//     const filter = {};
+    
+//     // Filtri standard
+//     if (userId) filter.userId = userId;
+//     if (poloId) filter.poloId = poloId;
+//     if (mezzoId) filter.mezzoId = mezzoId;
+//     if (settimanaId) filter.settimanaId = settimanaId;
+    
+//     // CORREZIONE: Filtro stato solo se specificato esplicitamente
+//     if (attiva === 'true') {
+//       filter.attiva = true;
+//       console.log('🟢 Filtro: Solo ATTIVE');
+//     } else if (attiva === 'false') {
+//       filter.attiva = false;
+//       console.log('🔴 Filtro: Solo INATTIVE');
+//     } else {
+//       // attiva è undefined - mostra TUTTO
+//       console.log('🔵 Filtro: TUTTE (attive + inattive)');
+//     }
+    
+//     console.log('📋 Filter applicato:', filter);
+    
+//     const assegnazioni = await Assegnazione.find(filter)
+//       .populate('userId', 'username email')
+//       .populate('poloId', 'nome')
+//       .populate('mezzoId', 'nome')
+//       .populate('settimanaId', 'numero anno dataInizio dataFine')
+//       .sort({ createdAt: -1 });
+    
+//     console.log(`📊 Risultati trovati: ${assegnazioni.length}`);
+    
+//     res.json(assegnazioni);
+//   } catch (error) {
+//     console.error('❌ Errore query assegnazioni:', error);
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+
+app.get('/api/assegnazioni/my', authenticateToken, async (req, res) => {
+  try {
+    const assegnazioni = await Assegnazione.find({ 
+      userId: req.user.userId, 
+      attiva: true 
+    })
+      .populate('poloId', 'nome')
+      .populate('mezzoId', 'nome')
+      .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .sort({ 'settimanaId.anno': -1, 'settimanaId.numero': -1 });
+    res.json(assegnazioni);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// // POST - Crea nuova assegnazione (con validazioni multi-operatore)
+// app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) => {
+//   try {
+//     const { userId, poloId, settimanaId, mezzoId } = req.body;
+
+//     // 1. Controlli esistenti (operatore unico per settimana, max 2 per polo)
+//     const existingUserAssignment = await Assegnazione.findOne({
+//       userId, settimanaId, attiva: true
+//     });
+//     if (existingUserAssignment) {
+//       return res.status(400).json({ message: 'Operatore già assegnato per questa settimana' });
+//     }
+
+//     const existingPoloAssignments = await Assegnazione.find({
+//       poloId, settimanaId, attiva: true
+//     });
+//     if (existingPoloAssignments.length >= 2) {
+//       return res.status(400).json({ message: 'Polo al completo (max 2 operatori)' });
+//     }
+
+//     // ✅ NUOVO: Informazioni per mezzi condivisi
+//     let sharedVehicleInfo = null;
+//     if (existingPoloAssignments.length === 1) {
+//       const existingMezzo = existingPoloAssignments[0].mezzoId;
+//       if (existingMezzo.toString() === mezzoId) {
+//         sharedVehicleInfo = {
+//           shared: true,
+//           sharedWith: existingPoloAssignments[0].userId.username,
+//           vehicleName: (await Mezzo.findById(mezzoId)).nome
+//         };
+//       }
+//     }
+
+//     // Crea assegnazione
+//     const assegnazione = new Assegnazione(req.body);
+//     await assegnazione.save();
+    
+//     const populated = await Assegnazione.findById(assegnazione._id)
+//       .populate('userId', 'username email')
+//       .populate('poloId', 'nome')
+//       .populate('mezzoId', 'nome')
+//       .populate('settimanaId', 'numero anno dataInizio dataFine');
+    
+//     res.status(201).json({
+//       assegnazione: populated,
+//       sharedVehicleInfo // Include info condivisione nella risposta
+//     });
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// });
+
+// // PUT - Modifica assegnazione esistente (con validazioni)
+// app.put('/api/assegnazioni/:id', authenticateToken, requireAdmin, async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { userId, poloId, settimanaId, mezzoId } = req.body;
+
+//     // Trova l'assegnazione esistente
+//     const existingAssegnazione = await Assegnazione.findById(id);
+//     if (!existingAssegnazione) {
+//       return res.status(404).json({ message: 'Assegnazione non trovata' });
+//     }
+
+//     // Se i dati non sono cambiati, procedi senza validazioni
+//     const isUnchanged = 
+//       existingAssegnazione.userId.toString() === userId &&
+//       existingAssegnazione.poloId.toString() === poloId &&
+//       existingAssegnazione.settimanaId.toString() === settimanaId &&
+//       existingAssegnazione.mezzoId.toString() === mezzoId;
+
+//     if (isUnchanged) {
+//       // Aggiorna solo altri campi (es. postazione, note)
+//       const updated = await Assegnazione.findByIdAndUpdate(
+//         id,
+//         req.body,
+//         { new: true }
+//       )
+//       .populate('userId', 'username email')
+//       .populate('poloId', 'nome descrizione')
+//       .populate('mezzoId', 'nome descrizione')
+//       .populate('settimanaId', 'numero anno dataInizio dataFine')
+//       .populate('postazioneId', 'nome descrizione');
+
+//       return res.json({
+//         message: 'Assegnazione aggiornata con successo',
+//         assegnazione: updated
+//       });
+//     }
+
+//     // ✅ VALIDAZIONE 1: Se cambia l'operatore, controlla che il nuovo operatore non sia già assegnato
+//     if (existingAssegnazione.userId.toString() !== userId) {
+//       const conflictUserAssignment = await Assegnazione.findOne({
+//         _id: { $ne: id }, // Escludi l'assegnazione corrente
+//         userId,
+//         settimanaId,
+//         attiva: true
+//       });
+
+//       if (conflictUserAssignment) {
+//         const conflict = await Assegnazione.findById(conflictUserAssignment._id)
+//           .populate('poloId', 'nome')
+//           .populate('mezzoId', 'nome');
+        
+//         return res.status(400).json({ 
+//           message: `Operatore già assegnato per questa settimana al ${conflict.poloId?.nome} con ${conflict.mezzoId?.nome}`,
+//           conflictType: 'USER_ALREADY_ASSIGNED'
+//         });
+//       }
+//     }
+
+//     // ✅ VALIDAZIONE 2: Se cambia polo/settimana, controlla limite di 2 operatori
+//     if (existingAssegnazione.poloId.toString() !== poloId || 
+//         existingAssegnazione.settimanaId.toString() !== settimanaId) {
+      
+//       const existingPoloAssignments = await Assegnazione.find({
+//         _id: { $ne: id }, // Escludi l'assegnazione corrente
+//         poloId,
+//         settimanaId,
+//         attiva: true
+//       });
+
+//       if (existingPoloAssignments.length >= 2) {
+//         const assignments = await Assegnazione.find({
+//           _id: { $ne: id },
+//           poloId,
+//           settimanaId,
+//           attiva: true
+//         }).populate('userId', 'username').populate('mezzoId', 'nome');
+
+//         return res.status(400).json({ 
+//           message: 'Polo già al completo per questa settimana (massimo 2 operatori)',
+//           conflictType: 'POLO_FULL',
+//           currentAssignments: assignments.map(a => ({
+//             operatore: a.userId?.username,
+//             mezzo: a.mezzoId?.nome
+//           }))
+//         });
+//       }
+//     }
+
+//     // ✅ VALIDAZIONE 3: Se cambia il mezzo, controlla che non sia già assegnato
+//     if (existingAssegnazione.mezzoId.toString() !== mezzoId) {
+//       const conflictMezzoAssignment = await Assegnazione.findOne({
+//         _id: { $ne: id }, // Escludi l'assegnazione corrente
+//         mezzoId,
+//         settimanaId,
+//         attiva: true
+//       });
+
+//       if (conflictMezzoAssignment) {
+//         const conflict = await Assegnazione.findById(conflictMezzoAssignment._id)
+//           .populate('userId', 'username')
+//           .populate('poloId', 'nome');
+        
+//         return res.status(400).json({ 
+//           message: `Mezzo già assegnato nella settimana a ${conflict.userId?.username} per il ${conflict.poloId?.nome}`,
+//           conflictType: 'MEZZO_ALREADY_ASSIGNED'
+//         });
+//       }
+//     }
+
+//     // Se tutte le validazioni passano, aggiorna l'assegnazione
+//     const updated = await Assegnazione.findByIdAndUpdate(
+//       id,
+//       req.body,
+//       { new: true }
+//     )
+//     .populate('userId', 'username email')
+//     .populate('poloId', 'nome descrizione')
+//     .populate('mezzoId', 'nome descrizione')
+//     .populate('settimanaId', 'numero anno dataInizio dataFine')
+//     .populate('postazioneId', 'nome descrizione');
+
+//     // Calcola informazioni sul polo aggiornato
+//     const currentPoloAssignments = await Assegnazione.find({
+//       poloId: updated.poloId._id,
+//       settimanaId: updated.settimanaId._id,
+//       attiva: true
+//     });
+
+//     res.json({
+//       message: 'Assegnazione modificata con successo',
+//       assegnazione: updated,
+//       poloInfo: {
+//         postiOccupati: currentPoloAssignments.length,
+//         postiRimasti: 2 - currentPoloAssignments.length,
+//         postiTotali: 2
+//       }
+//     });
+    
+//   } catch (error) {
+//     console.error('Errore modifica assegnazione:', error);
+    
+//     if (error.code === 11000) {
+//       return res.status(400).json({ 
+//         message: 'Conflitto: questa combinazione esiste già',
+//         conflictType: 'DUPLICATE_ASSIGNMENT'
+//       });
+//     }
+    
+//     res.status(400).json({ 
+//       message: 'Errore nella modifica dell\'assegnazione: ' + error.message 
+//     });
+//   }
+// });
 
 // ✅ BONUS: Endpoint per ottenere informazioni sui posti disponibili
 app.get('/api/assegnazioni/availability/:poloId/:settimanaId', authenticateToken, async (req, res) => {
@@ -3237,6 +4094,1197 @@ app.post('/api/postazioni/copy', authenticateToken, requireAdmin, async (req, re
   } catch (error) {
     console.error('❌ Errore copia postazioni:', error);
     res.status(400).json({ message: error.message });
+  }
+});
+
+// =====================================================
+// ROTTE API PER EXCEL IMPORT/EXPORT POSTAZIONI
+// =====================================================
+
+// GET - Download template Excel per postazioni
+app.get('/api/postazioni/template', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    // Carica i poli per il template
+    const poli = await Polo.find({}, 'nome').sort({ nome: 1 });
+    
+    // Crea dati di esempio per il template
+    const templateData = [
+      {
+        nome: 'Postazione Esempio 1',
+        polo: poli.length > 0 ? poli[0].nome : 'Polo Nord',
+        indirizzo: 'Via Roma 123, Milano',
+        latitudine: 45.464664,
+        longitudine: 9.188540
+      },
+      {
+        nome: 'Postazione Esempio 2', 
+        polo: poli.length > 1 ? poli[1].nome : 'Polo Sud',
+        indirizzo: 'Via Dante 456, Milano',
+        latitudine: 45.466797,
+        longitudine: 9.190544
+      }
+    ];
+
+    // Crea workbook Excel
+    const workbook = xlsx.utils.book_new();
+    const worksheet = xlsx.utils.json_to_sheet(templateData);
+    
+    // Imposta larghezza delle colonne
+    worksheet['!cols'] = [
+      { wch: 20 }, // nome
+      { wch: 15 }, // polo
+      { wch: 30 }, // indirizzo  
+      { wch: 12 }, // latitudine
+      { wch: 12 }  // longitudine
+    ];
+
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Postazioni');
+    
+    // Genera buffer Excel
+    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=template_postazioni.xlsx');
+    res.send(buffer);
+    
+  } catch (error) {
+    console.error('❌ Errore download template:', error);
+    res.status(500).json({ message: 'Errore nel download del template' });
+  }
+});
+
+// POST - Import Excel postazioni
+app.post('/api/postazioni/import', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    if (!req.files || !req.files.file) {
+      return res.status(400).json({ message: 'Nessun file caricato' });
+    }
+
+    const file = req.files.file;
+    
+    // Verifica che sia un file Excel
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      return res.status(400).json({ message: 'Il file deve essere in formato Excel (.xlsx o .xls)' });
+    }
+
+    // Leggi il file Excel
+    const workbook = xlsx.read(file.data, { type: 'buffer' });
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(worksheet);
+
+    if (!data || data.length === 0) {
+      return res.status(400).json({ message: 'Il file Excel è vuoto o non contiene dati validi' });
+    }
+
+    let created = 0;
+    let updated = 0;
+    let errors = 0;
+    const errorMessages = [];
+
+    // Carica tutti i poli per la ricerca
+    const poli = await Polo.find({});
+    const poliMap = {};
+    poli.forEach(polo => {
+      poliMap[polo.nome.toLowerCase()] = polo._id;
+    });
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const rowNum = i + 2; // +2 perché Excel inizia da 1 e abbiamo header
+      
+      try {
+        // Validazione campi obbligatori
+        if (!row.nome || !row.polo) {
+          throw new Error(`Riga ${rowNum}: Nome e polo sono obbligatori`);
+        }
+
+        // Trova il polo
+        const poloId = poliMap[row.polo.toLowerCase()];
+        if (!poloId) {
+          throw new Error(`Riga ${rowNum}: Polo "${row.polo}" non trovato`);
+        }
+
+        // Prepara i dati della postazione
+        const postazioneData = {
+          nome: row.nome.trim(),
+          poloId: poloId,
+          indirizzo: row.indirizzo ? row.indirizzo.trim() : '',
+          coordinate: {
+            lat: row.latitudine ? parseFloat(row.latitudine) : '',
+            lng: row.longitudine ? parseFloat(row.longitudine) : ''
+          }
+        };
+
+        // Verifica se la postazione esiste già (stesso nome e polo)
+        const existingPostazione = await Postazione.findOne({
+          nome: postazioneData.nome,
+          poloId: poloId
+        });
+
+        if (existingPostazione) {
+          // Aggiorna postazione esistente
+          await Postazione.findByIdAndUpdate(existingPostazione._id, postazioneData);
+          updated++;
+        } else {
+          // Crea nuova postazione
+          const newPostazione = new Postazione(postazioneData);
+          await newPostazione.save();
+          created++;
+        }
+
+      } catch (error) {
+        errors++;
+        errorMessages.push(error.message);
+        console.error(`❌ Errore riga ${rowNum}:`, error.message);
+      }
+    }
+
+    console.log(`📊 Import completato: ${created} create, ${updated} aggiornate, ${errors} errori`);
+    
+    res.json({
+      message: 'Import completato',
+      created,
+      updated,
+      errors,
+      errorMessages: errorMessages.slice(0, 10) // Limita a 10 errori per evitare risposte troppo grandi
+    });
+
+  } catch (error) {
+    console.error('❌ Errore import Excel:', error);
+    res.status(500).json({ message: 'Errore nell\'import del file Excel' });
+  }
+});
+
+// =====================================================
+// ROTTE API PER GESTIONE ORDINI
+// =====================================================
+
+// GET - Lista tutti gli ordini con filtri
+app.get('/api/ordini', authenticateToken, async (req, res) => {
+  try {
+    const { 
+      stato, 
+      priorita, 
+      cliente, 
+      dataInizio, 
+      dataFine, 
+      citta, 
+      assegnato,
+      page = 1, 
+      limit = 50 
+    } = req.query;
+    
+    const filter = { attivo: true };
+    
+    // Filtri
+    if (stato) filter.stato = stato;
+    if (priorita) filter.priorita = priorita;
+    if (cliente) filter.cliente = { $regex: cliente, $options: 'i' };
+    if (citta) filter['indirizzo.citta'] = { $regex: citta, $options: 'i' };
+    
+    // Filtro per data consegna
+    if (dataInizio || dataFine) {
+      filter.dataConsegna = {};
+      if (dataInizio) filter.dataConsegna.$gte = new Date(dataInizio);
+      if (dataFine) filter.dataConsegna.$lte = new Date(dataFine);
+    }
+    
+    // Filtro per ordini assegnati/non assegnati
+    if (assegnato === 'true') {
+      filter.stato = { $in: ['ASSEGNATO', 'IN_CORSO', 'COMPLETATO'] };
+    } else if (assegnato === 'false') {
+      filter.stato = 'CREATO';
+    }
+    
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const [ordini, totale] = await Promise.all([
+      Ordine.find(filter)
+        .sort({ dataConsegna: 1, priorita: 1, createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('createdBy', 'username'),
+      Ordine.countDocuments(filter)
+    ]);
+    
+    res.json({
+      ordini,
+      paginazione: {
+        pagina: parseInt(page),
+        limite: parseInt(limit),
+        totale,
+        pagine: Math.ceil(totale / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Errore caricamento ordini:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - Dettaglio singolo ordine
+app.get('/api/ordini/:id', authenticateToken, async (req, res) => {
+  try {
+    const ordine = await Ordine.findById(req.params.id)
+      .populate('createdBy', 'username email');
+    
+    if (!ordine) {
+      return res.status(404).json({ message: 'Ordine non trovato' });
+    }
+    
+    // Trova eventuale assegnazione
+    const assegnazione = await Assegnazione.findOne({
+      'ordini.ordineId': ordine._id,
+      attiva: true
+    })
+    .populate('userId', 'username email')
+    .populate('poloId', 'nome')
+    .populate('mezzoId', 'nome')
+    .populate('settimanaId', 'numero anno dataInizio dataFine');
+    
+    res.json({
+      ordine,
+      assegnazione: assegnazione ? {
+        id: assegnazione._id,
+        operatore: assegnazione.userId,
+        polo: assegnazione.poloId,
+        mezzo: assegnazione.mezzoId,
+        settimana: assegnazione.settimanaId,
+        dettagliOrdine: assegnazione.ordini.find(o => 
+          o.ordineId.toString() === ordine._id.toString()
+        )
+      } : null
+    });
+  } catch (error) {
+    console.error('Errore caricamento ordine:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Crea nuovo ordine
+app.post('/api/ordini', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const {
+      numero,
+      cliente,
+      descrizione,
+      dataConsegna,
+      indirizzo,
+      priorita,
+      note,
+      prodotti,
+      valore,
+      tempoStimato
+    } = req.body;
+    
+    // Validazioni
+    if (!numero || !cliente || !dataConsegna || !indirizzo) {
+      return res.status(400).json({ 
+        message: 'Campi obbligatori: numero, cliente, dataConsegna, indirizzo' 
+      });
+    }
+    
+    // Controlla numero ordine univoco
+    const esistente = await Ordine.findOne({ numero });
+    if (esistente) {
+      return res.status(400).json({ 
+        message: 'Numero ordine già esistente' 
+      });
+    }
+    
+    const ordine = new Ordine({
+      numero,
+      cliente,
+      descrizione,
+      dataConsegna: new Date(dataConsegna),
+      indirizzo,
+      priorita: priorita || 'MEDIA',
+      note,
+      prodotti: prodotti || [],
+      valore: parseFloat(valore) || 0,
+      tempoStimato: parseInt(tempoStimato) || 60,
+      createdBy: req.user.userId
+    });
+    
+    await ordine.save();
+    
+    const ordinePopolato = await Ordine.findById(ordine._id)
+      .populate('createdBy', 'username');
+    
+    res.status(201).json({
+      message: 'Ordine creato con successo',
+      ordine: ordinePopolato
+    });
+  } catch (error) {
+    console.error('Errore creazione ordine:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// PUT - Modifica ordine esistente
+app.put('/api/ordini/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Controlla se l'ordine è già assegnato
+    const assegnazione = await Assegnazione.findOne({
+      'ordini.ordineId': id,
+      'ordini.stato': { $in: ['IN_CORSO', 'COMPLETATO'] },
+      attiva: true
+    });
+    
+    if (assegnazione) {
+      return res.status(400).json({ 
+        message: 'Impossibile modificare ordine già in corso o completato',
+        assegnazione: {
+          operatore: assegnazione.userId,
+          stato: assegnazione.ordini.find(o => o.ordineId.toString() === id).stato
+        }
+      });
+    }
+    
+    const ordine = await Ordine.findByIdAndUpdate(
+      id,
+      req.body,
+      { new: true, runValidators: true }
+    ).populate('createdBy', 'username');
+    
+    if (!ordine) {
+      return res.status(404).json({ message: 'Ordine non trovato' });
+    }
+    
+    res.json({
+      message: 'Ordine aggiornato con successo',
+      ordine
+    });
+  } catch (error) {
+    console.error('Errore aggiornamento ordine:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// DELETE - Soft delete ordine
+app.delete('/api/ordini/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Controlla se l'ordine è assegnato
+    const assegnazione = await Assegnazione.findOne({
+      'ordini.ordineId': id,
+      attiva: true
+    });
+    
+    if (assegnazione) {
+      return res.status(400).json({ 
+        message: 'Impossibile eliminare ordine assegnato. Rimuovere prima dall\'assegnazione.',
+        assegnazione: {
+          id: assegnazione._id,
+          operatore: assegnazione.userId
+        }
+      });
+    }
+    
+    const ordine = await Ordine.findByIdAndUpdate(
+      id,
+      { attivo: false },
+      { new: true }
+    );
+    
+    if (!ordine) {
+      return res.status(404).json({ message: 'Ordine non trovato' });
+    }
+    
+    res.json({ message: 'Ordine eliminato con successo' });
+  } catch (error) {
+    console.error('Errore eliminazione ordine:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// =====================================================
+// ROTTE API PER ASSEGNAZIONI AGGIORNATE
+// =====================================================
+
+// GET - Lista assegnazioni (aggiornata per includere ordini)
+app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
+  try {
+    const { 
+      userId, 
+      poloId, 
+      mezzoId, 
+      settimanaId, 
+      attiva,
+      conOrdini // nuovo filtro
+    } = req.query;
+    
+    const filter = {};
+    
+    if (userId) filter.userId = userId;
+    if (poloId) filter.poloId = poloId;
+    if (mezzoId) filter.mezzoId = mezzoId;
+    if (settimanaId) filter.settimanaId = settimanaId;
+    
+    if (attiva === 'true') {
+      filter.attiva = true;
+    } else if (attiva === 'false') {
+      filter.attiva = false;
+    }
+    
+    // Filtro per assegnazioni con/senza ordini
+    if (conOrdini === 'true') {
+      filter['ordini.0'] = { $exists: true };
+    } else if (conOrdini === 'false') {
+      filter['ordini.0'] = { $exists: false };
+    }
+    
+    const assegnazioni = await Assegnazione.find(filter)
+      .populate('userId', 'username email')
+      .populate('poloId', 'nome')
+      .populate('mezzoId', 'nome')
+      .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('postazioneId', 'nome')
+      .populate('ordini.ordineId', 'numero cliente dataConsegna priorita stato valore')
+      .sort({ createdAt: -1 });
+    
+    res.json(assegnazioni);
+  } catch (error) {
+    console.error('Errore caricamento assegnazioni:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Crea assegnazione (aggiornata)
+app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId, poloId, settimanaId, mezzoId, ordini = [] } = req.body;
+
+    // Validazioni esistenti per operatore e polo
+    const existingUserAssignment = await Assegnazione.findOne({
+      userId, settimanaId, attiva: true
+    });
+    if (existingUserAssignment) {
+      return res.status(400).json({ message: 'Operatore già assegnato per questa settimana' });
+    }
+
+    const existingPoloAssignments = await Assegnazione.find({
+      poloId, settimanaId, attiva: true
+    });
+    if (existingPoloAssignments.length >= 2) {
+      return res.status(400).json({ message: 'Polo al completo (max 2 operatori)' });
+    }
+
+    // ✅ NUOVO: Validazione ordini se forniti
+    if (ordini && ordini.length > 0) {
+      for (const ordineData of ordini) {
+        const { ordineId } = ordineData;
+        
+        // Controlla se l'ordine esiste
+        const ordine = await Ordine.findById(ordineId);
+        if (!ordine) {
+          return res.status(400).json({ 
+            message: `Ordine ${ordineId} non trovato` 
+          });
+        }
+        
+        // Controlla se l'ordine è già assegnato
+        const giaAssegnato = await Assegnazione.findOne({
+          'ordini.ordineId': ordineId,
+          attiva: true
+        });
+        if (giaAssegnato) {
+          return res.status(400).json({ 
+            message: `Ordine ${ordine.numero} già assegnato`,
+            assegnatoA: giaAssegnato.userId
+          });
+        }
+        
+        // Aggiorna stato ordine
+        await Ordine.findByIdAndUpdate(ordineId, { stato: 'ASSEGNATO' });
+      }
+    }
+
+    // Crea assegnazione
+    const assegnazione = new Assegnazione({
+      userId,
+      poloId, 
+      mezzoId,
+      settimanaId,
+      postazioneId: req.body.postazioneId,
+      ordini: ordini.map((o, index) => ({
+        ordineId: o.ordineId,
+        priorita: o.priorita || (index + 1),
+        tempoStimato: o.tempoStimato,
+        note: o.note || ''
+      })),
+      createdBy: req.user.userId
+    });
+    
+    await assegnazione.save();
+    
+    const populated = await Assegnazione.findById(assegnazione._id)
+      .populate('userId', 'username email')
+      .populate('poloId', 'nome')
+      .populate('mezzoId', 'nome')
+      .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('ordini.ordineId', 'numero cliente dataConsegna priorita valore');
+    
+    res.status(201).json({
+      message: 'Assegnazione creata con successo',
+      assegnazione: populated
+    });
+  } catch (error) {
+    console.error('Errore creazione assegnazione:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// =====================================================
+// ROTTE SPECIFICHE PER GESTIONE ORDINI IN ASSEGNAZIONI
+// =====================================================
+
+// POST - Aggiungi ordine a assegnazione esistente
+app.post('/api/assegnazioni/:id/ordini', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ordineId, priorita, tempoStimato, note } = req.body;
+    
+    const assegnazione = await Assegnazione.findById(id);
+    if (!assegnazione) {
+      return res.status(404).json({ message: 'Assegnazione non trovata' });
+    }
+    
+    // Controlla se l'ordine esiste ed è disponibile
+    const ordine = await Ordine.findById(ordineId);
+    if (!ordine) {
+      return res.status(404).json({ message: 'Ordine non trovato' });
+    }
+    
+    if (ordine.stato !== 'CREATO') {
+      return res.status(400).json({ 
+        message: 'Ordine non disponibile per assegnazione',
+        statoAttuale: ordine.stato
+      });
+    }
+    
+    // Controlla se già assegnato altrove
+    const giaAssegnato = await Assegnazione.findOne({
+      'ordini.ordineId': ordineId,
+      attiva: true
+    });
+    if (giaAssegnato) {
+      return res.status(400).json({ 
+        message: 'Ordine già assegnato ad altro operatore' 
+      });
+    }
+    
+    // Aggiungi ordine all'assegnazione
+    await assegnazione.aggiungiOrdine(ordineId, priorita, tempoStimato, note);
+    
+    // Aggiorna stato ordine
+    await Ordine.findByIdAndUpdate(ordineId, { stato: 'ASSEGNATO' });
+    
+    const updated = await Assegnazione.findById(id)
+      .populate('ordini.ordineId', 'numero cliente dataConsegna priorita valore');
+    
+    res.json({
+      message: 'Ordine aggiunto all\'assegnazione',
+      assegnazione: updated
+    });
+  } catch (error) {
+    console.error('Errore aggiunta ordine:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// DELETE - Rimuovi ordine da assegnazione
+app.delete('/api/assegnazioni/:id/ordini/:ordineId', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id, ordineId } = req.params;
+    
+    const assegnazione = await Assegnazione.findById(id);
+    if (!assegnazione) {
+      return res.status(404).json({ message: 'Assegnazione non trovata' });
+    }
+    
+    const ordineNellAssegnazione = assegnazione.ordini.find(
+      o => o.ordineId.toString() === ordineId
+    );
+    
+    if (!ordineNellAssegnazione) {
+      return res.status(404).json({ message: 'Ordine non trovato in questa assegnazione' });
+    }
+    
+    // Non permettere rimozione se in corso o completato
+    if (['IN_CORSO', 'COMPLETATO'].includes(ordineNellAssegnazione.stato)) {
+      return res.status(400).json({ 
+        message: 'Impossibile rimuovere ordine in corso o completato',
+        stato: ordineNellAssegnazione.stato
+      });
+    }
+    
+    // Rimuovi ordine dall'assegnazione
+    await assegnazione.rimuoviOrdine(ordineId);
+    
+    // Ripristina stato ordine
+    await Ordine.findByIdAndUpdate(ordineId, { stato: 'CREATO' });
+    
+    res.json({
+      message: 'Ordine rimosso dall\'assegnazione con successo'
+    });
+  } catch (error) {
+    console.error('Errore rimozione ordine:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// PATCH - Aggiorna stato ordine in assegnazione
+app.patch('/api/assegnazioni/:id/ordini/:ordineId/stato', authenticateToken, async (req, res) => {
+  try {
+    const { id, ordineId } = req.params;
+    const { stato, note } = req.body;
+    
+    if (!['ASSEGNATO', 'IN_CORSO', 'COMPLETATO', 'ANNULLATO'].includes(stato)) {
+      return res.status(400).json({ 
+        message: 'Stato non valido',
+        statiValidi: ['ASSEGNATO', 'IN_CORSO', 'COMPLETATO', 'ANNULLATO']
+      });
+    }
+    
+    const assegnazione = await Assegnazione.findById(id);
+    if (!assegnazione) {
+      return res.status(404).json({ message: 'Assegnazione non trovata' });
+    }
+    
+    // Controlla autorizzazioni: admin o operatore proprietario
+    if (req.user.role !== 'admin' && assegnazione.userId.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'Non autorizzato' });
+    }
+    
+    await assegnazione.aggiornaStatoOrdine(ordineId, stato, note);
+    
+    // Aggiorna anche lo stato nell'ordine principale se necessario
+    const mappingStati = {
+      'ASSEGNATO': 'ASSEGNATO',
+      'IN_CORSO': 'IN_CORSO', 
+      'COMPLETATO': 'COMPLETATO',
+      'ANNULLATO': 'CREATO' // se annullato, torna disponibile
+    };
+    
+    await Ordine.findByIdAndUpdate(ordineId, { 
+      stato: mappingStati[stato] 
+    });
+    
+    const updated = await Assegnazione.findById(id)
+      .populate('ordini.ordineId', 'numero cliente dataConsegna');
+    
+    res.json({
+      message: 'Stato ordine aggiornato',
+      assegnazione: updated
+    });
+  } catch (error) {
+    console.error('Errore aggiornamento stato:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// PATCH - Riordina priorità ordini in assegnazione
+app.patch('/api/assegnazioni/:id/ordini/priorita', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nuovoOrdine } = req.body; // Array di { ordineId, priorita }
+    
+    const assegnazione = await Assegnazione.findById(id);
+    if (!assegnazione) {
+      return res.status(404).json({ message: 'Assegnazione non trovata' });
+    }
+    
+    await assegnazione.riordinaPriorita(nuovoOrdine);
+    
+    const updated = await Assegnazione.findById(id)
+      .populate('ordini.ordineId', 'numero cliente dataConsegna');
+    
+    res.json({
+      message: 'Priorità ordini aggiornata',
+      assegnazione: updated
+    });
+  } catch (error) {
+    console.error('Errore riordino priorità:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// =====================================================
+// ROTTE DI RICERCA E STATISTICHE
+// =====================================================
+
+// GET - Ordini disponibili per assegnazione
+app.get('/api/ordini/disponibili', authenticateToken, async (req, res) => {
+  try {
+    const { 
+      settimanaId, 
+      poloId, 
+      dataInizio, 
+      dataFine,
+      priorita,
+      citta
+    } = req.query;
+    
+    const filter = { 
+      stato: 'CREATO',
+      attivo: true 
+    };
+    
+    // Filtri temporali
+    if (dataInizio || dataFine) {
+      filter.dataConsegna = {};
+      if (dataInizio) filter.dataConsegna.$gte = new Date(dataInizio);
+      if (dataFine) filter.dataConsegna.$lte = new Date(dataFine);
+    }
+    
+    // Se specificata una settimana, filtra per quella settimana
+    if (settimanaId) {
+      const settimana = await Settimana.findById(settimanaId);
+      if (settimana) {
+        filter.dataConsegna = {
+          $gte: new Date(settimana.dataInizio),
+          $lte: new Date(settimana.dataFine)
+        };
+      }
+    }
+    
+    if (priorita) filter.priorita = priorita;
+    if (citta) filter['indirizzo.citta'] = { $regex: citta, $options: 'i' };
+    
+    const ordini = await Ordine.find(filter)
+      .sort({ priorita: 1, dataConsegna: 1 })
+      .limit(100);
+    
+    res.json({
+      ordini,
+      totale: ordini.length,
+      filtri: { settimanaId, poloId, dataInizio, dataFine, priorita, citta }
+    });
+  } catch (error) {
+    console.error('Errore caricamento ordini disponibili:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - Ricerca ordini avanzata
+app.get('/api/ordini/ricerca', authenticateToken, async (req, res) => {
+  try {
+    const { q, tipo = 'tutti' } = req.query; // q = query di ricerca
+    
+    if (!q || q.length < 2) {
+      return res.status(400).json({ 
+        message: 'Query di ricerca troppo breve (minimo 2 caratteri)' 
+      });
+    }
+    
+    const searchRegex = { $regex: q, $options: 'i' };
+    const baseFilter = { attivo: true };
+    
+    // Filtri per tipo
+    if (tipo === 'disponibili') {
+      baseFilter.stato = 'CREATO';
+    } else if (tipo === 'assegnati') {
+      baseFilter.stato = { $in: ['ASSEGNATO', 'IN_CORSO'] };
+    } else if (tipo === 'completati') {
+      baseFilter.stato = 'COMPLETATO';
+    }
+    
+    const ordini = await Ordine.find({
+      ...baseFilter,
+      $or: [
+        { numero: searchRegex },
+        { cliente: searchRegex },
+        { descrizione: searchRegex },
+        { 'indirizzo.via': searchRegex },
+        { 'indirizzo.citta': searchRegex },
+        { 'prodotti.nome': searchRegex }
+      ]
+    })
+    .sort({ dataConsegna: 1, createdAt: -1 })
+    .limit(50)
+    .populate('createdBy', 'username');
+    
+    res.json({
+      ordini,
+      totale: ordini.length,
+      query: q,
+      tipo
+    });
+  } catch (error) {
+    console.error('Errore ricerca ordini:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - Dashboard statistiche ordini e assegnazioni
+app.get('/api/dashboard/ordini-assegnazioni', authenticateToken, async (req, res) => {
+  try {
+    const { settimanaId } = req.query;
+    
+    // Statistiche generali ordini
+    const statsOrdini = await Ordine.aggregate([
+      { $match: { attivo: true } },
+      {
+        $group: {
+          _id: '$stato',
+          count: { $sum: 1 },
+          valoreTotal: { $sum: '$valore' }
+        }
+      }
+    ]);
+    
+    // Statistiche per settimana se specificata
+    let statsSettimanali = null;
+    if (settimanaId) {
+      statsSettimanali = await Assegnazione.statisticheSettimanali(settimanaId);
+    }
+    
+    // Top operatori per numero ordini
+    const topOperatori = await Assegnazione.aggregate([
+      { $match: { attiva: true } },
+      { $unwind: '$ordini' },
+      {
+        $group: {
+          _id: '$userId',
+          totaleOrdini: { $sum: 1 },
+          ordiniCompletati: {
+            $sum: { $cond: [{ $eq: ['$ordini.stato', 'COMPLETATO'] }, 1, 0] }
+          },
+          valoreGestito: { $sum: '$stats.valoreCommercialeAssegnato' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'operatore'
+        }
+      },
+      { $unwind: '$operatore' },
+      {
+        $project: {
+          username: '$operatore.username',
+          totaleOrdini: 1,
+          ordiniCompletati: 1,
+          valoreGestito: 1,
+          percentualeCompletamento: {
+            $multiply: [
+              { $divide: ['$ordiniCompletati', '$totaleOrdini'] },
+              100
+            ]
+          }
+        }
+      },
+      { $sort: { totaleOrdini: -1 } },
+      { $limit: 10 }
+    ]);
+    
+    // Ordini per priorità
+    const prioritaDistribution = await Ordine.aggregate([
+      { $match: { attivo: true, stato: { $ne: 'COMPLETATO' } } },
+      {
+        $group: {
+          _id: '$priorita',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+    
+    // Trend settimanale (ultimi 30 giorni)
+    const trendOrdini = await Ordine.aggregate([
+      {
+        $match: {
+          attivo: true,
+          createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            anno: { $year: '$createdAt' },
+            mese: { $month: '$createdAt' },
+            giorno: { $dayOfMonth: '$createdAt' }
+          },
+          ordiniCreati: { $sum: 1 },
+          valoreGiornaliero: { $sum: '$valore' }
+        }
+      },
+      { $sort: { '_id.anno': 1, '_id.mese': 1, '_id.giorno': 1 } }
+    ]);
+    
+    res.json({
+      statisticheOrdini: {
+        perStato: statsOrdini,
+        prioritaDistribution,
+        trend: trendOrdini
+      },
+      statisticheSettimanali,
+      topOperatori,
+      dataGenerazione: new Date()
+    });
+  } catch (error) {
+    console.error('Errore dashboard:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - Statistiche per operatore specifico
+app.get('/api/operatori/:userId/statistiche-ordini', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { settimanaId, mese, anno } = req.query;
+    
+    // Controlla autorizzazioni
+    if (req.user.role !== 'admin' && req.user.userId !== userId) {
+      return res.status(403).json({ message: 'Non autorizzato' });
+    }
+    
+    const matchFilter = { userId: mongoose.Types.ObjectId(userId), attiva: true };
+    
+    // Filtri temporali per assegnazioni
+    if (settimanaId) {
+      matchFilter.settimanaId = mongoose.Types.ObjectId(settimanaId);
+    }
+    
+    const stats = await Assegnazione.aggregate([
+      { $match: matchFilter },
+      { $unwind: { path: '$ordini', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'ordini',
+          localField: 'ordini.ordineId',
+          foreignField: '_id',
+          as: 'dettagliOrdine'
+        }
+      },
+      { $unwind: { path: '$dettagliOrdine', preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: null,
+          totaleAssegnazioni: { $sum: 1 },
+          totaleOrdini: { 
+            $sum: { $cond: [{ $ne: ['$ordini', null] }, 1, 0] }
+          },
+          ordiniCompletati: {
+            $sum: { $cond: [{ $eq: ['$ordini.stato', 'COMPLETATO'] }, 1, 0] }
+          },
+          valoreGestito: { $sum: '$dettagliOrdine.valore' },
+          tempoTotaleStimato: { $sum: '$ordini.tempoStimato' }
+        }
+      },
+      {
+        $project: {
+          totaleAssegnazioni: 1,
+          totaleOrdini: 1,
+          ordiniCompletati: 1,
+          valoreGestito: 1,
+          tempoTotaleStimato: 1,
+          percentualeCompletamento: {
+            $cond: [
+              { $gt: ['$totaleOrdini', 0] },
+              { $multiply: [{ $divide: ['$ordiniCompletati', '$totaleOrdini'] }, 100] },
+              0
+            ]
+          },
+          mediaValorePerOrdine: {
+            $cond: [
+              { $gt: ['$totaleOrdini', 0] },
+              { $divide: ['$valoreGestito', '$totaleOrdini'] },
+              0
+            ]
+          }
+        }
+      }
+    ]);
+    
+    res.json({
+      operatoreId: userId,
+      statistiche: stats[0] || {
+        totaleAssegnazioni: 0,
+        totaleOrdini: 0,
+        ordiniCompletati: 0,
+        valoreGestito: 0,
+        tempoTotaleStimato: 0,
+        percentualeCompletamento: 0,
+        mediaValorePerOrdine: 0
+      },
+      periodo: { settimanaId, mese, anno }
+    });
+  } catch (error) {
+    console.error('Errore statistiche operatore:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// =====================================================
+// ROTTE BULK OPERATIONS
+// =====================================================
+
+// POST - Assegnazione batch di ordini
+app.post('/api/assegnazioni/batch', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { assegnazioni } = req.body;
+    // assegnazioni = [{ userId, poloId, mezzoId, settimanaId, ordiniIds: [] }]
+    
+    if (!Array.isArray(assegnazioni) || assegnazioni.length === 0) {
+      return res.status(400).json({ 
+        message: 'Array di assegnazioni richiesto' 
+      });
+    }
+    
+    const risultati = [];
+    const errori = [];
+    
+    for (const [index, assegnazioneData] of assegnazioni.entries()) {
+      try {
+        const { userId, poloId, mezzoId, settimanaId, ordiniIds = [] } = assegnazioneData;
+        
+        // Validazioni per questa assegnazione
+        const existingUserAssignment = await Assegnazione.findOne({
+          userId, settimanaId, attiva: true
+        });
+        
+        if (existingUserAssignment) {
+          errori.push({
+            index,
+            errore: `Operatore ${userId} già assegnato per settimana ${settimanaId}`
+          });
+          continue;
+        }
+        
+        // Crea assegnazione
+        const assegnazione = new Assegnazione({
+          userId,
+          poloId,
+          mezzoId,
+          settimanaId,
+          ordini: ordiniIds.map((ordineId, idx) => ({
+            ordineId,
+            priorita: idx + 1
+          })),
+          createdBy: req.user.userId
+        });
+        
+        await assegnazione.save();
+        
+        // Aggiorna stati ordini
+        await Ordine.updateMany(
+          { _id: { $in: ordiniIds } },
+          { stato: 'ASSEGNATO' }
+        );
+        
+        risultati.push({
+          index,
+          assegnazioneId: assegnazione._id,
+          ordiniAssegnati: ordiniIds.length
+        });
+        
+      } catch (error) {
+        errori.push({
+          index,
+          errore: error.message
+        });
+      }
+    }
+    
+    res.json({
+      message: 'Operazione batch completata',
+      successi: risultati.length,
+      errori: errori.length,
+      dettagli: { risultati, errori }
+    });
+    
+  } catch (error) {
+    console.error('Errore assegnazione batch:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// =====================================================
+// UTILITY ENDPOINTS
+// =====================================================
+
+// GET - Controlla conflitti per una potenziale assegnazione
+app.post('/api/assegnazioni/verifica-conflitti', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId, poloId, settimanaId, mezzoId, ordiniIds = [] } = req.body;
+    
+    const conflitti = [];
+    
+    // Verifica operatore
+    const conflittoOperatore = await Assegnazione.findOne({
+      userId, settimanaId, attiva: true
+    });
+    if (conflittoOperatore) {
+      conflitti.push({
+        tipo: 'OPERATORE_GIA_ASSEGNATO',
+        messaggio: 'Operatore già assegnato per questa settimana',
+        dettagli: { assegnazioneId: conflittoOperatore._id }
+      });
+    }
+    
+    // Verifica polo al completo
+    const assegnazioniPolo = await Assegnazione.find({
+      poloId, settimanaId, attiva: true
+    });
+    if (assegnazioniPolo.length >= 2) {
+      conflitti.push({
+        tipo: 'POLO_COMPLETO',
+        messaggio: 'Polo al completo (massimo 2 operatori)',
+        dettagli: { 
+          assegnazioniEsistenti: assegnazioniPolo.length,
+          massimo: 2
+        }
+      });
+    }
+    
+    // Verifica mezzo
+    const conflittoMezzo = await Assegnazione.findOne({
+      mezzoId, settimanaId, attiva: true
+    });
+    if (conflittoMezzo) {
+      conflitti.push({
+        tipo: 'MEZZO_GIA_ASSEGNATO',
+        messaggio: 'Mezzo già assegnato per questa settimana',
+        dettagli: { assegnazioneId: conflittoMezzo._id }
+      });
+    }
+    
+    // Verifica ordini
+    for (const ordineId of ordiniIds) {
+      const ordineAssegnato = await Assegnazione.findOne({
+        'ordini.ordineId': ordineId,
+        attiva: true
+      });
+      if (ordineAssegnato) {
+        const ordine = await Ordine.findById(ordineId);
+        conflitti.push({
+          tipo: 'ORDINE_GIA_ASSEGNATO',
+          messaggio: `Ordine ${ordine?.numero} già assegnato`,
+          dettagli: { 
+            ordineId,
+            numeroOrdine: ordine?.numero,
+            assegnazioneId: ordineAssegnato._id
+          }
+        });
+      }
+    }
+    
+    res.json({
+      hasConflitti: conflitti.length > 0,
+      conflitti,
+      valido: conflitti.length === 0
+    });
+    
+  } catch (error) {
+    console.error('Errore verifica conflitti:', error);
+    res.status(500).json({ message: error.message });
   }
 });
 // Avvia il server

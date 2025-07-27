@@ -1,77 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Save, 
-  X, 
-  Building, 
-  MapPin, 
-  Users, 
-  Calendar,
-  Search,
-  Filter,
-  Copy,
-  ToggleLeft,
-  ToggleRight,
-  Wrench
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Edit, Trash2, Save, X, Building, MapPin, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { apiCall } from '../../services/api';
-import { formatDate } from '../../utils/formatters';
-
 
 const PostazioniManagement = () => {
   const { token, setError } = useAuth();
   
   // Stati per dati
   const [postazioni, setPostazioni] = useState([]);
-  const [allPostazioni, setAllPostazioni] = useState([]); // ← NUOVO: Tutte le postazioni
-  const [poli, setPoli] = useState([]); // ← CAMBIATO: da settimane a poli
+  const [poli, setPoli] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // Stati per import Excel
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   
   // Stati per form nuova postazione
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState({
     nome: '',
-    descrizione: '',
-    poloId: '', // ← CAMBIATO: da settimanaId a poloId
+    poloId: '',
     indirizzo: '',
-    coordinate: { lat: '', lng: '' },
-    capacitaPersone: 1,
-    attrezzature: [],
-    note: '',
-    attiva: true
+    latitudine: '',
+    longitudine: ''
   });
   
   // Stati per editing
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
     nome: '',
-    descrizione: '',
-    poloId: '', // ← CAMBIATO: da settimanaId a poloId
+    poloId: '',
     indirizzo: '',
-    coordinate: { lat: '', lng: '' },
-    capacitaPersone: 1,
-    attrezzature: [],
-    note: '',
-    attiva: true
-  });
-
-  // Stati per filtri
-  const [filters, setFilters] = useState({
-    poloId: '', // ← CAMBIATO: da settimanaId a poloId
-    attiva: '',
-    searchTerm: '',
-    capacitaMin: '',
-    capacitaMax: ''
-  });
-
-  // Stati per copia
-  const [showCopyForm, setShowCopyForm] = useState(false);
-  const [copyForm, setCopyForm] = useState({
-    fromPoloId: '', // ← CAMBIATO: da fromSettimanaId a fromPoloId
-    toPoloId: '' // ← CAMBIATO: da toSettimanaId a toPoloId
+    latitudine: '',
+    longitudine: ''
   });
 
   // Carica dati dal server
@@ -80,58 +41,21 @@ const PostazioniManagement = () => {
       setLoading(true);
       setError('');
       
-      // Carica poli (cambiato da settimane)
+      // Carica poli
       const poliData = await apiCall('/poli', {}, token);
       setPoli(poliData || []);
       
-      // Carica TUTTE le postazioni (senza filtro searchTerm)
-      const queryParams = new URLSearchParams();
-      if (filters.poloId) queryParams.append('poloId', filters.poloId); // ← CAMBIATO
-      if (filters.attiva !== '') queryParams.append('attiva', filters.attiva);
-      if (filters.capacitaMin) queryParams.append('capacitaMin', filters.capacitaMin);
-      if (filters.capacitaMax) queryParams.append('capacitaMax', filters.capacitaMax);
-      
-      const postazioniData = await apiCall(`/postazioni?${queryParams}`, {}, token);
-      setAllPostazioni(postazioniData || []); // ← SALVA TUTTE LE POSTAZIONI
+      // Carica postazioni
+      const postazioniData = await apiCall('/postazioni', {}, token);
+      setPostazioni(postazioniData || []);
     } catch (err) {
       setError('Errore nel caricamento dati: ' + err.message);
-      setAllPostazioni([]);
-      setPoli([]); // ← CAMBIATO
+      setPostazioni([]);
+      setPoli([]);
     } finally {
       setLoading(false);
     }
   };
-
-  // Applica filtri lato client
-  const applyClientFilters = () => {
-    let filtered = [...allPostazioni];
-
-    // Filtro ricerca libera (LATO CLIENT)
-    if (filters.searchTerm) {
-      const term = filters.searchTerm.toLowerCase();
-      filtered = filtered.filter(postazione => 
-        postazione.nome.toLowerCase().includes(term) ||
-        postazione.descrizione?.toLowerCase().includes(term) ||
-        postazione.indirizzo?.toLowerCase().includes(term) ||
-        postazione.note?.toLowerCase().includes(term) ||
-        postazione.attrezzature?.some(att => att.toLowerCase().includes(term)) ||
-        // ← CAMBIATO: ricerca nel polo invece della settimana
-        (postazione.poloId?.nome && postazione.poloId.nome.toLowerCase().includes(term))
-      );
-    }
-
-    setPostazioni(filtered);
-  };
-
-  // Carica dati quando cambiano i filtri SERVER
-  useEffect(() => {
-    loadData();
-  }, [filters.poloId, filters.attiva, filters.capacitaMin, filters.capacitaMax]); // ← CAMBIATO
-
-  // Applica filtri CLIENT quando cambiano searchTerm o allPostazioni
-  useEffect(() => {
-    applyClientFilters();
-  }, [filters.searchTerm, allPostazioni]);
 
   // Caricamento iniziale
   useEffect(() => {
@@ -142,54 +66,57 @@ const PostazioniManagement = () => {
   const resetAddForm = () => {
     setAddForm({
       nome: '',
-      descrizione: '',
-      poloId: '', // ← CAMBIATO
+      poloId: '',
       indirizzo: '',
-      coordinate: { lat: '', lng: '' },
-      capacitaPersone: 1,
-      attrezzature: [],
-      note: '',
-      attiva: true
+      latitudine: '',
+      longitudine: ''
     });
     setShowAddForm(false);
   };
 
   // Crea nuova postazione
   const handleCreatePostazione = async () => {
-   if (!addForm.nome || !addForm.poloId) { // ← CAMBIATO
+    if (!addForm.nome || !addForm.poloId) {
       setError('Nome e polo sono obbligatori');
       return;
     }
 
-     try {
+    try {
       setError('');
       
+      // Prepara i dati con coordinate nel formato corretto
+      const postData = {
+        nome: addForm.nome,
+        poloId: addForm.poloId,
+        indirizzo: addForm.indirizzo,
+        coordinate: {
+          lat: parseFloat(addForm.latitudine) || '',
+          lng: parseFloat(addForm.longitudine) || ''
+        }
+      };
+
       await apiCall('/postazioni', {
         method: 'POST',
-        body: JSON.stringify(addForm)
+        body: JSON.stringify(postData)
       }, token);
 
       await loadData();
       resetAddForm();
-       setError('Postazione creata con successo');
-     } catch (err) {
+      setError('Postazione creata con successo');
+    } catch (err) {
       setError('Errore nella creazione: ' + err.message);
-     }
-   };
+    }
+  };
 
   // Avvia editing
   const startEdit = (postazione) => {
     setEditingId(postazione._id);
     setEditForm({
       nome: postazione.nome,
-      descrizione: postazione.descrizione || '',
-      poloId: postazione.poloId?._id || '', // ← CAMBIATO
+      poloId: postazione.poloId?._id || '',
       indirizzo: postazione.indirizzo || '',
-      coordinate: postazione.coordinate || { lat: '', lng: '' },
-      capacitaPersone: postazione.capacitaPersone || 1,
-      attrezzature: postazione.attrezzature || [],
-      note: postazione.note || '',
-      attiva: postazione.attiva
+      latitudine: postazione.coordinate?.lat || '',
+      longitudine: postazione.coordinate?.lng || ''
     });
   };
 
@@ -198,14 +125,10 @@ const PostazioniManagement = () => {
     setEditingId(null);
     setEditForm({
       nome: '',
-      descrizione: '',
-      poloId: '', // ← CAMBIATO
+      poloId: '',
       indirizzo: '',
-      coordinate: { lat: '', lng: '' },
-      capacitaPersone: 1,
-      attrezzature: [],
-      note: '',
-      attiva: true
+      latitudine: '',
+      longitudine: ''
     });
   };
 
@@ -214,12 +137,23 @@ const PostazioniManagement = () => {
     try {
       setError('');
       
+      // Prepara i dati con coordinate nel formato corretto
+      const updateData = {
+        nome: editForm.nome,
+        poloId: editForm.poloId,
+        indirizzo: editForm.indirizzo,
+        coordinate: {
+          lat: parseFloat(editForm.latitudine) || '',
+          lng: parseFloat(editForm.longitudine) || ''
+        }
+      };
+
       await apiCall(`/postazioni/${postazioneId}`, {
         method: 'PUT',
-        body: JSON.stringify(editForm)
+        body: JSON.stringify(updateData)
       }, token);
 
-      await loadData(); // ← RICARICA DAL SERVER
+      await loadData();
       cancelEdit();
       setError('Postazione aggiornata con successo');
     } catch (err) {
@@ -240,135 +174,96 @@ const PostazioniManagement = () => {
         method: 'DELETE'
       }, token);
 
-      await loadData(); // ← RICARICA DAL SERVER
+      await loadData();
       setError('Postazione eliminata con successo');
     } catch (err) {
       setError('Errore nell\'eliminazione: ' + err.message);
     }
   };
 
-  // Toggle stato attiva
-  const toggleAttiva = async (postazioneId, currentState) => {
+  // Download template Excel
+  const downloadTemplate = async () => {
     try {
       setError('');
       
-      await apiCall(`/postazioni/${postazioneId}/toggle`, {
-        method: 'PATCH',
-        body: JSON.stringify({ attiva: !currentState })
-      }, token);
+      const response = await fetch('/api/postazioni/template', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
-      await loadData(); // ← RICARICA DAL SERVER
-      setError(`Postazione ${!currentState ? 'attivata' : 'disattivata'} con successo`);
+      if (!response.ok) {
+        throw new Error('Errore nel download del template');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = 'template_postazioni.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setError('Template scaricato con successo');
     } catch (err) {
-      setError('Errore nel cambio stato: ' + err.message);
+      setError('Errore nel download: ' + err.message);
     }
   };
 
-  // Copia postazioni tra poli (cambiato da settimane)
-  const handleCopyPostazioni = async () => {
-    if (!copyForm.fromPoloId || !copyForm.toPoloId) { // ← CAMBIATO
-      setError('Seleziona entrambi i poli');
+  // Upload Excel file
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Verifica che sia un file Excel
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      setError('Per favore seleziona un file Excel (.xlsx o .xls)');
       return;
     }
 
     try {
+      setUploading(true);
       setError('');
-      
-      const result = await apiCall('/postazioni/copy', {
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/postazioni/import', {
         method: 'POST',
-        body: JSON.stringify(copyForm)
-      }, token);
-
-      await loadData(); // ← RICARICA DAL SERVER
-      setShowCopyForm(false);
-      setCopyForm({ fromPoloId: '', toPoloId: '' }); // ← CAMBIATO
-      setError(`Copia completata: ${result.copiate} postazioni copiate, ${result.saltate} già esistenti`);
-    } catch (err) {
-      setError('Errore nella copia: ' + err.message);
-    }
-  };
-
-  // Aggiorna filtri
-  const updateFilters = (newFilters) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
-  };
-
-  // Reset filtri
-  const resetFilters = () => {
-    setFilters({
-      poloId: '', // ← CAMBIATO
-      attiva: '',
-      searchTerm: '',
-      capacitaMin: '',
-      capacitaMax: ''
-    });
-  };
-
-  // Gestione attrezzature
-  const addAttrezzatura = (isEdit = false) => {
-    const form = isEdit ? editForm : addForm;
-    const setForm = isEdit ? setEditForm : setAddForm;
-    
-    const nuovaAttrezzatura = prompt('Inserisci il nome dell\'attrezzatura:');
-    if (nuovaAttrezzatura) {
-      setForm({
-        ...form,
-        attrezzature: [...form.attrezzature, nuovaAttrezzatura.trim()]
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Errore nell\'upload del file');
+      }
+
+      await loadData(); // Ricarica i dati
+      setError(`Import completato: ${result.created} postazioni create, ${result.updated} aggiornate, ${result.errors} errori`);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err) {
+      setError('Errore nell\'import: ' + err.message);
+    } finally {
+      setUploading(false);
     }
   };
-
-  const removeAttrezzatura = (index, isEdit = false) => {
-    const form = isEdit ? editForm : addForm;
-    const setForm = isEdit ? setEditForm : setAddForm;
-    
-    setForm({
-      ...form,
-      attrezzature: form.attrezzature.filter((_, i) => i !== index)
-    });
-  };
-
-// Funzione per aprire Google Maps
-const openInGoogleMaps = (postazione) => {
-  let url = 'https://www.google.com/maps/search/';
-  
-  // Se ha coordinate GPS, usa quelle (più preciso)
-  if (postazione.coordinate?.lat && postazione.coordinate?.lng) {
-    url += `${postazione.coordinate.lat},${postazione.coordinate.lng}`;
-  } 
-  // Altrimenti usa l'indirizzo testuale
-  else if (postazione.indirizzo) {
-    url += encodeURIComponent(postazione.indirizzo);
-  }
-  // Fallback: cerca per nome postazione
-  else {
-    url += encodeURIComponent(postazione.nome + ' Milano'); // Aggiungi città di default
-  }
-  
-  // Apri in nuova tab
-  window.open(url, '_blank', 'noopener,noreferrer');
-};
-
-const openNavigation = (postazione) => {
-  let destination = '';
-  
-  if (postazione.coordinate?.lat && postazione.coordinate?.lng) {
-    destination = `${postazione.coordinate.lat},${postazione.coordinate.lng}`;
-  } else if (postazione.indirizzo) {
-    destination = encodeURIComponent(postazione.indirizzo);
-  } else {
-    destination = encodeURIComponent(postazione.nome + ' Milano');
-  }
-  
-  // URL per navigazione da posizione corrente
-  const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
-  window.open(url, '_blank', 'noopener,noreferrer');
-};
 
   return (
     <>
       <div className="space-y-6">
-        {/* Header - UGUALE */}
+        {/* Header */}
         <div className="glass-postazioni-card p-8 rounded-3xl">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
@@ -378,18 +273,45 @@ const openNavigation = (postazione) => {
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-2">Gestione Postazioni</h2>
                 <p className="text-white/70">
-                  Crea e gestisci postazioni di lavoro per ogni polo {/* ← CAMBIATO testo */}
+                  Crea e gestisci postazioni di lavoro per ogni polo
                 </p>
               </div>
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => setShowCopyForm(true)}
+                onClick={downloadTemplate}
                 className="glass-button-secondary flex items-center gap-2 px-4 py-3 rounded-2xl hover:scale-105 transition-all duration-300"
+                title="Scarica template Excel"
               >
-                <Copy className="w-5 h-5" />
-                <span className="font-medium">Copia</span>
+                <Download className="w-4 h-4" />
+                <span className="font-medium">Template</span>
               </button>
+              
+              <div className="relative">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={uploading}
+                />
+                <button
+                  className="glass-button-secondary flex items-center gap-2 px-4 py-3 rounded-2xl hover:scale-105 transition-all duration-300"
+                  disabled={uploading}
+                  title="Carica file Excel"
+                >
+                  {uploading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  <span className="font-medium">
+                    {uploading ? 'Caricando...' : 'Import'}
+                  </span>
+                </button>
+              </div>
+
               <button
                 onClick={() => setShowAddForm(true)}
                 className="glass-button-primary flex items-center gap-3 px-6 py-3 rounded-2xl hover:scale-105 transition-all duration-300"
@@ -401,72 +323,7 @@ const openNavigation = (postazione) => {
           </div>
         </div>
 
-        {/* Form Copia Postazioni - AGGIORNATO PER POLI */}
-        {showCopyForm && (
-          <div className="glass-postazioni-card p-6 rounded-3xl border-l-4 border-blue-400">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <Copy className="w-5 h-5 mr-2" />
-              Copia Postazioni tra Poli {/* ← CAMBIATO testo */}
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">Da Polo</label> {/* ← CAMBIATO */}
-                <div className="glass-input-container">
-                  <select
-                    className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                    value={copyForm.fromPoloId} // ← CAMBIATO
-                    onChange={(e) => setCopyForm({ ...copyForm, fromPoloId: e.target.value })} // ← CAMBIATO
-                  >
-                    <option value="" className="bg-gray-800">Seleziona polo origine</option> {/* ← CAMBIATO */}
-                    {poli.map(polo => ( // ← CAMBIATO: da settimane a poli
-                      <option key={polo._id} value={polo._id} className="bg-gray-800">
-                        {polo.nome} {/* ← CAMBIATO: mostra nome polo */}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">A Polo</label> {/* ← CAMBIATO */}
-                <div className="glass-input-container">
-                  <select
-                    className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                    value={copyForm.toPoloId} // ← CAMBIATO
-                    onChange={(e) => setCopyForm({ ...copyForm, toPoloId: e.target.value })} // ← CAMBIATO
-                  >
-                    <option value="" className="bg-gray-800">Seleziona polo destinazione</option> {/* ← CAMBIATO */}
-                    {poli.map(polo => ( // ← CAMBIATO: da settimane a poli
-                      <option key={polo._id} value={polo._id} className="bg-gray-800">
-                        {polo.nome} {/* ← CAMBIATO: mostra nome polo */}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={handleCopyPostazioni}
-                className="glass-button-primary flex items-center gap-2 px-4 py-2 rounded-xl hover:scale-105 transition-all duration-300"
-              >
-                <Copy className="w-4 h-4" />
-                Copia Postazioni
-              </button>
-              <button
-                onClick={() => setShowCopyForm(false)}
-                className="glass-button-secondary flex items-center gap-2 px-4 py-2 rounded-xl hover:scale-105 transition-all duration-300"
-              >
-                <X className="w-4 h-4" />
-                Annulla
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Form Nuova Postazione - AGGIORNATO PER POLI */}
+        {/* Form Nuova Postazione */}
         {showAddForm && (
           <div className="glass-postazioni-card p-8 rounded-3xl border-l-4 border-green-400">
             <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
@@ -489,47 +346,20 @@ const openNavigation = (postazione) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">Polo *</label> {/* ← CAMBIATO */}
+                <label className="block text-sm font-medium text-white/80 mb-2">Polo *</label>
                 <div className="glass-input-container">
                   <select
                     className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white"
-                    value={addForm.poloId} // ← CAMBIATO
-                    onChange={(e) => setAddForm({ ...addForm, poloId: e.target.value })} // ← CAMBIATO
+                    value={addForm.poloId}
+                    onChange={(e) => setAddForm({ ...addForm, poloId: e.target.value })}
                   >
-                    <option value="" className="bg-gray-800">Seleziona polo</option> {/* ← CAMBIATO */}
-                    {poli.map(polo => ( // ← CAMBIATO: da settimane a poli
+                    <option value="" className="bg-gray-800">Seleziona polo</option>
+                    {poli.map(polo => (
                       <option key={polo._id} value={polo._id} className="bg-gray-800">
-                        {polo.nome} {/* ← CAMBIATO: mostra nome polo */}
+                        {polo.nome}
                       </option>
                     ))}
                   </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">Descrizione</label>
-                <div className="glass-input-container">
-                  <input
-                    type="text"
-                    className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    value={addForm.descrizione}
-                    onChange={(e) => setAddForm({ ...addForm, descrizione: e.target.value })}
-                    placeholder="Descrizione della postazione"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">Capacità Persone</label>
-                <div className="glass-input-container">
-                  <input
-                    type="number"
-                    min="1"
-                    className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    value={addForm.capacitaPersone}
-                    onChange={(e) => setAddForm({ ...addForm, capacitaPersone: parseInt(e.target.value) || 1 })}
-                    placeholder="1"
-                  />
                 </div>
               </div>
 
@@ -553,11 +383,8 @@ const openNavigation = (postazione) => {
                     type="number"
                     step="any"
                     className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    value={addForm.coordinate.lat}
-                    onChange={(e) => setAddForm({ 
-                      ...addForm, 
-                      coordinate: { ...addForm.coordinate, lat: parseFloat(e.target.value) || '' }
-                    })}
+                    value={addForm.latitudine}
+                    onChange={(e) => setAddForm({ ...addForm, latitudine: e.target.value })}
                     placeholder="45.464664"
                   />
                 </div>
@@ -570,50 +397,9 @@ const openNavigation = (postazione) => {
                     type="number"
                     step="any"
                     className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    value={addForm.coordinate.lng}
-                    onChange={(e) => setAddForm({ 
-                      ...addForm, 
-                      coordinate: { ...addForm.coordinate, lng: parseFloat(e.target.value) || '' }
-                    })}
+                    value={addForm.longitudine}
+                    onChange={(e) => setAddForm({ ...addForm, longitudine: e.target.value })}
                     placeholder="9.188540"
-                  />
-                </div>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-white/80 mb-2">Attrezzature</label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {addForm.attrezzature.map((att, index) => (
-                    <span key={index} className="glass-badge px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                      {att}
-                      <button
-                        onClick={() => removeAttrezzatura(index, false)}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => addAttrezzatura(false)}
-                  className="glass-button-secondary px-4 py-2 rounded-xl text-sm"
-                >
-                  <Plus className="w-4 h-4 inline mr-1" />
-                  Aggiungi Attrezzatura
-                </button>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-white/80 mb-2">Note</label>
-                <div className="glass-input-container">
-                  <textarea
-                    className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50 resize-none"
-                    rows="3"
-                    value={addForm.note}
-                    onChange={(e) => setAddForm({ ...addForm, note: e.target.value })}
-                    placeholder="Note aggiuntive sulla postazione"
                   />
                 </div>
               </div>
@@ -638,121 +424,36 @@ const openNavigation = (postazione) => {
           </div>
         )}
 
-        {/* Filtri - AGGIORNATI PER POLI */}
-        <div className="glass-postazioni-card p-6 rounded-2xl">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-white flex items-center">
-              <Filter className="w-5 h-5 mr-2" />
-              Filtri
-            </h3>
-            {/* Mostra conteggio risultati */}
-            <div className="text-white/70 text-sm">
-              {postazioni.length} di {allPostazioni.length} postazioni
+        {/* Info Excel Import */}
+        <div className="glass-postazioni-card p-6 rounded-2xl border-l-4 border-blue-400">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <FileSpreadsheet className="w-5 h-5 mr-2" />
+            Import Excel - Informazioni
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-white/70">
+            <div>
+              <h4 className="font-medium text-white mb-2">Formato richiesto:</h4>
+              <ul className="space-y-1">
+                <li>• <strong>nome</strong>: Nome della postazione (obbligatorio)</li>
+                <li>• <strong>polo</strong>: Nome del polo (obbligatorio)</li>
+                <li>• <strong>indirizzo</strong>: Indirizzo completo</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium text-white mb-2">Coordinate GPS:</h4>
+              <ul className="space-y-1">
+                <li>• <strong>latitudine</strong>: Coordinata latitudine (es. 45.464664)</li>
+                <li>• <strong>longitudine</strong>: Coordinata longitudine (es. 9.188540)</li>
+              </ul>
             </div>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Polo</label> {/* ← CAMBIATO */}
-              <div className="glass-input-container">
-                <select
-                  className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                  value={filters.poloId} // ← CAMBIATO
-                  onChange={(e) => updateFilters({ poloId: e.target.value })} // ← CAMBIATO
-                >
-                  <option value="" className="bg-gray-800">Tutti i poli</option> {/* ← CAMBIATO */}
-                  {poli.map(polo => ( // ← CAMBIATO: da settimane a poli
-                    <option key={polo._id} value={polo._id} className="bg-gray-800">
-                      {polo.nome} {/* ← CAMBIATO: mostra nome polo */}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Stato</label>
-              <div className="glass-input-container">
-                <select
-                  className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                  value={filters.attiva}
-                  onChange={(e) => updateFilters({ attiva: e.target.value })}
-                >
-                  <option value="" className="bg-gray-800">Tutti gli stati</option>
-                  <option value="true" className="bg-gray-800">Solo Attive</option>
-                  <option value="false" className="bg-gray-800">Solo Inattive</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Capacità Min</label>
-              <div className="glass-input-container">
-                <input
-                  type="number"
-                  min="1"
-                  className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                  value={filters.capacitaMin}
-                  onChange={(e) => updateFilters({ capacitaMin: e.target.value })}
-                  placeholder="1"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Capacità Max</label>
-              <div className="glass-input-container">
-                <input
-                  type="number"
-                  min="1"
-                  className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                  value={filters.capacitaMax}
-                  onChange={(e) => updateFilters({ capacitaMax: e.target.value })}
-                  placeholder="10"
-                />
-              </div>
-            </div>
-
-            {/* ← RICERCA MIGLIORATA */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">🔍 Ricerca Avanzata</label>
-              <div className="glass-input-container">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Nome, indirizzo, attrezzature..."
-                    className="glass-input w-full pl-10 pr-4 py-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    value={filters.searchTerm}
-                    onChange={(e) => updateFilters({ searchTerm: e.target.value })}
-                  />
-                  {/* Mostra X per pulire */}
-                  {filters.searchTerm && (
-                    <button
-                      onClick={() => updateFilters({ searchTerm: '' })}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottone Reset */}
-          <div className="flex justify-end">
-            <button
-              onClick={resetFilters}
-              className="glass-button-secondary px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
-            >
-              Reset Filtri
-            </button>
-          </div>
+          <p className="text-xs text-white/50 mt-4">
+            💡 Scarica il template per avere il formato corretto. Il sistema aggiornerà le postazioni esistenti e creerà quelle nuove.
+          </p>
         </div>
 
-        {/* Statistiche - UGUALE */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Statistiche */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="glass-stat-card p-6 rounded-2xl">
             <div className="flex items-center">
               <div className="glass-stat-icon p-3 rounded-xl bg-gradient-to-r from-blue-400 to-blue-600 mr-4">
@@ -760,33 +461,7 @@ const openNavigation = (postazione) => {
               </div>
               <div>
                 <div className="text-2xl font-bold text-white">{postazioni.length}</div>
-                <div className="text-sm text-white/70">Mostrate</div>
-              </div>
-            </div>
-          </div>
-          <div className="glass-stat-card p-6 rounded-2xl">
-            <div className="flex items-center">
-              <div className="glass-stat-icon p-3 rounded-xl bg-gradient-to-r from-green-400 to-green-600 mr-4">
-                <ToggleRight className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-400">
-                  {postazioni.filter(p => p.attiva).length}
-                </div>
-                <div className="text-sm text-white/70">Attive</div>
-              </div>
-            </div>
-          </div>
-          <div className="glass-stat-card p-6 rounded-2xl">
-            <div className="flex items-center">
-              <div className="glass-stat-icon p-3 rounded-xl bg-gradient-to-r from-purple-400 to-purple-600 mr-4">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-purple-400">
-                  {postazioni.reduce((sum, p) => sum + (p.capacitaPersone || 0), 0)}
-                </div>
-                <div className="text-sm text-white/70">Capacità Tot.</div>
+                <div className="text-sm text-white/70">Postazioni Totali</div>
               </div>
             </div>
           </div>
@@ -799,13 +474,13 @@ const openNavigation = (postazione) => {
                 <div className="text-2xl font-bold text-orange-400">
                   {postazioni.filter(p => p.coordinate?.lat && p.coordinate?.lng).length}
                 </div>
-                <div className="text-sm text-white/70">Con GPS</div>
+                <div className="text-sm text-white/70">Con Coordinate GPS</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tabella Postazioni - AGGIORNATA PER POLI */}
+        {/* Tabella Postazioni */}
         <div className="glass-postazioni-card rounded-3xl overflow-hidden">
           <div className="glass-table-header px-6 py-4">
             <h3 className="text-lg font-semibold text-white">Lista Postazioni</h3>
@@ -824,19 +499,16 @@ const openNavigation = (postazione) => {
                       Nome
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Polo {/* ← CAMBIATO: da Settimana a Polo */}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Capacità
+                      Polo
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Indirizzo
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Attrezzature
+                      Latitudine
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Stato
+                      Longitudine
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Azioni
@@ -844,7 +516,6 @@ const openNavigation = (postazione) => {
                   </tr>
                 </thead>
                 <tbody className="glass-table-body">
-                  {/* Usa postazioni (filtrate) invece di allPostazioni */}
                   {postazioni.map(postazione => {
                     const isEditing = editingId === postazione._id;
                     
@@ -861,10 +532,7 @@ const openNavigation = (postazione) => {
                               />
                             </div>
                           ) : (
-                            <div>
-                              <div className="text-sm font-medium text-white">{postazione.nome}</div>
-                              <div className="text-sm text-white/60">{postazione.descrizione}</div>
-                            </div>
+                            <div className="text-sm font-medium text-white">{postazione.nome}</div>
                           )}
                         </td>
                         
@@ -873,39 +541,20 @@ const openNavigation = (postazione) => {
                             <div className="glass-input-container">
                               <select
                                 className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
-                                value={editForm.poloId} // ← CAMBIATO
-                                onChange={(e) => setEditForm({ ...editForm, poloId: e.target.value })} // ← CAMBIATO
+                                value={editForm.poloId}
+                                onChange={(e) => setEditForm({ ...editForm, poloId: e.target.value })}
                               >
                                 <option value="" className="bg-gray-800">Seleziona</option>
-                                {poli.map(polo => ( // ← CAMBIATO: da settimane a poli
+                                {poli.map(polo => (
                                   <option key={polo._id} value={polo._id} className="bg-gray-800">
-                                    {polo.nome} {/* ← CAMBIATO: mostra nome polo */}
+                                    {polo.nome}
                                   </option>
                                 ))}
                               </select>
                             </div>
                           ) : (
                             <div className="text-sm text-white">
-                              {postazione.poloId?.nome || 'N/A'} {/* ← CAMBIATO: mostra nome polo */}
-                            </div>
-                          )}
-                        </td>
-                        
-                        <td className="px-6 py-4">
-                          {isEditing ? (
-                            <div className="glass-input-container">
-                              <input
-                                type="number"
-                                min="1"
-                                className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
-                                value={editForm.capacitaPersone}
-                                onChange={(e) => setEditForm({ ...editForm, capacitaPersone: parseInt(e.target.value) || 1 })}
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex items-center text-sm text-white">
-                              <Users className="w-4 h-4 mr-1" />
-                              {postazione.capacitaPersone || 1}
+                              {postazione.poloId?.nome || 'N/A'}
                             </div>
                           )}
                         </td>
@@ -922,44 +571,45 @@ const openNavigation = (postazione) => {
                             </div>
                           ) : (
                             <div className="text-sm text-white">
-                              {postazione.indirizzo ? (
-                                <div className="flex items-center">
-                                  <MapPin className="w-4 h-4 mr-1" />
-                                  {postazione.indirizzo}
-                                </div>
-                              ) : (
-                                <span className="text-white/50">Non specificato</span>
-                              )}
+                              {postazione.indirizzo || 'Non specificato'}
                             </div>
                           )}
                         </td>
-                        
+
                         <td className="px-6 py-4">
-                          <div className="flex flex-wrap gap-1">
-                            {(postazione.attrezzature || []).slice(0, 2).map((att, index) => (
-                              <span key={index} className="glass-mini-badge px-2 py-1 rounded text-xs">
-                                {att}
-                              </span>
-                            ))}
-                            {(postazione.attrezzature || []).length > 2 && (
-                              <span className="text-xs text-white/50">
-                                +{postazione.attrezzature.length - 2}
-                              </span>
-                            )}
-                            {(!postazione.attrezzature || postazione.attrezzature.length === 0) && (
-                              <span className="text-xs text-white/50">Nessuna</span>
-                            )}
-                          </div>
+                          {isEditing ? (
+                            <div className="glass-input-container">
+                              <input
+                                type="number"
+                                step="any"
+                                className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+                                value={editForm.latitudine}
+                                onChange={(e) => setEditForm({ ...editForm, latitudine: e.target.value })}
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-sm text-white">
+                              {postazione.coordinate?.lat || 'N/A'}
+                            </div>
+                          )}
                         </td>
-                        
+
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            postazione.attiva 
-                              ? 'bg-green-500/20 text-green-300 border border-green-400/30'
-                              : 'bg-red-500/20 text-red-300 border border-red-400/30'
-                          } glass-badge`}>
-                            {postazione.attiva ? 'Attiva' : 'Inattiva'}
-                          </span>
+                          {isEditing ? (
+                            <div className="glass-input-container">
+                              <input
+                                type="number"
+                                step="any"
+                                className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+                                value={editForm.longitudine}
+                                onChange={(e) => setEditForm({ ...editForm, longitudine: e.target.value })}
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-sm text-white">
+                              {postazione.coordinate?.lng || 'N/A'}
+                            </div>
+                          )}
                         </td>
                         
                         <td className="px-6 py-4">
@@ -990,17 +640,6 @@ const openNavigation = (postazione) => {
                                 <Edit className="w-4 h-4 text-blue-400" />
                               </button>
                               <button
-                                onClick={() => toggleAttiva(postazione._id, postazione.attiva)}
-                                className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"
-                                title={postazione.attiva ? 'Disattiva' : 'Attiva'}
-                              >
-                                {postazione.attiva ? (
-                                  <ToggleLeft className="w-4 h-4 text-yellow-400" />
-                                ) : (
-                                  <ToggleRight className="w-4 h-4 text-green-400" />
-                                )}
-                              </button>
-                              <button
                                 onClick={() => deletePostazione(postazione._id, postazione.nome)}
                                 className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"
                                 title="Elimina postazione"
@@ -1020,32 +659,8 @@ const openNavigation = (postazione) => {
               {postazioni.length === 0 && !loading && (
                 <div className="text-center py-8">
                   <Building className="w-12 h-12 text-white/40 mx-auto mb-4" />
-                  {allPostazioni.length === 0 ? (
-                    <>
-                      <p className="text-white/70">Nessuna postazione trovata</p>
-                      <p className="text-sm text-white/50">Clicca "Nuova Postazione" per iniziare</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-white/70">Nessuna postazione corrisponde ai filtri</p>
-                      <p className="text-sm text-white/50 mb-4">
-                        {filters.searchTerm ? `Nessun risultato per "${filters.searchTerm}"` : 'Modifica i filtri per vedere più risultati'}
-                      </p>
-                      <button
-                        onClick={resetFilters}
-                        className="glass-button-secondary px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
-                      >
-                        Reset Filtri
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Debug info se necessario */}
-              {filters.searchTerm && (
-                <div className="px-6 py-2 text-xs text-white/50 border-t border-white/10">
-                  💡 Ricerca in: nome, descrizione, indirizzo, note, attrezzature, polo {/* ← CAMBIATO: da settimana a polo */}
+                  <p className="text-white/70">Nessuna postazione trovata</p>
+                  <p className="text-sm text-white/50">Clicca "Nuova Postazione" per iniziare</p>
                 </div>
               )}
             </div>
@@ -1053,7 +668,7 @@ const openNavigation = (postazione) => {
         </div>
       </div>
 
-      {/* Custom Styles - UGUALI */}
+      {/* Custom Styles */}
       <style jsx>{`
         .glass-postazioni-card {
           background: rgba(255, 255, 255, 0.08);
@@ -1169,17 +784,6 @@ const openNavigation = (postazione) => {
 
         .glass-table-row {
           border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .glass-badge {
-          backdrop-filter: blur(10px);
-        }
-
-        .glass-mini-badge {
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(8px);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          color: white;
         }
 
         .glass-action-button {

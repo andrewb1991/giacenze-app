@@ -205,6 +205,60 @@ export const useGiacenze = () => {
     }
   };
 
+  const updateGiacenza = async (giacenzaId, updates) => {
+    if (!giacenzaId) {
+      setError('ID giacenza mancante');
+      return;
+    }
+
+    try {
+      setError('');
+      await apiCall(`/admin/giacenze/${giacenzaId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          quantitaAssegnata: parseInt(updates.quantitaAssegnata),
+          quantitaDisponibile: parseInt(updates.quantitaDisponibile),
+          quantitaMinima: parseInt(updates.quantitaMinima) || 0,
+          note: updates.note || ''
+        })
+      }, token);
+
+      // Ricarica giacenze
+      const updatedGiacenze = await apiCall('/admin/giacenze', {}, token);
+      dispatch({ type: 'SET_ALL_GIACENZE', payload: updatedGiacenze });
+
+      console.log('Giacenza aggiornata con successo');
+      return true;
+    } catch (err) {
+      setError('Errore nell\'aggiornamento giacenza: ' + err.message);
+      return false;
+    }
+  };
+
+  const deleteGiacenza = async (giacenzaId) => {
+    if (!giacenzaId) {
+      setError('ID giacenza mancante');
+      return;
+    }
+
+    try {
+      setError('');
+      await apiCall(`/admin/giacenze/${giacenzaId}`, {
+        method: 'DELETE'
+      }, token);
+
+      // Ricarica giacenze
+      const updatedGiacenze = await apiCall('/admin/giacenze', {}, token);
+      dispatch({ type: 'SET_ALL_GIACENZE', payload: updatedGiacenze });
+
+      console.log('Giacenza eliminata con successo');
+      return true;
+    } catch (err) {
+      setError('Errore nell\'eliminazione giacenza: ' + err.message);
+      return false;
+    }
+  };
+
   const loadUserGiacenze = async (userId, filters = {}) => {
   try {
     setLoading(true);
@@ -266,6 +320,8 @@ export const useGiacenze = () => {
     addProduct,
     loadUtilizzi,
     assignGiacenza,
+    updateGiacenza,
+    deleteGiacenza,
     setSelectedAssignment
   };
 };
