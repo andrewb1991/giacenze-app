@@ -962,7 +962,7 @@
 
 // components/admin/UserGiacenzeView.js - VERSIONE CORRETTA
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Truck, Plus, User, Package, ArrowLeft, CheckCircle, AlertCircle, Eye, Filter, Search, BarChart3, X } from 'lucide-react';
+import { Calendar, MapPin, Truck, Plus, User, Package, ArrowLeft, CheckCircle, AlertCircle, Eye, Filter, Search, BarChart3, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
@@ -1122,7 +1122,7 @@ const UtilizziGiacenzaManager = ({ giacenza, onUtilizziChange, token, setError }
 
 const UserGiacenzeView = () => {
   const { token, setError } = useAuth();
-  const { users, allProducts, assegnazioni, assignGiacenza, updateGiacenza } = useGiacenze();
+  const { users, allProducts, assegnazioni, assignGiacenza, updateGiacenza, deleteGiacenza } = useGiacenze();
   const { state, dispatch } = useAppContext();
   const { selectedUserForGiacenze, giacenzeForm } = state;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -1246,17 +1246,29 @@ const UserGiacenzeView = () => {
   // ✅ AGGIORNATO: Ricarica giacenze dopo assegnazione
   const handleAssignGiacenza = async () => {
     try {
+      console.log('🔧 handleAssignGiacenza - Form data:', giacenzeForm);
+      
       // Prima assegna/aggiorna la giacenza normale
       await assignGiacenza(selectedUserForGiacenze, giacenzeForm);
       
       // Se c'è un aggiornamento diretto della quantità disponibile, applicalo
-      if (giacenzeForm.nuovaQuantitaDisponibile && giacenzeForm.productId) {
+      if (giacenzeForm.nuovaQuantitaDisponibile !== undefined && giacenzeForm.nuovaQuantitaDisponibile !== '' && giacenzeForm.productId) {
         const existingGiacenza = userGiacenze.find(g => g.productId?._id === giacenzeForm.productId);
+        console.log('🔧 Giacenza esistente:', existingGiacenza);
+        console.log('🔧 Nuova quantità disponibile:', giacenzeForm.nuovaQuantitaDisponibile);
+        console.log('🔧 Quantità attuale:', existingGiacenza?.quantitaDisponibile);
+        
         if (existingGiacenza && parseInt(giacenzeForm.nuovaQuantitaDisponibile) !== existingGiacenza.quantitaDisponibile) {
+          console.log('🔧 Aggiornamento quantità disponibile...');
           await updateGiacenza(existingGiacenza._id, {
             quantitaDisponibile: parseInt(giacenzeForm.nuovaQuantitaDisponibile)
           });
+          console.log('✅ Quantità disponibile aggiornata');
+        } else {
+          console.log('⚠️ Nessun aggiornamento necessario o dati mancanti');
         }
+      } else {
+        console.log('⚠️ Campo nuovaQuantitaDisponibile non presente:', giacenzeForm.nuovaQuantitaDisponibile);
       }
       
       // Ricarica le giacenze dopo l'assegnazione
@@ -1297,6 +1309,113 @@ const UserGiacenzeView = () => {
       sogliaMinimaMin: '',
       sogliaMinimaMax: ''
     });
+  };
+
+  // Elimina giacenza
+  const handleDeleteGiacenza = async (giacenza) => {
+    try {
+      // Prima carica gli utilizzi correlati a questa giacenza
+      const utilizziData = await apiCall(`/admin/utilizzi?userId=${giacenza.userId._id}`, {}, token);
+      
+      // Filtra gli utilizzi per questo prodotto e settimana (se specificata)
+      const utilizziCorrelati = Array.isArray(utilizziData) 
+        ? utilizziData.filter(u => {
+            const sameProduct = u.productId?._id === giacenza.productId._id;
+            if (giacenza.settimanaId) {
+              // Giacenza specifica per settimana - elimina solo utilizzi di quella settimana
+              return sameProduct && u.settimanaId?._id === giacenza.settimanaId._id;
+            } else {
+              // Giacenza globale - elimina tutti gli utilizzi del prodotto
+              return sameProduct;
+            }
+          })
+        : [];
+
+      // Carica anche le postazioni per mostrare i dettagli completi
+      const postazioniData = await apiCall('/postazioni', {}, token);
+      const postazioni = Array.isArray(postazioniData) ? postazioniData : [];
+
+      const isGlobal = !giacenza.settimanaId;
+      const settimanaText = isGlobal ? 'globale' : `per la settimana ${formatWeek(giacenza.settimanaId)}`;
+      
+      // Prepara il messaggio con i dettagli degli utilizzi
+      let confirmMessage = `Sei sicuro di voler eliminare la giacenza ${settimanaText} di "${giacenza.productId?.nome}"?\n\n`;
+      
+      confirmMessage += `GIACENZA DA ELIMINARE:\n`;
+      confirmMessage += `• Quantità assegnata: ${giacenza.quantitaAssegnata} ${giacenza.productId?.unita}\n`;
+      confirmMessage += `• Quantità disponibile: ${giacenza.quantitaDisponibile} ${giacenza.productId?.unita}\n\n`;
+
+      if (utilizziCorrelati.length > 0) {
+        const totalUtilizzato = utilizziCorrelati.reduce((sum, u) => sum + (u.quantitaUtilizzata || 0), 0);
+        
+        confirmMessage += `⚠️ ATTENZIONE: Verranno eliminati anche ${utilizziCorrelati.length} utilizzi collegati:\n\n`;
+        
+        utilizziCorrelati.forEach((utilizzo, index) => {
+          const postazione = postazioni.find(p => p._id === utilizzo.postazioneId);
+          const data = new Date(utilizzo.dataUtilizzo).toLocaleDateString('it-IT', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric' 
+          });
+          
+          confirmMessage += `${index + 1}. ${utilizzo.quantitaUtilizzata} ${giacenza.productId?.unita} - ${data}\n`;
+          confirmMessage += `   📅 ${formatWeek(utilizzo.settimanaId)} | 📍 ${utilizzo.poloId?.nome} | 🚛 ${utilizzo.mezzoId?.nome}`;
+          if (postazione) {
+            confirmMessage += ` | 📦 ${postazione.nome}`;
+          }
+          if (utilizzo.note) {
+            confirmMessage += `\n   📝 ${utilizzo.note}`;
+          }
+          confirmMessage += `\n\n`;
+        });
+        
+        confirmMessage += `📊 Totale utilizzato da eliminare: ${totalUtilizzato} ${giacenza.productId?.unita}\n\n`;
+      } else {
+        confirmMessage += `✅ Non ci sono utilizzi collegati da eliminare.\n\n`;
+      }
+      
+      confirmMessage += `L'operazione non può essere annullata.`;
+
+      // Mostra il popup di conferma con tutti i dettagli
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+
+      console.log('🗑️ Eliminazione giacenza:', giacenza._id);
+      console.log('🗑️ Utilizzi da eliminare:', utilizziCorrelati.length);
+      
+      // Prima elimina tutti gli utilizzi correlati
+      if (utilizziCorrelati.length > 0) {
+        console.log('🗑️ Eliminazione utilizzi correlati...');
+        for (const utilizzo of utilizziCorrelati) {
+          try {
+            await apiCall(`/admin/utilizzi/${utilizzo._id}`, { method: 'DELETE' }, token);
+            console.log(`✅ Utilizzo eliminato: ${utilizzo._id}`);
+          } catch (err) {
+            console.error(`❌ Errore eliminazione utilizzo ${utilizzo._id}:`, err);
+            throw new Error(`Errore nell'eliminazione dell'utilizzo del ${new Date(utilizzo.dataUtilizzo).toLocaleDateString('it-IT')}`);
+          }
+        }
+        console.log('✅ Tutti gli utilizzi correlati eliminati');
+      }
+      
+      // Poi elimina la giacenza
+      const success = await deleteGiacenza(giacenza._id);
+      
+      if (success) {
+        // Ricarica le giacenze dopo l'eliminazione
+        await loadUserGiacenze();
+        const messaggioSuccesso = utilizziCorrelati.length > 0 
+          ? `✅ Giacenza eliminata con successo insieme a ${utilizziCorrelati.length} utilizzi correlati`
+          : '✅ Giacenza eliminata con successo';
+        console.log(messaggioSuccesso);
+      } else {
+        setError('Errore nell\'eliminazione della giacenza');
+      }
+    } catch (err) {
+      setError('Errore nell\'eliminazione: ' + err.message);
+      console.error('❌ Errore eliminazione giacenza:', err);
+    }
   };
 
   return (
@@ -1517,8 +1636,13 @@ const UserGiacenzeView = () => {
                     type="number"
                     min="0"
                     className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    value={giacenzeForm.nuovaQuantitaDisponibile || existingGiacenza.quantitaDisponibile}
-                    onChange={(e) => updateGiacenzeForm({ nuovaQuantitaDisponibile: e.target.value })}
+                    value={giacenzeForm.nuovaQuantitaDisponibile !== undefined && giacenzeForm.nuovaQuantitaDisponibile !== '' 
+                      ? giacenzeForm.nuovaQuantitaDisponibile 
+                      : existingGiacenza.quantitaDisponibile}
+                    onChange={(e) => {
+                      console.log('🔧 Campo nuovaQuantitaDisponibile cambiato:', e.target.value);
+                      updateGiacenzeForm({ nuovaQuantitaDisponibile: e.target.value });
+                    }}
                     onClick={(e) => e.stopPropagation()}
                     onFocus={(e) => e.stopPropagation()}
                     placeholder={`Attuale: ${existingGiacenza.quantitaDisponibile}`}
@@ -1561,7 +1685,7 @@ const UserGiacenzeView = () => {
                   const currentAssigned = existingGiacenza.quantitaAssegnata;
                   
                   // Controlla se c'è un aggiornamento diretto della quantità disponibile
-                  const newDisponibile = giacenzeForm.nuovaQuantitaDisponibile ? 
+                  const newDisponibile = (giacenzeForm.nuovaQuantitaDisponibile !== undefined && giacenzeForm.nuovaQuantitaDisponibile !== '') ? 
                     parseInt(giacenzeForm.nuovaQuantitaDisponibile) : null;
                   
                   let newAvailable, newAssigned, operation;
@@ -1911,10 +2035,13 @@ const UserGiacenzeView = () => {
                       Soglia Min
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Tipo
+                      Settimana
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Stato
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
+                      Azioni
                     </th>
                   </tr>
                 </thead>
@@ -1950,13 +2077,19 @@ const UserGiacenzeView = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`glass-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            giacenza.isGlobale 
-                              ? 'text-blue-200 border-blue-300/30 bg-blue-400/20' 
-                              : 'text-purple-200 border-purple-300/30 bg-purple-400/20'
-                          }`}>
-                            {giacenza.isGlobale ? 'Globale' : 'Specifica'}
-                          </span>
+                          <div className="text-sm text-white">
+                            {giacenza.settimanaId ? (
+                              <div className="flex items-center">
+                                <Calendar className="w-4 h-4 mr-1 text-blue-300" />
+                                <span>{formatWeek(giacenza.settimanaId)}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center">
+                                <span className="text-blue-300">🌐</span>
+                                <span className="ml-1">Globale</span>
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`glass-status-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -1976,6 +2109,15 @@ const UserGiacenzeView = () => {
                               </>
                             )}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => handleDeleteGiacenza(giacenza)}
+                            className="glass-button p-2 rounded-lg text-red-300 hover:text-red-200 hover:scale-105 transition-all duration-300"
+                            title={giacenza.settimanaId ? 'Elimina giacenza per questa settimana' : 'Elimina giacenza globale'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     );

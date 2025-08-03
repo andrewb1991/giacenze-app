@@ -242,14 +242,26 @@ export const useGiacenze = () => {
 
     try {
       setError('');
+      // Costruisci payload solo con i campi forniti
+      const payload = {};
+      if (updates.quantitaAssegnata !== undefined) {
+        payload.quantitaAssegnata = parseInt(updates.quantitaAssegnata);
+      }
+      if (updates.quantitaDisponibile !== undefined) {
+        payload.quantitaDisponibile = parseInt(updates.quantitaDisponibile);
+      }
+      if (updates.quantitaMinima !== undefined) {
+        payload.quantitaMinima = parseInt(updates.quantitaMinima) || 0;
+      }
+      if (updates.note !== undefined) {
+        payload.note = updates.note || '';
+      }
+
+      console.log('🔧 updateGiacenza payload:', payload);
+
       await apiCall(`/admin/giacenze/${giacenzaId}`, {
         method: 'PUT',
-        body: JSON.stringify({
-          quantitaAssegnata: parseInt(updates.quantitaAssegnata),
-          quantitaDisponibile: parseInt(updates.quantitaDisponibile),
-          quantitaMinima: parseInt(updates.quantitaMinima) || 0,
-          note: updates.note || ''
-        })
+        body: JSON.stringify(payload)
       }, token);
 
       // Ricarica giacenze
