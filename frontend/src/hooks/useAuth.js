@@ -86,6 +86,9 @@ export const AuthProvider = ({ children }) => {
     removeFromStorage(STORAGE_KEYS.TOKEN);
     removeFromStorage(STORAGE_KEYS.USER);
     removeFromStorage(STORAGE_KEYS.CURRENT_PAGE);
+    
+    // Notifica il cambio di utente per far ricaricare i dati
+    window.dispatchEvent(new CustomEvent('userChanged'));
   };
 
   // 🔐 Funzione di login
@@ -124,6 +127,9 @@ export const AuthProvider = ({ children }) => {
       saveToStorage(STORAGE_KEYS.TOKEN, data.token);
       saveToStorage(STORAGE_KEYS.USER, data.user);
       saveToStorage(STORAGE_KEYS.CURRENT_PAGE, initialPage);
+
+      // Notifica il cambio di utente per far ricaricare i dati
+      window.dispatchEvent(new CustomEvent('userChanged'));
 
       setError('');
     } catch (err) {

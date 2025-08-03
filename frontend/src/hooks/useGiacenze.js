@@ -24,10 +24,26 @@ export const useGiacenze = () => {
 
   // Carica dati iniziali
   useEffect(() => {
-    if (token && user && !dataLoaded) {
+    if (token && user) {
+      // Reset dataLoaded quando cambia l'utente
+      dispatch({ type: 'SET_DATA_LOADED', payload: false });
       loadData().then(() => dispatch({ type: 'SET_DATA_LOADED', payload: true }));
     }
-  }, [token, user, dataLoaded]);
+  }, [token, user?.id]); // Dipende dall'ID utente, non da dataLoaded
+
+  // Ascolta i cambi di utente per ricaricare i dati
+  useEffect(() => {
+    const handleUserChange = () => {
+      if (token && user) {
+        console.log('🔄 Ricaricamento dati per nuovo utente');
+        dispatch({ type: 'SET_DATA_LOADED', payload: false });
+        loadData().then(() => dispatch({ type: 'SET_DATA_LOADED', payload: true }));
+      }
+    };
+
+    window.addEventListener('userChanged', handleUserChange);
+    return () => window.removeEventListener('userChanged', handleUserChange);
+  }, [token, user]);
 
   const loadData = async () => {
     try {

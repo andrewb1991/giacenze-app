@@ -6,7 +6,7 @@ import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
 import { BackButton } from '../shared/Navigation';
 import { downloadExcelReport } from '../../services/api';
-import { formatWeek, getCurrentWeekFromList, sortWeeksChronologically } from '../../utils/formatters';
+import { formatWeek, getCurrentWeekFromList, sortWeeksChronologically, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
 
 const ReportsPage = () => {
   const { user, token, setCurrentPage, setError } = useAuth();
@@ -14,6 +14,7 @@ const ReportsPage = () => {
   const { state, dispatch } = useAppContext();
   const { reportFilters } = state;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [showAllWeeks, setShowAllWeeks] = useState(false);
 
   // Mouse tracking per effetti interattivi
   useEffect(() => {
@@ -25,18 +26,35 @@ const ReportsPage = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Set default current week for reports (only on first load)
+  // Set default current week for reports when showAllWeeks is false
   useEffect(() => {
-    if (settimane.length > 0 && reportFilters.settimanaId === undefined) {
+    if (settimane.length > 0 && !showAllWeeks && (!reportFilters.settimanaId || reportFilters.settimanaId === '')) {
       const currentWeek = getCurrentWeekFromList(settimane);
       if (currentWeek) {
         updateReportFilters({ settimanaId: currentWeek._id });
       }
     }
-  }, [settimane]);
+  }, [settimane, showAllWeeks]);
 
-  // Sort weeks chronologically for dropdown
-  const sortedSettimane = sortWeeksChronologically(settimane);
+  // Handle showAllWeeks toggle
+  useEffect(() => {
+    if (showAllWeeks) {
+      // When showing all weeks, clear the week filter
+      updateReportFilters({ settimanaId: '' });
+    } else {
+      // When not showing all weeks, set current week as default
+      const currentWeek = getCurrentWeekFromList(settimane);
+      if (currentWeek) {
+        updateReportFilters({ settimanaId: currentWeek._id });
+      }
+    }
+  }, [showAllWeeks, settimane]);
+
+  // Sort weeks centered on current week for dropdown
+  const sortedSettimane = React.useMemo(() => {
+    if (!settimane.length) return [];
+    return sortWeeksCenteredOnCurrent(settimane);
+  }, [settimane]);
 
   const updateReportFilters = (updates) => {
     dispatch({ type: 'SET_REPORT_FILTERS', payload: updates });
@@ -74,7 +92,7 @@ const ReportsPage = () => {
 
       {/* Navigation */}
       <nav className="relative z-10 glass-nav border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-4">
               <button
@@ -92,7 +110,7 @@ const ReportsPage = () => {
         </div>
       </nav>
 
-      <div className="relative z-10 max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="glass-card p-6 rounded-2xl">
           <div className="flex items-center space-x-3 mb-6">
             <div className="glass-icon p-3 rounded-xl">
@@ -107,30 +125,53 @@ const ReportsPage = () => {
                 <Calendar className="w-4 h-4 mr-2" />
                 Settimana
               </label>
-              <select
-                className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                value={reportFilters.settimanaId}
-                onChange={(e) => updateReportFilters({ settimanaId: e.target.value })}
-              >
-                <option value="" className="bg-gray-800">🌍 Tutte le settimane</option>
-                {sortedSettimane.length > 0 ? (
-                  sortedSettimane.map(settimana => (
-                    <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                      {formatWeek(settimana)}
-                    </option>
-                  ))
-                ) : (
-                  <option disabled className="bg-gray-800">Caricamento settimane...</option>
-                )}
-              </select>
-              {reportFilters.settimanaId && (
-                <button
-                  onClick={() => updateReportFilters({ settimanaId: '' })}
-                  className="mt-2 text-xs text-blue-300 hover:text-blue-200 transition-colors"
+              
+              {/* Dropdown settimane (visibile solo quando checkbox non è selezionata) */}
+              {!showAllWeeks && (
+                <select
+                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                  value={reportFilters.settimanaId}
+                  onChange={(e) => updateReportFilters({ settimanaId: e.target.value })}
                 >
-                  📅 Mostra tutte le settimane
-                </button>
+                  {sortedSettimane.length > 0 ? (
+                    sortedSettimane.map((settimana) => {
+                      const currentWeek = getCurrentWeekFromList(settimane);
+                      const isCurrentWeek = currentWeek && settimana._id === currentWeek._id;
+                      return (
+                        <option key={settimana._id} value={settimana._id} className="bg-gray-800">
+                          {isCurrentWeek ? '📅 ' : ''}{formatWeek(settimana)}{isCurrentWeek ? ' (Corrente)' : ''}
+                        </option>
+                      );
+                    })
+                  ) : (
+                    <option disabled className="bg-gray-800">Caricamento settimane...</option>
+                  )}
+                </select>
               )}
+
+              {/* Checkbox "Tutte le settimane" */}
+              <div className="mt-3">
+                <label className="glass-checkbox-container flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showAllWeeks}
+                    onChange={(e) => setShowAllWeeks(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`glass-checkbox w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${
+                    showAllWeeks 
+                      ? 'border-blue-400 bg-blue-400/20' 
+                      : 'border-white/30 bg-transparent'
+                  }`}>
+                    {showAllWeeks && (
+                      <svg className="w-3 h-3 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="ml-2 text-sm text-white/80">🌍 Tutte le settimane</span>
+                </label>
+              </div>
             </div>
 
             <div>

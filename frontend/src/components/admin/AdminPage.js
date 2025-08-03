@@ -68,7 +68,7 @@ const AdminPage = () => {
         <div className="relative z-10">
           <Navigation title="Amministrazione Giacenze" fixed="true"/>
 
-          <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 pt-20">
+          <div className="w-full mx-auto py-6 px-4 sm:px-6 lg:px-8 pt-20">
             {adminView === 'user-giacenze' ? (
               <UserGiacenzeView />
             ) : (

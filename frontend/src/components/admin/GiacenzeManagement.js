@@ -4,11 +4,12 @@ import { Plus, Users, ChevronRight, Package2, UserPlus, AlertCircle, Filter, Sea
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
 import { calculatePercentage, formatDate } from '../../utils/formatters';
+import UserGiacenzeView from './UserGiacenzeView';
 
 const GiacenzeManagement = () => {
   const { users, allProducts, allGiacenze, assegnazioni, assignGiacenza, updateGiacenza, deleteGiacenza } = useGiacenze();
   const { state, dispatch } = useAppContext();
-  const { selectedUser, giacenzeForm } = state;
+  const { selectedUser, giacenzeForm, adminView, selectedUserForGiacenze } = state;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   // Stati per edit modal
@@ -236,8 +237,13 @@ const GiacenzeManagement = () => {
       </div>
 
       <div className="relative z-10 space-y-6">
-        {/* Gestione Giacenze Utenti */}
-        <div className="glass-management-card p-8 rounded-3xl">
+        {/* Conditional rendering based on adminView */}
+        {adminView === 'user-giacenze' ? (
+          <UserGiacenzeView />
+        ) : (
+          <>
+            {/* Gestione Giacenze Utenti */}
+            <div className="glass-management-card p-8 rounded-3xl">
           <div className="glass-card-header mb-6">
             <div className="flex items-center mb-4">
               <div className="glass-icon p-3 rounded-2xl mr-4">
@@ -782,7 +788,6 @@ const GiacenzeManagement = () => {
             )}
           </div>
         </div>
-      </div>
 
       {/* Edit Modal */}
       {editingGiacenza && (
@@ -1033,6 +1038,9 @@ const GiacenzeManagement = () => {
           </div>
         </div>
       )}
+          </>
+        )}
+      </div>
 
       {/* Custom Styles */}
       <style jsx>{`

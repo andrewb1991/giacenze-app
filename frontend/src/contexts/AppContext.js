@@ -176,7 +176,8 @@ const appReducer = (state, action) => {
     case 'LOGOUT':
       return {
         ...initialState,
-        currentPage: 'login'
+        currentPage: 'login',
+        dataLoaded: false
       };
     
     default:

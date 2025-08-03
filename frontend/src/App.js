@@ -2,12 +2,22 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { AppProvider } from './contexts/AppContext';
+import { ThemeProvider } from './hooks/useTheme';
 import LoginPage from './components/auth/LoginPage';
 import Dashboard from './components/dashboard/Dashboard';
 import GiacenzePage from './components/giacenze/GiacenzePage';
 import UtilizziPage from './components/utilizzi/UtilizziPage';
 import ReportsPage from './components/reports/ReportsPage';
 import AdminPage from './components/admin/AdminPage';
+import AdminDashboard from './components/admin/AdminDashboard';
+import AdminGiacenzeSection from './components/admin/sections/AdminGiacenzeSection';
+import AdminAssegnazioniSection from './components/admin/sections/AdminAssegnazioniSection';
+import AdminUtilizziSection from './components/admin/sections/AdminUtilizziSection';
+import AdminOperatoriSection from './components/admin/sections/AdminOperatoriSection';
+import AdminProdottiSection from './components/admin/sections/AdminProdottiSection';
+import AdminPostazioniSection from './components/admin/sections/AdminPostazioniSection';
+import AdminReportsSection from './components/admin/sections/AdminReportsSection';
+import AdminOrdiniSection from './components/admin/sections/AdminOrdiniSection';
 import ErrorMessage from './components/shared/ErrorMessage';
 import OrdiniManagement from './components/admin/OrdiniManagement';
 
@@ -206,10 +216,27 @@ const AppContent = () => {
         return <UtilizziPage />;
       case 'reports':
         return <ReportsPage />;
-        case 'ordini':
+      case 'ordini':
         return <OrdiniManagement />;
       case 'admin':
-        return user?.role === 'admin' ? <AdminPage /> : <Dashboard />;
+        return user?.role === 'admin' ? <AdminDashboard /> : <Dashboard />;
+      // Sezioni Admin specifiche
+      case 'admin-giacenze':
+        return user?.role === 'admin' ? <AdminGiacenzeSection /> : <Dashboard />;
+      case 'admin-assegnazioni':
+        return user?.role === 'admin' ? <AdminAssegnazioniSection /> : <Dashboard />;
+      case 'admin-utilizzi':
+        return user?.role === 'admin' ? <AdminUtilizziSection /> : <Dashboard />;
+      case 'admin-operatori':
+        return user?.role === 'admin' ? <AdminOperatoriSection /> : <Dashboard />;
+      case 'admin-prodotti':
+        return user?.role === 'admin' ? <AdminProdottiSection /> : <Dashboard />;
+      case 'admin-postazioni':
+        return user?.role === 'admin' ? <AdminPostazioniSection /> : <Dashboard />;
+      case 'admin-reports':
+        return user?.role === 'admin' ? <AdminReportsSection /> : <Dashboard />;
+      case 'admin-ordini':
+        return user?.role === 'admin' ? <AdminOrdiniSection /> : <Dashboard />;
       default:
         return <Dashboard />;
     }
@@ -226,11 +253,13 @@ const AppContent = () => {
 // 🚀 Componente App principale con tutti i provider
 const App = () => {
   return (
-    <AuthProvider>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppProvider>
+          <AppContent />
+        </AppProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 

@@ -2,13 +2,242 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+html, body {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: auto;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Assicura che il contenuto si espanda su tutti gli schermi */
+* {
+  box-sizing: border-box;
+}
+
+/* Responsive breakpoints per contenuti larghi */
+@media (min-width: 1280px) {
+  .responsive-container {
+    max-width: none !important;
+    width: 100% !important;
+  }
+}
+
+/* Migliore gestione dell'overflow orizzontale */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ===== SISTEMA TEMI ===== */
+
+/* Tema Light - Bianco */
+.theme-light {
+  --bg-primary: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-nav: rgba(255, 255, 255, 0.95);
+  --bg-input: rgba(255, 255, 255, 0.8);
+  --bg-button: rgba(59, 130, 246, 0.1);
+  --bg-button-hover: rgba(59, 130, 246, 0.2);
+  
+  --text-primary: #000000;
+  --text-secondary: #4b5563;
+  --text-white: #000000;
+  
+  --border-color: rgba(59, 130, 246, 0.4);
+  --border-white: rgba(59, 130, 246, 0.3);
+  
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(59, 130, 246, 0.4);
+  --glass-blur: blur(8px);
+  
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Tema Dark - Nero */
+.theme-dark {
+  --bg-primary: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  --bg-secondary: #1e293b;
+  --bg-card: rgba(30, 41, 59, 0.9);
+  --bg-nav: rgba(15, 23, 42, 0.95);
+  --bg-input: rgba(30, 41, 59, 0.8);
+  --bg-button: rgba(100, 116, 139, 0.3);
+  --bg-button-hover: rgba(100, 116, 139, 0.4);
+  
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-white: #f1f5f9;
+  
+  --border-color: rgba(100, 116, 139, 0.3);
+  --border-white: rgba(100, 116, 139, 0.2);
+  
+  --glass-bg: rgba(30, 41, 59, 0.8);
+  --glass-border: rgba(100, 116, 139, 0.3);
+  --glass-blur: blur(15px);
+  
+  --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Tema Default - Colorato (variabili per override parziale) */
+.theme-default {
+  /* Mantiene gli stili CSS originali */
+}
+
+/* Applicazione globale dei temi */
+.theme-light,
+.theme-dark {
+  /* Background principale */
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.theme-light .min-h-screen,
+.theme-dark .min-h-screen {
+  background: var(--bg-primary) !important;
+}
+
+/* Override per elementi glass negli altri temi */
+.theme-light .glass-card,
+.theme-light .glass-nav,
+.theme-light .glass-button,
+.theme-light .glass-icon,
+.theme-light .glass-input,
+.theme-light .glass-user-info,
+.theme-light .glass-button-admin,
+.theme-light .glass-assignment-card,
+.theme-light .glass-modal,
+.theme-light .glass-management-card,
+.theme-light .glass-loading-container,
+.theme-light .glass-card-large {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  border: 2px solid var(--glass-border) !important;
+  box-shadow: 0 8px 32px var(--shadow-color), 0 0 0 1px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Bordi specifici per componenti nel tema light */
+.theme-light .glass-nav-container,
+.theme-light .glass-tab-button,
+.theme-light .glass-tab-active {
+  border: 2px solid rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Tab attiva nel tema light */
+.theme-light .glass-tab-active {
+  border-color: rgba(59, 130, 246, 0.7) !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Bottoni nel tema light */
+.theme-light .glass-button:hover,
+.theme-light .glass-tab-button:hover {
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Input e form nel tema light */
+.theme-light .glass-input:focus,
+.theme-light .glass-input:hover {
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Tabelle nel tema light */
+.theme-light .glass-table-header,
+.theme-light .glass-table-row {
+  border-bottom: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Cards nel tema light */
+.theme-light .glass-card:hover {
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.15) !important;
+}
+
+.theme-dark .glass-card,
+.theme-dark .glass-nav,
+.theme-dark .glass-button,
+.theme-dark .glass-icon,
+.theme-dark .glass-input,
+.theme-dark .glass-user-info,
+.theme-dark .glass-button-admin,
+.theme-dark .glass-assignment-card,
+.theme-dark .glass-modal,
+.theme-dark .glass-management-card,
+.theme-dark .glass-loading-container,
+.theme-dark .glass-card-large {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 8px 32px var(--shadow-color) !important;
+}
+
+/* Testo nei temi alternativi */
+.theme-light .text-white,
+.theme-light .text-white\\/90,
+.theme-light .text-white\\/80,
+.theme-light .text-white\\/70,
+.theme-light .text-white\\/60,
+.theme-light .text-white\\/50 {
+  color: #000000 !important;
+}
+
+/* Assicura che tutto il testo sia nero nel tema light */
+.theme-light * {
+  color: #000000 !important;
+}
+
+.theme-light .text-gray-600,
+.theme-light .text-gray-500,
+.theme-light .text-gray-400 {
+  color: #4b5563 !important;
+}
+
+.theme-dark .text-white,
+.theme-dark .text-white\\/90,
+.theme-dark .text-white\\/80,
+.theme-dark .text-white\\/70,
+.theme-dark .text-white\\/60,
+.theme-dark .text-white\\/50 {
+  color: var(--text-white) !important;
+}
+
+/* Input e placeholder */
+.theme-light .placeholder-white\\/50::placeholder,
+.theme-dark .placeholder-white\\/50::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+/* Effetti background orbs disabilitati nei temi alternativi */
+.theme-light .animate-blob,
+.theme-dark .animate-blob {
+  display: none !important;
+}
+
+/* Interactive light effect adattato */
+.theme-light .bg-gradient-radial {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%) !important;
+}
+
+.theme-dark .bg-gradient-radial {
+  background: radial-gradient(circle, rgba(100, 116, 139, 0.2) 0%, transparent 70%) !important;
 }
 
 code {

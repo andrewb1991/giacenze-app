@@ -322,3 +322,10 @@ export const getCurrentWeekFromList = (settimane) => {
   // Fallback to first available week
   return settimane[0] || null;
 };
+
+export const sortWeeksCenteredOnCurrent = (settimane) => {
+  if (!settimane || settimane.length === 0) return [];
+  
+  // Simply return chronological order - earliest to latest
+  return sortWeeksChronologically(settimane);
+};

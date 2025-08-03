@@ -3066,7 +3066,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
 import { apiCall } from '../../services/api';
-import { formatWeek, sortAssignmentsByCurrentWeekFirst, sortWeeksChronologically, getCurrentWeekIndex, getCurrentWeekFromList } from '../../utils/formatters';
+import { formatWeek, sortAssignmentsByCurrentWeekFirst, sortWeeksChronologically, getCurrentWeekIndex, getCurrentWeekFromList, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
 
 const AssignmentsManagement = () => {
   const { token, setError } = useAuth();
@@ -3089,6 +3089,9 @@ const AssignmentsManagement = () => {
     rdt: '',        // ✅ NUOVO FILTRO
     searchTerm: ''
   });
+  
+  // Stato per checkbox "tutte le settimane"
+  const [showAllWeeks, setShowAllWeeks] = useState(false);
   
   // Stati per dati
   const [assegnazioni, setAssegnazioni] = useState([]);
@@ -3127,18 +3130,35 @@ const AssignmentsManagement = () => {
     }
   }, [settimane]);
 
-  // Set default current week for filters (only on first load)
+  // Set default current week for filters when showAllWeeks is false
   useEffect(() => {
-    if (settimane.length > 0 && filters.settimanaId === '') {
+    if (settimane.length > 0 && !showAllWeeks && filters.settimanaId === '') {
       const currentWeek = getCurrentWeekFromList(settimane);
       if (currentWeek) {
         updateFilters({ settimanaId: currentWeek._id });
       }
     }
-  }, [settimane]);
+  }, [settimane, showAllWeeks]);
 
-  // Sort weeks chronologically for dropdowns
-  const sortedSettimane = sortWeeksChronologically(settimane);
+  // Handle showAllWeeks toggle
+  useEffect(() => {
+    if (showAllWeeks) {
+      // When showing all weeks, clear the week filter
+      updateFilters({ settimanaId: '' });
+    } else {
+      // When not showing all weeks, set current week as default
+      const currentWeek = getCurrentWeekFromList(settimane);
+      if (currentWeek) {
+        updateFilters({ settimanaId: currentWeek._id });
+      }
+    }
+  }, [showAllWeeks, settimane]);
+
+  // Sort weeks centered on current week for dropdown
+  const sortedSettimane = React.useMemo(() => {
+    if (!settimane.length) return [];
+    return sortWeeksCenteredOnCurrent(settimane);
+  }, [settimane]);
 
   const updateAssegnazioneForm = (updates) => {
     dispatch({ type: 'SET_ASSEGNAZIONE_FORM', payload: updates });
@@ -3325,7 +3345,7 @@ const AssignmentsManagement = () => {
   // Ricarica quando cambiano i filtri principali - ✅ AGGIORNATO
   useEffect(() => {
     loadAssegnazioni();
-  }, [filters.userId, filters.poloId, filters.mezzoId, filters.settimanaId, filters.attiva, filters.ordine, filters.rdt]);
+  }, [filters.userId, filters.poloId, filters.mezzoId, filters.settimanaId, filters.attiva, filters.ordine, filters.rdt, showAllWeeks]);
 
   // Carica dati iniziali
   useEffect(() => {
@@ -3538,14 +3558,15 @@ const AssignmentsManagement = () => {
                   onChange={(e) => updateAssegnazioneForm({ settimanaId: e.target.value })}
                 >
                   <option value="" className="bg-gray-800">Seleziona settimana</option>
-                  {sortedSettimane.map(settimana => {
+                  {sortedSettimane.map((settimana, index) => {
                     const count = getAssignmentCountForPoloWeek(assegnazioneForm.poloId, settimana._id);
                     const isPoloSelected = assegnazioneForm.poloId;
                     const remainingSlots = isPoloSelected ? 2 - count : 2;
+                    const isCurrentWeek = index === 0 && getCurrentWeekFromList(settimane)?._id === settimana._id;
                     
                     return (
                       <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                        {formatWeek(settimana)} 
+                        {isCurrentWeek ? '📅 ' : ''}{formatWeek(settimana)}{isCurrentWeek ? ' (Corrente)' : ''} 
                         {isPoloSelected && ` (${remainingSlots} posto/i libero/i)`}
                       </option>
                     );
@@ -3788,26 +3809,49 @@ const AssignmentsManagement = () => {
                 <Calendar className="w-4 h-4 mr-2" />
                 Settimana
               </label>
-              <select
-                className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
-                value={filters.settimanaId}
-                onChange={(e) => updateFilters({ settimanaId: e.target.value })}
-              >
-                <option value="" className="bg-gray-800">🌍 Tutte le settimane</option>
-                {sortedSettimane.map(settimana => (
-                  <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                    Settimana {settimana.numero}/{settimana.anno}
-                  </option>
-                ))}
-              </select>
-              {filters.settimanaId && (
-                <button
-                  onClick={() => updateFilters({ settimanaId: '' })}
-                  className="mt-2 text-xs text-blue-300 hover:text-blue-200 transition-colors"
+              
+              {/* Dropdown settimane (visibile solo quando checkbox non è selezionata) */}
+              {!showAllWeeks && (
+                <select
+                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
+                  value={filters.settimanaId}
+                  onChange={(e) => updateFilters({ settimanaId: e.target.value })}
                 >
-                  📅 Mostra tutte le settimane
-                </button>
+                  {sortedSettimane.map((settimana) => {
+                    const currentWeek = getCurrentWeekFromList(settimane);
+                    const isCurrentWeek = currentWeek && settimana._id === currentWeek._id;
+                    return (
+                      <option key={settimana._id} value={settimana._id} className="bg-gray-800">
+                        {isCurrentWeek ? '📅 ' : ''}{formatWeek(settimana)}{isCurrentWeek ? ' (Corrente)' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
               )}
+
+              {/* Checkbox "Tutte le settimane" */}
+              <div className="mt-3">
+                <label className="glass-checkbox-container flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showAllWeeks}
+                    onChange={(e) => setShowAllWeeks(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`glass-checkbox w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${
+                    showAllWeeks 
+                      ? 'border-blue-400 bg-blue-400/20' 
+                      : 'border-white/30 bg-transparent'
+                  }`}>
+                    {showAllWeeks && (
+                      <svg className="w-3 h-3 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="ml-2 text-sm text-white/80">🌍 Tutte le settimane</span>
+                </label>
+              </div>
             </div>
 
             {/* ✅ NUOVO FILTRO: Ordine */}

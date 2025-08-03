@@ -117,7 +117,7 @@ const GiacenzePage = () => {
 
       {/* Navigation */}
       <nav className="relative z-10 glass-nav border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-4">
               <button
@@ -135,7 +135,7 @@ const GiacenzePage = () => {
         </div>
       </nav>
 
-      <div className="relative z-10 max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
+      <div className="relative z-10 w-full mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Selettore Settimana */}
         {myAssignments.length > 0 && (
           <div className="glass-card p-6 rounded-2xl">
@@ -151,11 +151,14 @@ const GiacenzePage = () => {
               }}
             >
               <option value="" className="bg-gray-800">Seleziona una settimana</option>
-              {sortedAssignments.map(assignment => (
-                <option key={assignment._id} value={assignment._id} className="bg-gray-800">
-                  {formatWeek(assignment.settimanaId)} - {assignment.poloId?.nome} - {assignment.mezzoId?.nome}
-                </option>
-              ))}
+              {sortedAssignments.map((assignment, index) => {
+                const isCurrentWeek = index === 0 && getCurrentWeekAssignment(myAssignments)?._id === assignment._id;
+                return (
+                  <option key={assignment._id} value={assignment._id} className="bg-gray-800">
+                    {isCurrentWeek ? '📅 ' : ''}{formatWeek(assignment.settimanaId)}{isCurrentWeek ? ' (Corrente)' : ''} - {assignment.poloId?.nome} - {assignment.mezzoId?.nome}
+                  </option>
+                );
+              })}
             </select>
           </div>
         )}

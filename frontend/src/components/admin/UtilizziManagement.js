@@ -1,14 +1,14 @@
 // components/admin/UtilizziManagement.js
 import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, Save, X, Search, Filter, Eye, User, Package, Calendar, ChevronRight, BarChart3, Clock, FileText, AlertCircle } from 'lucide-react';
+import { Edit, Trash2, Save, X, Search, Filter, Eye, User, Package, Calendar, ChevronRight, BarChart3, Clock, FileText, AlertCircle, MapPin } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { apiCall } from '../../services/api';
-import { formatWeek, formatDateTime, getCurrentWeekFromList, sortWeeksChronologically } from '../../utils/formatters';
+import { formatWeek, formatDateTime, getCurrentWeekFromList, sortWeeksChronologically, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
 
 const UtilizziManagement = () => {
   const { token, setError } = useAuth();
-  const { users, settimane } = useGiacenze();
+  const { users, settimane, poli, mezzi } = useGiacenze();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   
   // Stati per filtri
@@ -18,9 +18,13 @@ const UtilizziManagement = () => {
     searchTerm: ''
   });
   
+  // Stato per checkbox "tutte le settimane"
+  const [showAllWeeks, setShowAllWeeks] = useState(false);
+  
   // Stati per dati
   const [allUtilizzi, setAllUtilizzi] = useState([]);
   const [groupedUtilizzi, setGroupedUtilizzi] = useState([]);
+  const [postazioni, setPostazioni] = useState([]);
   const [loading, setLoading] = useState(false);
   
   // Stati per modal dettagli
@@ -45,18 +49,35 @@ const UtilizziManagement = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Set default current week for filters (only on first load)
+  // Set default current week for filters when showAllWeeks is false
   useEffect(() => {
-    if (settimane.length > 0 && filters.settimanaId === '') {
+    if (settimane.length > 0 && !showAllWeeks && filters.settimanaId === '') {
       const currentWeek = getCurrentWeekFromList(settimane);
       if (currentWeek) {
         setFilters(prev => ({ ...prev, settimanaId: currentWeek._id }));
       }
     }
-  }, [settimane]);
+  }, [settimane, showAllWeeks]);
 
-  // Sort weeks chronologically for dropdown
-  const sortedSettimane = sortWeeksChronologically(settimane);
+  // Handle showAllWeeks toggle
+  useEffect(() => {
+    if (showAllWeeks) {
+      // When showing all weeks, clear the week filter
+      setFilters(prev => ({ ...prev, settimanaId: '' }));
+    } else {
+      // When not showing all weeks, set current week as default
+      const currentWeek = getCurrentWeekFromList(settimane);
+      if (currentWeek) {
+        setFilters(prev => ({ ...prev, settimanaId: currentWeek._id }));
+      }
+    }
+  }, [showAllWeeks, settimane]);
+
+  // Sort weeks centered on current week for dropdown
+  const sortedSettimane = React.useMemo(() => {
+    if (!settimane.length) return [];
+    return sortWeeksCenteredOnCurrent(settimane);
+  }, [settimane]);
 
   // Carica tutti gli utilizzi
   const loadAllUtilizzi = async () => {
@@ -132,6 +153,22 @@ const UtilizziManagement = () => {
     
     setGroupedUtilizzi(groupedArray);
   };
+
+  // Carica postazioni
+  const loadPostazioni = async () => {
+    try {
+      const data = await apiCall('/postazioni', {}, token);
+      setPostazioni(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Errore caricamento postazioni:', error);
+      setPostazioni([]);
+    }
+  };
+
+  // Carica dati iniziali
+  useEffect(() => {
+    loadPostazioni();
+  }, [token]);
 
   // Carica dati quando cambiano i filtri
   useEffect(() => {
@@ -314,29 +351,53 @@ const UtilizziManagement = () => {
 
             {/* Filtro Settimana */}
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
+              <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
+                <Calendar className="w-4 h-4 mr-2" />
                 Settimana
               </label>
-              <select
-                className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                value={filters.settimanaId}
-                onChange={(e) => updateFilters({ settimanaId: e.target.value })}
-              >
-                <option value="" className="bg-gray-800">🌍 Tutte le settimane</option>
-                {sortedSettimane.map(settimana => (
-                  <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                    {formatWeek(settimana)}
-                  </option>
-                ))}
-              </select>
-              {filters.settimanaId && (
-                <button
-                  onClick={() => updateFilters({ settimanaId: '' })}
-                  className="mt-2 text-xs text-blue-300 hover:text-blue-200 transition-colors"
+              
+              {/* Dropdown settimane (visibile solo quando checkbox non è selezionata) */}
+              {!showAllWeeks && (
+                <select
+                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                  value={filters.settimanaId}
+                  onChange={(e) => updateFilters({ settimanaId: e.target.value })}
                 >
-                  📅 Mostra tutte le settimane
-                </button>
+                  {sortedSettimane.map((settimana) => {
+                    const currentWeek = getCurrentWeekFromList(settimane);
+                    const isCurrentWeek = currentWeek && settimana._id === currentWeek._id;
+                    return (
+                      <option key={settimana._id} value={settimana._id} className="bg-gray-800">
+                        {isCurrentWeek ? '📅 ' : ''}{formatWeek(settimana)}{isCurrentWeek ? ' (Settimana corrente)' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
               )}
+
+              {/* Checkbox "Tutte le settimane" */}
+              <div className="mt-3">
+                <label className="glass-checkbox-container flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showAllWeeks}
+                    onChange={(e) => setShowAllWeeks(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`glass-checkbox w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${
+                    showAllWeeks 
+                      ? 'border-blue-400 bg-blue-400/20' 
+                      : 'border-white/30 bg-transparent'
+                  }`}>
+                    {showAllWeeks && (
+                      <svg className="w-3 h-3 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="ml-2 text-sm text-white/80">🌍 Tutte le settimane</span>
+                </label>
+              </div>
             </div>
 
             {/* Ricerca per Nome */}
@@ -642,15 +703,58 @@ const UtilizziManagement = () => {
                   const isEditing = editingId === utilizzo._id;
                   const dateTime = formatDateTime(utilizzo.dataUtilizzo);
                   
+                  // Trova la postazione dall'ID utilizzando i dati delle postazioni caricate
+                  const postazione = postazioni?.find(p => p._id === utilizzo.postazioneId);
+                  const polo = poli?.find(p => p._id === utilizzo.poloId);
+                  
+                  // Debug: verifica dati postazione
+                  console.log('🔍 Dati utilizzo:', {
+                    utilizzoId: utilizzo._id,
+                    postazioneId: utilizzo.postazioneId,
+                    postazioneTrovata: postazione,
+                    poloId: utilizzo.poloId,
+                    poloTrovato: polo
+                  });
+                  
                   return (
                     <div key={utilizzo._id} className="glass-utilizzo-item p-4 rounded-xl">
                       <div className="flex items-center justify-between">
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                           {/* Data/Ora */}
                           <div>
-                            <div className="text-xs text-white/60 mb-1">Data/Ora</div>
+                            <div className="text-xs text-white/60 mb-1 flex items-center">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Data/Ora
+                            </div>
                             <div className="text-sm text-white">{dateTime.date}</div>
                             <div className="text-xs text-white/50">{dateTime.time}</div>
+                          </div>
+                          
+                          {/* Postazione */}
+                          <div>
+                            <div className="text-xs text-white/60 mb-1 flex items-center">
+                              <MapPin className="w-3 h-3 mr-1" />
+                              Postazione
+                            </div>
+                            <div className="text-sm text-white">
+                              {postazione?.nome || 'N/A'}
+                            </div>
+                            {polo?.nome && (
+                              <div className="text-xs text-white/50">
+                                {polo.nome}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Settimana */}
+                          <div>
+                            <div className="text-xs text-white/60 mb-1 flex items-center">
+                              <Calendar className="w-3 h-3 mr-1" />
+                              Settimana
+                            </div>
+                            <div className="text-sm text-white">
+                              {utilizzo.settimanaId ? formatWeek(utilizzo.settimanaId) : 'N/A'}
+                            </div>
                           </div>
                           
                           {/* Quantità */}
