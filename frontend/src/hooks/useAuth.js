@@ -91,9 +91,11 @@ export const AuthProvider = ({ children }) => {
   // 🔐 Funzione di login
   const login = async (credentials) => {
     try {
+      console.log('🔐 Iniziando login con:', credentials);
       setLoading(true);
       setError('');
 
+      console.log('📡 Facendo richiesta a:', 'https://giacenze-app-production.up.railway.app/api/login');
       const response = await fetch('https://giacenze-app-production.up.railway.app/api/login', {
         method: 'POST',
         headers: {
@@ -102,7 +104,9 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify(credentials),
       });
 
+      console.log('📨 Risposta ricevuta:', response.status, response.statusText);
       const data = await response.json();
+      console.log('📊 Dati risposta:', data);
 
       if (!response.ok) {
         throw new Error(data.message || 'Errore durante il login');
@@ -123,6 +127,7 @@ export const AuthProvider = ({ children }) => {
 
       setError('');
     } catch (err) {
+      console.error('❌ Errore durante login:', err);
       setError(err.message);
       clearAuthData(); // Pulisci in caso di errore
     } finally {
