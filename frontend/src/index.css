@@ -190,14 +190,10 @@ html, body {
 }
 
 /* Testo nei temi alternativi */
-.theme-light .text-white,
-.theme-light .text-white\\/90,
-.theme-light .text-white\\/80,
-.theme-light .text-white\\/70,
-.theme-light .text-white\\/60,
-.theme-light .text-white\\/50 {
+.theme-light [class*="text-white/"] {
   color: #000000 !important;
 }
+
 
 /* Assicura che tutto il testo sia nero nel tema light */
 .theme-light * {
