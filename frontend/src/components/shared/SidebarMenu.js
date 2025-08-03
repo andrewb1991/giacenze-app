@@ -13,9 +13,9 @@ const SidebarMenu = () => {
   const adminSections = [
     { 
       id: 'dashboard', 
-      label: 'Dashboard', 
+      label: 'Dashboard Admin', 
       icon: '🏠',
-      description: 'Panoramica generale del sistema',
+      description: 'Panoramica generale del sistema admin',
       color: 'from-gray-400 to-gray-600'
     },
     { 
@@ -78,7 +78,7 @@ const SidebarMenu = () => {
 
   const handleSectionClick = (sectionId) => {
     if (sectionId === 'dashboard') {
-      setCurrentPage('admin-dashboard');
+      setCurrentPage('admin');
     } else {
       setCurrentPage(`admin-${sectionId}`);
     }
@@ -88,7 +88,7 @@ const SidebarMenu = () => {
   // Chiudi menu quando si clicca fuori
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isSidebarOpen && !event.target.closest('.sidebar-menu')) {
+      if (isSidebarOpen && !event.target.closest('.ios-speech-bubble')) {
         setIsSidebarOpen(false);
       }
     };
@@ -104,18 +104,16 @@ const SidebarMenu = () => {
 
   return (
     <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 transition-all duration-300"
-        onClick={() => setIsSidebarOpen(false)}
-      />
-
       {/* iOS-style Menu */}
       <div 
-        className="fixed inset-0 flex items-center justify-center z-50 p-6 animate-menu-appear"
+        className="fixed top-[60px] left-4 z-[60] animate-menu-slide-down"
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* iOS Menu Container */}
-        <div className="ios-menu-container max-w-sm w-full max-h-[80vh] overflow-hidden">
+        {/* iOS Menu Container with Speech Bubble */}
+        <div 
+          className="ios-speech-bubble w-80 max-h-[90vh] overflow-hidden" 
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header Card */}
           <div className="ios-menu-header mb-4">
             <div className="flex items-center justify-between">
@@ -131,34 +129,55 @@ const SidebarMenu = () => {
                 onClick={() => setIsSidebarOpen(false)}
                 className="ios-close-button"
                 title="Chiudi"
+                type="button"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* Menu Grid */}
-          <div className="ios-menu-grid grid grid-cols-2 gap-3 mb-4 max-h-[60vh] overflow-y-auto">
-            {adminSections.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => handleSectionClick(section.id)}
-                className="ios-menu-tile group"
-              >
-                <div className="flex flex-col items-center text-center">
-                  {/* Icon Circle */}
-                  <div className={`ios-app-icon bg-gradient-to-br ${section.color} mb-2`}>
-                    <span className="text-2xl">{section.icon}</span>
+
+          {/* Menu List */}
+          <div className="ios-menu-list mb-4 max-h-[60vh] overflow-y-auto">
+            {adminSections.map((section, index) => (
+              <div key={section.id}>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSectionClick(section.id);
+                  }}
+                  className="ios-menu-item group w-full"
+                  type="button"
+                  style={{ 
+                    minHeight: '50px',
+                    display: 'block',
+                    position: 'relative',
+                    zIndex: 100
+                  }}
+                >
+                  <div className="flex items-center">
+                    {/* Icon */}
+                    <div className="ios-menu-icon mr-3">
+                      <span className="text-xl">{section.icon}</span>
+                    </div>
+                    
+                    {/* Label */}
+                    <span className={`text-base font-normal ${
+                      isLight ? 'text-black' : 'text-white'
+                    }`}>
+                      {section.label}
+                    </span>
                   </div>
-                  
-                  {/* Label */}
-                  <h3 className={`text-xs font-medium leading-tight ${
-                    isLight ? 'text-black' : 'text-white'
-                  }`}>
-                    {section.label}
-                  </h3>
-                </div>
-              </button>
+                </button>
+                
+                {/* Separator */}
+                {index < adminSections.length - 1 && (
+                  <div className={`ios-menu-separator ${
+                    isLight ? 'border-gray-200' : 'border-white/10'
+                  }`} />
+                )}
+              </div>
             ))}
           </div>
 
@@ -170,6 +189,7 @@ const SidebarMenu = () => {
                 setIsSidebarOpen(false);
               }}
               className="ios-footer-button group w-full"
+              type="button"
             >
               <Home className={`w-5 h-5 ${isLight ? 'text-gray-600' : 'text-white/80'}`} />
               <span className={`${isLight ? 'text-gray-700' : 'text-white/90'}`}>
@@ -180,186 +200,323 @@ const SidebarMenu = () => {
         </div>
       </div>
 
-      {/* Apple Liquid Glass Styles */}
+      {/* iOS Native Menu Styles */}
       <style jsx>{`
-        /* Apple-inspired liquid glass toggle button */
-        .apple-glass-button {
+        /* iOS Speech Bubble */
+        .ios-speech-bubble {
           background: ${isLight 
-            ? 'rgba(255, 255, 255, 0.8)' 
+            ? 'rgba(255, 255, 255, 0.98)' 
             : isDark 
-              ? 'rgba(30, 30, 30, 0.8)' 
-              : 'rgba(255, 255, 255, 0.1)'
+              ? 'rgba(40, 40, 42, 0.98)' 
+              : 'rgba(30, 30, 40, 0.98)'
           };
-          backdrop-filter: blur(20px) saturate(180%);
-          -webkit-backdrop-filter: blur(20px) saturate(180%);
-          border: 1px solid ${isLight 
-            ? 'rgba(255, 255, 255, 0.9)' 
-            : isDark 
-              ? 'rgba(255, 255, 255, 0.1)' 
-              : 'rgba(255, 255, 255, 0.2)'
-          };
-          border-radius: 1.5rem; /* 24px - più stondato */
+          backdrop-filter: blur(50px) saturate(200%);
+          -webkit-backdrop-filter: blur(50px) saturate(200%);
           box-shadow: ${isLight
-            ? '0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
+            ? '0 20px 60px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08)'
             : isDark
-              ? '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-              : '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+              ? '0 20px 60px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3)'
+              : '0 20px 60px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.2)'
           };
+          position: relative;
+          z-index: 70;
+          pointer-events: auto;
+          border-radius: 24px;
+          overflow: visible;
         }
 
-        .apple-glass-button:hover {
-          background: ${isLight 
-            ? 'rgba(255, 255, 255, 0.9)' 
+        .ios-speech-bubble::before {
+          content: '';
+          position: absolute;
+          top: -15px;
+          left: 20px;
+          width: 0;
+          height: 0;
+          border-left: 15px solid transparent;
+          border-right: 15px solid transparent;
+          border-bottom: 15px solid ${isLight 
+            ? 'rgba(255, 255, 255, 0.98)' 
             : isDark 
-              ? 'rgba(45, 45, 45, 0.9)' 
+              ? 'rgba(40, 40, 42, 0.98)' 
+              : 'rgba(30, 30, 40, 0.98)'
+          };
+          filter: drop-shadow(0 -2px 4px rgba(0, 0, 0, 0.1));
+          z-index: 72;
+        }
+
+        .ios-speech-bubble::after {
+          content: '';
+          position: absolute;
+          top: -17px;
+          left: 19px;
+          width: 0;
+          height: 0;
+          border-left: 17px solid transparent;
+          border-right: 17px solid transparent;
+          border-bottom: 17px solid ${isLight 
+            ? 'rgba(0, 0, 0, 0.08)' 
+            : isDark 
+              ? 'rgba(255, 255, 255, 0.12)' 
               : 'rgba(255, 255, 255, 0.15)'
           };
-          border: 1px solid ${isLight 
-            ? 'rgba(255, 255, 255, 1)' 
-            : isDark 
-              ? 'rgba(255, 255, 255, 0.15)' 
-              : 'rgba(255, 255, 255, 0.3)'
-          };
-          transform: scale(1.05) translateY(-1px);
+          z-index: 71;
         }
 
-        /* Apple-inspired liquid glass sidebar */
-        .apple-glass-sidebar {
-          background: ${isLight 
-            ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)' 
-            : isDark 
-              ? 'linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(30, 30, 30, 0.95) 100%)' 
-              : 'linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(40, 40, 70, 0.95) 100%)'
-          };
-          backdrop-filter: blur(40px) saturate(200%);
-          -webkit-backdrop-filter: blur(40px) saturate(200%);
-          border-top-right-radius: 2rem; /* 32px - bordi stondati solo a destra */
-          border-bottom-right-radius: 2rem;
-          border-right: 1px solid ${isLight 
+        /* iOS Menu Header */
+        .ios-menu-header {
+          background: transparent;
+          padding: 16px 20px 12px 20px;
+          border-bottom: 1px solid ${isLight 
             ? 'rgba(0, 0, 0, 0.08)' 
             : isDark 
               ? 'rgba(255, 255, 255, 0.08)' 
               : 'rgba(255, 255, 255, 0.1)'
           };
-          box-shadow: ${isLight
-            ? '20px 0 60px rgba(0, 0, 0, 0.08), inset -1px 0 0 rgba(255, 255, 255, 0.9)'
-            : isDark
-              ? '20px 0 60px rgba(0, 0, 0, 0.6), inset -1px 0 0 rgba(255, 255, 255, 0.05)'
-              : '20px 0 60px rgba(0, 0, 0, 0.3), inset -1px 0 0 rgba(255, 255, 255, 0.1)'
+        }
+
+        /* iOS Close Button */
+        .ios-close-button {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: ${isLight 
+            ? 'rgba(120, 120, 128, 0.16)' 
+            : isDark 
+              ? 'rgba(120, 120, 128, 0.24)' 
+              : 'rgba(255, 255, 255, 0.15)'
+          };
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+          color: ${isLight ? '#000' : '#fff'};
+          transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .ios-close-button:hover {
+          background: ${isLight 
+            ? 'rgba(120, 120, 128, 0.24)' 
+            : isDark 
+              ? 'rgba(120, 120, 128, 0.32)' 
+              : 'rgba(255, 255, 255, 0.2)'
+          };
+          transform: scale(1.05);
+        }
+
+        .ios-close-button:active {
+          transform: scale(0.95);
+        }
+
+        /* iOS Menu List */
+        .ios-menu-list {
+          padding: 8px 0;
+        }
+
+        /* iOS Menu Items */
+        .ios-menu-item {
+          background: transparent;
+          padding: 12px 20px;
+          text-align: left;
+          transition: all 0.15s ease-out;
+          cursor: pointer !important;
+          pointer-events: auto !important;
+          z-index: 80;
+          width: 100%;
+        }
+
+        .ios-menu-item:hover {
+          background: ${isLight 
+            ? 'rgba(120, 120, 128, 0.08)' 
+            : isDark 
+              ? 'rgba(255, 255, 255, 0.04)' 
+              : 'rgba(255, 255, 255, 0.06)'
+          } !important;
+        }
+
+        .ios-menu-item:active {
+          background: ${isLight 
+            ? 'rgba(120, 120, 128, 0.16)' 
+            : isDark 
+              ? 'rgba(255, 255, 255, 0.08)' 
+              : 'rgba(255, 255, 255, 0.1)'
+          } !important;
+          transform: scale(0.98);
+        }
+
+        /* iOS Menu Icon */
+        .ios-menu-icon {
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          color: ${isLight 
+            ? 'rgba(0, 0, 0, 0.8)' 
+            : isDark 
+              ? 'rgba(255, 255, 255, 0.8)' 
+              : 'rgba(255, 255, 255, 0.9)'
           };
         }
 
-        /* Apple-inspired liquid glass menu items */
-        .apple-glass-menu-item {
-          background: ${isLight 
-            ? 'rgba(255, 255, 255, 0.6)' 
-            : isDark 
-              ? 'rgba(255, 255, 255, 0.03)' 
-              : 'rgba(255, 255, 255, 0.05)'
-          };
-          backdrop-filter: blur(20px) saturate(150%);
-          -webkit-backdrop-filter: blur(20px) saturate(150%);
-          border: 1px solid ${isLight 
-            ? 'rgba(0, 0, 0, 0.06)' 
+        /* iOS Menu Separator */
+        .ios-menu-separator {
+          height: 1px;
+          margin-left: 51px;
+          border-bottom: 1px solid;
+        }
+
+        /* iOS Menu Footer */
+        .ios-menu-footer {
+          background: transparent;
+          padding: 8px 0 0 0;
+          border-top: 1px solid ${isLight 
+            ? 'rgba(0, 0, 0, 0.08)' 
             : isDark 
               ? 'rgba(255, 255, 255, 0.08)' 
               : 'rgba(255, 255, 255, 0.1)'
           };
-          border-radius: 1.5rem; /* 24px - più stondato */
-          transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-          box-shadow: ${isLight
-            ? '0 4px 20px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
-            : isDark
-              ? '0 4px 20px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
-              : '0 4px 20px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-          };
         }
 
-        .apple-glass-menu-item:hover {
+        /* iOS Footer Button */
+        .ios-footer-button {
+          background: transparent !important;
+          border: none !important;
+          padding: 12px 20px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          font-size: 16px;
+          font-weight: 400;
+          text-align: left;
+          width: 100%;
+          transition: all 0.15s ease-out;
+          cursor: pointer;
+        }
+
+        .ios-footer-button:hover {
           background: ${isLight 
-            ? 'rgba(255, 255, 255, 0.8)' 
+            ? 'rgba(120, 120, 128, 0.08)' 
             : isDark 
-              ? 'rgba(255, 255, 255, 0.06)' 
-              : 'rgba(255, 255, 255, 0.1)'
-          };
-          border: 1px solid ${isLight 
-            ? 'rgba(59, 130, 246, 0.2)' 
-            : isDark 
-              ? 'rgba(255, 255, 255, 0.12)' 
-              : 'rgba(255, 255, 255, 0.2)'
-          };
-          transform: translateX(6px) scale(1.02);
-          box-shadow: ${isLight
-            ? '0 12px 40px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1)'
-            : isDark
-              ? '0 12px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
-              : '0 12px 40px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
-          };
+              ? 'rgba(255, 255, 255, 0.04)' 
+              : 'rgba(255, 255, 255, 0.06)'
+          } !important;
         }
 
-        .apple-glass-menu-item:active {
-          transform: translateX(4px) scale(0.98);
-          transition: all 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        /* Apple-style scrollbar */
-        .sidebar-menu::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        .sidebar-menu::-webkit-scrollbar-track {
+        .ios-footer-button:active {
+          transform: scale(0.98);
           background: ${isLight 
-            ? 'rgba(0, 0, 0, 0.05)' 
+            ? 'rgba(120, 120, 128, 0.16)' 
             : isDark 
-              ? 'rgba(255, 255, 255, 0.05)' 
+              ? 'rgba(255, 255, 255, 0.08)' 
               : 'rgba(255, 255, 255, 0.1)'
-          };
-          border-radius: 4px;
-          margin: 8px 0;
+          } !important;
         }
 
-        .sidebar-menu::-webkit-scrollbar-thumb {
+        /* iOS Scrollbar */
+        .ios-menu-list::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .ios-menu-list::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .ios-menu-list::-webkit-scrollbar-thumb {
           background: ${isLight 
             ? 'rgba(0, 0, 0, 0.2)' 
             : isDark 
-              ? 'rgba(255, 255, 255, 0.2)' 
-              : 'rgba(255, 255, 255, 0.3)'
+              ? 'rgba(255, 255, 255, 0.3)' 
+              : 'rgba(255, 255, 255, 0.4)'
           };
-          border-radius: 4px;
-          border: 2px solid transparent;
-          background-clip: content-box;
+          border-radius: 3px;
         }
 
-        .sidebar-menu::-webkit-scrollbar-thumb:hover {
+        .ios-menu-list::-webkit-scrollbar-thumb:hover {
           background: ${isLight 
             ? 'rgba(0, 0, 0, 0.3)' 
             : isDark 
-              ? 'rgba(255, 255, 255, 0.3)' 
+              ? 'rgba(255, 255, 255, 0.4)' 
               : 'rgba(255, 255, 255, 0.5)'
           };
-          background-clip: content-box;
         }
 
-        /* Smooth appearance animation */
-        .animate-slide-in {
-          animation: slideInLiquid 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        /* iOS Menu Slide Down Animation */
+        .animate-menu-slide-down {
+          animation: menuSlideDown 0.2s ease-out;
         }
 
-        @keyframes slideInLiquid {
+        .animate-menu-slide-down .ios-speech-bubble::before,
+        .animate-menu-slide-down .ios-speech-bubble::after {
+          animation: bubbleArrowSlide 0.2s ease-out;
+        }
+
+        @keyframes menuSlideDown {
           from {
-            transform: translateX(-100%) scale(0.98);
+            opacity: 0;
+            transform: translateY(-30px) scale(0.9);
+          }
+          50% {
+            opacity: 0.8;
+            transform: translateY(-5px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes bubbleArrowSlide {
+          from {
+            opacity: 0;
+            transform: translateY(-12px) scale(0.7) rotate(-5deg);
+          }
+          50% {
+            opacity: 0.7;
+            transform: translateY(-2px) scale(0.95) rotate(2deg);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1) rotate(0deg);
+          }
+        }
+
+        /* Backdrop fade animation */
+        .animate-backdrop-fade {
+          animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+          from {
             opacity: 0;
           }
           to {
-            transform: translateX(0) scale(1);
             opacity: 1;
+          }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+          .ios-menu-container {
+            width: 280px;
+          }
+          
+          .ios-menu-item {
+            padding: 10px 16px;
+          }
+          
+          .ios-footer-button {
+            padding: 10px 16px;
+          }
+        }
+
+        @media (max-width: 320px) {
+          .ios-menu-container {
+            width: 260px;
+          }
+          
+          .animate-menu-slide-down {
+            padding: 12px;
           }
         }
       `}</style>

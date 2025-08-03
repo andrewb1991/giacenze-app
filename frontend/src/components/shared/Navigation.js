@@ -71,29 +71,34 @@ const Navigation = ({ title = "Giacenze Personali", showBackToDashboard = false,
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-4">
               {showSidebarToggle && sidebarState && (
-                <button
-                  onClick={() => sidebarState.setIsSidebarOpen(!sidebarState.isSidebarOpen)}
-                  className={`glass-button p-2 rounded-2xl hover:scale-105 transition-all duration-300 ${
-                    isLight ? 'text-black' : 'text-white'
-                  }`}
-                  title="Menu di navigazione"
-                >
-                  <Menu className="w-6 h-6" />
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      sidebarState.setIsSidebarOpen(!sidebarState.isSidebarOpen);
+                    }}
+                    className={`glass-button p-2 rounded-2xl hover:scale-105 transition-all duration-300 ${
+                      isLight ? 'text-black' : 'text-white'
+                    }`}
+                    title="Menu di navigazione"
+                  >
+                    <Menu className="w-6 h-6" />
+                  </button>
+                  {user?.role === 'admin' && (
+                    <button
+                      onClick={() => setCurrentPage('admin')}
+                      className="glass-button-admin px-3 py-1 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center space-x-1"
+                      title="Torna alla Dashboard Admin"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>Dashboard Admin</span>
+                    </button>
+                  )}
+                </>
               )}
               <div className="glass-icon p-2 rounded-xl">
                 <Package2 className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-xl font-semibold text-white">{title}</h1>
-              {showBackToDashboard && (
-                <button
-                  onClick={() => setCurrentPage(user?.role === 'admin' ? 'admin' : 'dashboard')}
-                  className="glass-button px-3 py-1 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center space-x-1"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>{user?.role === 'admin' ? 'Dashboard Admin' : 'Dashboard'}</span>
-                </button>
-              )}
             </div>
             <div className="flex items-center space-x-4">
               <div className="glass-user-info px-3 py-2 rounded-xl">
