@@ -206,19 +206,13 @@ html, body {
   color: #4b5563 !important;
 }
 
-.theme-dark .text-white,
-.theme-dark .text-white\\/90,
-.theme-dark .text-white\\/80,
-.theme-dark .text-white\\/70,
-.theme-dark .text-white\\/60,
-.theme-dark .text-white\\/50 {
-  color: var(--text-white) !important;
+.theme-light * {
+  color: #000000 !important;
 }
 
 /* Input e placeholder */
-.theme-light .placeholder-white\\/50::placeholder,
-.theme-dark .placeholder-white\\/50::placeholder {
-  color: var(--text-secondary) !important;
+.theme-light * {
+  color: #000000 !important;
 }
 
 /* Effetti background orbs disabilitati nei temi alternativi */
