@@ -351,6 +351,9 @@ const ordineSchema = new mongoose.Schema({
   timestamps: true 
 });
 
+// Assicura indice univoco sul campo numero per ordini
+ordineSchema.index({ numero: 1 }, { unique: true });
+
 // MODIFICATO: Schema giacenze con riferimento alla settimana
 const giacenzaUtenteSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -445,6 +448,20 @@ const GiacenzaUtente = mongoose.model('GiacenzaUtente', giacenzaUtenteSchema);
 const Utilizzo = mongoose.model('Utilizzo', utilizzoSchema);
 const Aggiunta = mongoose.model('Aggiunta', aggiuntaSchema);
 const Ordine = mongoose.model('Ordine', ordineSchema);
+
+// Rimuovi indice obsoleto se esiste
+(async () => {
+  try {
+    await Ordine.collection.dropIndex('numeroOrdine_1');
+    console.log('✅ Indice obsoleto numeroOrdine_1 rimosso');
+  } catch (err) {
+    if (err.code === 27 || err.message.includes('index not found')) {
+      console.log('ℹ️ Indice numeroOrdine_1 non trovato (già rimosso)');
+    } else {
+      console.log('⚠️ Errore rimozione indice:', err.message);
+    }
+  }
+})();
 
 // Schema RDT (Richiesta Di Trasferimento)
 const rdtSchema = new mongoose.Schema({
@@ -767,6 +784,73 @@ app.post('/api/add-product', authenticateToken, async (req, res) => {
       nuovaQuantitaDisponibile: giacenza.quantitaDisponibile
     });
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Aggiungi prodotti direttamente alle giacenze operatore (per finalizzazione ordini/RDT)
+app.post('/api/add-product-to-operator', authenticateToken, async (req, res) => {
+  try {
+    const { productId, quantitaAggiunta, assegnazioneId, note } = req.body;
+
+    // Trova l'assegnazione per ottenere l'userId dell'operatore
+    const assegnazione = await Assegnazione.findById(assegnazioneId).populate('userId');
+    if (!assegnazione) {
+      return res.status(404).json({ message: 'Assegnazione non trovata' });
+    }
+
+    const operatoreId = assegnazione.userId._id || assegnazione.userId;
+
+    // Trova o crea giacenza per l'operatore
+    let giacenza = await GiacenzaUtente.findOne({
+      userId: operatoreId,
+      productId,
+      attiva: true
+    });
+
+    if (!giacenza) {
+      // Crea nuova giacenza per l'operatore
+      giacenza = new GiacenzaUtente({
+        userId: operatoreId,
+        productId,
+        quantitaAssegnata: quantitaAggiunta,
+        quantitaDisponibile: quantitaAggiunta,
+        quantitaMinima: 0,
+        assegnatoDa: req.user.userId,
+        note: note || 'Aggiunto da finalizzazione ordine/RDT'
+      });
+    } else {
+      // Aggiorna giacenza esistente
+      giacenza.quantitaAssegnata += quantitaAggiunta;
+      giacenza.quantitaDisponibile += quantitaAggiunta;
+    }
+
+    await giacenza.save();
+
+    // Registra l'aggiunta
+    const aggiunta = new Aggiunta({
+      userId: operatoreId,
+      productId,
+      giacenzaUtenteId: giacenza._id,
+      assegnazioneId,
+      quantitaAggiunta,
+      quantitaPrimaDellAggiunta: giacenza.quantitaDisponibile - quantitaAggiunta,
+      quantitaDopoAggiunta: giacenza.quantitaDisponibile,
+      motivo: 'FINALIZZAZIONE_ORDINE_RDT',
+      note: note || 'Prodotti aggiunti da finalizzazione ordine/RDT'
+    });
+
+    await aggiunta.save();
+
+    res.status(200).json({
+      message: 'Prodotti aggiunti alle giacenze operatore',
+      giacenza: {
+        quantitaAssegnata: giacenza.quantitaAssegnata,
+        quantitaDisponibile: giacenza.quantitaDisponibile
+      }
+    });
+  } catch (error) {
+    console.error('Errore aggiunta prodotti operatore:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -3080,25 +3164,12 @@ app.post('/api/rdt', authenticateToken, requireAdmin, async (req, res) => {
     }
 
     // Verifica unicità numero RDT
-    console.log(`🔍 Controllo duplicati per RDT numero: "${numero}"`);
     const existingRdt = await RDT.findOne({ numero, deleted: false });
-    console.log('📋 RDT esistente trovato:', existingRdt ? {
-      _id: existingRdt._id,
-      numero: existingRdt.numero,
-      cliente: existingRdt.cliente,
-      stato: existingRdt.stato,
-      deleted: existingRdt.deleted,
-      createdAt: existingRdt.createdAt
-    } : 'Nessuno');
-    
     if (existingRdt) {
-      console.log(`❌ RDT con numero "${numero}" già esiste`);
       return res.status(400).json({ 
         message: 'Numero RDT già esistente' 
       });
     }
-    
-    console.log(`✅ Numero RDT "${numero}" disponibile`);
 
     // Calcola valore totale se non fornito
     let valoreCalcolato = valore || 0;
@@ -4743,30 +4814,6 @@ app.post('/api/postazioni/copy', authenticateToken, requireAdmin, async (req, re
 // =====================================================
 
 // GET - Lista tutti gli ordini con filtri
-// DEBUG - Controlla numeri ordini esistenti
-app.get('/api/debug/ordini-numeri', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const ordini = await Ordine.find({}, 'numero cliente stato createdAt').sort({ numero: 1 });
-    const rdt = await RDT.find({ deleted: false }, 'numero cliente stato createdAt').sort({ numero: 1 });
-    
-    res.json({
-      ordini: ordini.map(o => ({ 
-        numero: o.numero, 
-        cliente: o.cliente, 
-        stato: o.stato, 
-        createdAt: o.createdAt 
-      })),
-      rdt: rdt.map(r => ({ 
-        numero: r.numero, 
-        cliente: r.cliente, 
-        stato: r.stato, 
-        createdAt: r.createdAt 
-      }))
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
 
 app.get('/api/ordini', authenticateToken, async (req, res) => {
   try {
@@ -4892,40 +4939,13 @@ app.post('/api/ordini', authenticateToken, requireAdmin, async (req, res) => {
       });
     }
     
-    // Controlla numero ordine univoco con controlli multipli
-    console.log(`🔍 Controllo duplicati per ordine numero: "${numero}" (tipo: ${typeof numero})`);
-    
-    // Controllo principale
+    // Controlla numero ordine univoco
     const esistente = await Ordine.findOne({ numero });
-    
-    // Controllo alternativo per sicurezza (caso-insensitive e trim)
-    const esistenteAlt = await Ordine.findOne({ 
-      numero: { $regex: new RegExp(`^${numero.toString().trim()}$`, 'i') }
-    });
-    
-    console.log('📋 Ordine esistente trovato:', esistente ? {
-      _id: esistente._id,
-      numero: esistente.numero,
-      tipo: typeof esistente.numero,
-      cliente: esistente.cliente,
-      stato: esistente.stato,
-      createdAt: esistente.createdAt
-    } : 'Nessuno');
-    
-    console.log('📋 Ordine alternativo trovato:', esistenteAlt ? {
-      _id: esistenteAlt._id,
-      numero: esistenteAlt.numero,
-      tipo: typeof esistenteAlt.numero
-    } : 'Nessuno');
-    
-    if (esistente || esistenteAlt) {
-      console.log(`❌ Ordine con numero "${numero}" già esiste`);
+    if (esistente) {
       return res.status(400).json({ 
-        message: `Numero ordine già esistente: "${numero}"` 
+        message: 'Numero ordine già esistente' 
       });
     }
-    
-    console.log(`✅ Numero ordine "${numero}" disponibile`);
     
     const ordine = new Ordine({
       numero,
@@ -5228,7 +5248,7 @@ app.post('/api/assegnazioni/:id/ordini', authenticateToken, requireAdmin, async 
     }
     
     // Aggiungi ordine all'assegnazione (assicurati che sia ObjectId)
-    assegnazione.ordine = mongoose.Types.ObjectId(ordineId);
+    assegnazione.ordine = new mongoose.Types.ObjectId(ordineId);
     await assegnazione.save();
     
     // Aggiorna stato ordine
@@ -5598,11 +5618,11 @@ app.get('/api/operatori/:userId/statistiche-ordini', authenticateToken, async (r
       return res.status(403).json({ message: 'Non autorizzato' });
     }
     
-    const matchFilter = { userId: mongoose.Types.ObjectId(userId), attiva: true };
+    const matchFilter = { userId: new mongoose.Types.ObjectId(userId), attiva: true };
     
     // Filtri temporali per assegnazioni
     if (settimanaId) {
-      matchFilter.settimanaId = mongoose.Types.ObjectId(settimanaId);
+      matchFilter.settimanaId = new mongoose.Types.ObjectId(settimanaId);
     }
     
     const stats = await Assegnazione.aggregate([

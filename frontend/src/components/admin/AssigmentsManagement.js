@@ -3334,8 +3334,16 @@ const AssignmentsManagement = () => {
         assegnazione.userId?.email.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
         assegnazione.poloId?.nome.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
         assegnazione.mezzoId?.nome.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        (assegnazione.ordine && assegnazione.ordine.toLowerCase().includes(filters.searchTerm.toLowerCase())) ||  // ✅ NUOVO
-        (assegnazione.rdt && assegnazione.rdt.toLowerCase().includes(filters.searchTerm.toLowerCase()))             // ✅ NUOVO
+        (assegnazione.ordine && (
+          typeof assegnazione.ordine === 'object' 
+            ? assegnazione.ordine.numero?.toLowerCase().includes(filters.searchTerm.toLowerCase())
+            : assegnazione.ordine.toLowerCase().includes(filters.searchTerm.toLowerCase())
+        )) ||  // ✅ NUOVO
+        (assegnazione.rdt && (
+          typeof assegnazione.rdt === 'object' 
+            ? assegnazione.rdt.numero?.toLowerCase().includes(filters.searchTerm.toLowerCase())
+            : assegnazione.rdt.toLowerCase().includes(filters.searchTerm.toLowerCase())
+        ))             // ✅ NUOVO
       );
     }
     
@@ -4120,7 +4128,11 @@ const AssignmentsManagement = () => {
                             <>
                               <Hash className="w-4 h-4 mr-2 text-green-400" />
                               <div className="text-sm text-white">
-                                {assegnazione.ordine || (
+                                {assegnazione.ordine ? (
+                                  typeof assegnazione.ordine === 'object' 
+                                    ? assegnazione.ordine.numero 
+                                    : assegnazione.ordine
+                                ) : (
                                   <span className="text-white/40 italic">Non assegnato</span>
                                 )}
                               </div>
@@ -4146,7 +4158,11 @@ const AssignmentsManagement = () => {
                             <>
                               <Clipboard className="w-4 h-4 mr-2 text-purple-400" />
                               <div className="text-sm text-white">
-                                {assegnazione.rdt || (
+                                {assegnazione.rdt ? (
+                                  typeof assegnazione.rdt === 'object' 
+                                    ? assegnazione.rdt.numero 
+                                    : assegnazione.rdt
+                                ) : (
                                   <span className="text-white/40 italic">Non assegnato</span>
                                 )}
                               </div>
@@ -4234,8 +4250,8 @@ const AssignmentsManagement = () => {
                                         poloId: assegnazione.poloId?._id || '',
                                         mezzoId: assegnazione.mezzoId?._id || '',
                                         settimanaId: assegnazione.settimanaId?._id || '',
-                                        ordine: assegnazione.ordine || '',      // ✅ NUOVO CAMPO
-                                        rdt: assegnazione.rdt || ''             // ✅ NUOVO CAMPO
+                                        ordine: (typeof assegnazione.ordine === 'object' ? assegnazione.ordine?.numero : assegnazione.ordine) || '',      // ✅ NUOVO CAMPO
+                                        rdt: (typeof assegnazione.rdt === 'object' ? assegnazione.rdt?.numero : assegnazione.rdt) || ''             // ✅ NUOVO CAMPO
                                       });
                                     }}
                                     className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"

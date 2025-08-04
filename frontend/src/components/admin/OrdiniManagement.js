@@ -98,6 +98,21 @@ const OrdiniManagement = () => {
   const [finalizeItemType, setFinalizeItemType] = useState('ordine');
   const [finalizeAssignment, setFinalizeAssignment] = useState('');
 
+  // Stati per editing inline tabella
+  const [editingItem, setEditingItem] = useState(null);
+  const [editingType, setEditingType] = useState('');
+  const [editForm, setEditForm] = useState({});
+  
+  // Stati per controllo giacenze
+  const [giacenzeDisponibili, setGiacenzeDisponibili] = useState({});
+  const [loadingGiacenze, setLoadingGiacenze] = useState(false);
+  
+  // Stati per nuovo workflow creazione ordine
+  const [selectedOperatore, setSelectedOperatore] = useState('');
+  const [operatoreAssignments, setOperatoreAssignments] = useState([]);
+  const [operatoreGiacenze, setOperatoreGiacenze] = useState([]);
+  const [loadingOperatoreData, setLoadingOperatoreData] = useState(false);
+
   // Stati per filtri
   const [filtri, setFiltri] = useState({
     stato: '',
@@ -204,11 +219,7 @@ const OrdiniManagement = () => {
         }, 0)
       };
       
-      console.log('🔍 Payload da inviare:', payload);
-
-      // Controllo duplicati delegato al backend per maggiore affidabilità
-      // Il frontend potrebbe avere dati non aggiornati
-      console.log(`🔍 Tentativo creazione ${modalType} con numero: "${payload.numero}"`);;
+      console.log('🔍 Payload da inviare:', payload);;
 
       // Crea l'ordine/RDT
       const createdItem = await apiCall(endpoint, {
@@ -256,31 +267,15 @@ const OrdiniManagement = () => {
         }
       }
 
-      // Reset form e chiudi modal
-      setNuovoItem({
-        numero: '',
-        cliente: '',
-        dataConsegna: '',
-        priorita: 'MEDIA',  
-        prodotti: [],
-        indirizzo: {
-          via: '',
-          citta: '',
-          cap: '',
-          provincia: ''
-        },
-        contatti: {
-          telefono: '',
-          email: '',
-          referente: ''
-        },
-        note: '',
-        assegnazioneId: ''
-      });
+      // Reset form e chiudi modal SOLO in caso di successo
+      resetNewItemForm();
       setShowNewModal(false);
+      setError(''); // Pulisce eventuali errori precedenti
       
       // Ricarica dati
       await loadData();
+      
+      console.log(`✅ ${modalType} creato con successo`);
       
     } catch (err) {
       console.error(`❌ Errore creazione ${modalType}:`, err);
@@ -296,12 +291,13 @@ const OrdiniManagement = () => {
         setError(`Errore nella creazione ${modalType}: ` + err.message);
       }
       
-      // Ricarica i dati per assicurarsi che siano aggiornati per il prossimo tentativo
+      // NON pulire il form in caso di errore per permettere correzioni
+      // Ricarica i dati per assicurarsi che siano aggiornati
       await loadData();
     }
   };
 
-  const addProductToItem = () => {
+  const addProductToItem = async () => {
     if (!newProduct.productId || newProduct.quantita <= 0) {
       setError('Seleziona un prodotto e inserisci una quantità valida');
       return;
@@ -311,6 +307,20 @@ const OrdiniManagement = () => {
     if (!selectedProduct) {
       setError('Prodotto non trovato');
       return;
+    }
+
+    // Controllo giacenze se c'è un'assegnazione selezionata
+    if (nuovoItem.assegnazioneId) {
+      const giacenzeInfo = await checkGiacenzeDisponibili(
+        newProduct.productId, 
+        nuovoItem.assegnazioneId, 
+        newProduct.quantita
+      );
+      
+      if (giacenzeInfo && giacenzeInfo.quantitaAttuale < parseInt(newProduct.quantita)) {
+        setError(`⚠️ Giacenza insufficiente! Disponibile: ${giacenzeInfo.quantitaAttuale}, Richiesta: ${newProduct.quantita}`);
+        return;
+      }
     }
 
     // Controlla se il prodotto è già presente
@@ -401,7 +411,7 @@ const OrdiniManagement = () => {
     }
   };
 
-  const addProductToDetails = () => {
+  const addProductToDetails = async () => {
     if (!newProduct.productId || newProduct.quantita <= 0) {
       setError('Seleziona un prodotto e inserisci una quantità valida');
       return;
@@ -411,6 +421,20 @@ const OrdiniManagement = () => {
     if (!selectedProductObj) {
       setError('Prodotto non trovato');
       return;
+    }
+
+    // Verifica giacenze disponibili se c'è un'assegnazione
+    if (detailsItem?.assegnazioneId) {
+      const giacenzeInfo = await checkGiacenzeDisponibili(
+        newProduct.productId, 
+        detailsItem.assegnazioneId, 
+        newProduct.quantita
+      );
+      
+      if (giacenzeInfo && giacenzeInfo.quantitaAttuale < parseInt(newProduct.quantita)) {
+        setError(`⚠️ Quantità insufficiente! Disponibile: ${giacenzeInfo.quantitaAttuale}, Richiesta: ${newProduct.quantita}`);
+        return;
+      }
     }
 
     // Controlla se il prodotto è già presente
@@ -463,6 +487,292 @@ const OrdiniManagement = () => {
     setShowFinalizeModal(true);
   };
 
+  const startEdit = (item, type) => {
+    setEditingItem(item._id);
+    setEditingType(type);
+    setEditForm({
+      numero: item.numero,
+      cliente: item.cliente,
+      dataConsegna: item.dataConsegna,
+      priorita: item.priorita,
+      note: item.note || '',
+      indirizzo: {
+        via: item.indirizzo?.via || '',
+        citta: item.indirizzo?.citta || '',
+        cap: item.indirizzo?.cap || '',
+        provincia: item.indirizzo?.provincia || ''
+      },
+      contatti: {
+        telefono: item.contatti?.telefono || '',
+        email: item.contatti?.email || '',
+        referente: item.contatti?.referente || ''
+      },
+      // Aggiungi assegnazione corrente
+      assegnazioneId: (() => {
+        const assignments = getAssignazioniForItem(type, item._id);
+        return assignments[0]?._id || '';
+      })()
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingItem(null);
+    setEditingType('');
+    setEditForm({});
+  };
+
+  const reopenItem = async (itemId, itemType) => {
+    try {
+      const endpoint = itemType === 'ordine' ? '/ordini' : '/rdt';
+      
+      // Cambia stato da COMPLETATO/FINALIZZATO a CREATO
+      await apiCall(`${endpoint}/${itemId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ stato: 'CREATO' })
+      }, token);
+      
+      // Ricarica dati
+      await loadData();
+      
+      console.log(`⚙️ ${itemType} riaperto con successo - stato cambiato in CREATO`);
+    } catch (err) {
+      setError(`Errore nella riapertura ${itemType}: ` + err.message);
+      console.error('Errore riapertura:', err);
+    }
+  };
+
+  const resetNewItemForm = () => {
+    setNuovoItem({
+      numero: '',
+      cliente: '',
+      dataConsegna: '',
+      priorita: 'MEDIA',  
+      prodotti: [],
+      indirizzo: {
+        via: '',
+        citta: '',
+        cap: '',
+        provincia: ''
+      },
+      contatti: {
+        telefono: '',
+        email: '',
+        referente: ''
+      },
+      note: '',
+      assegnazioneId: ''
+    });
+    setNewProduct({ productId: '', quantita: 0 });
+    setProductSearch('');
+    setProductSelectionMode('search');
+    setSelectedOperatore('');
+    setOperatoreAssignments([]);
+    setOperatoreGiacenze([]);
+  };
+
+  const loadOperatoreData = async (operatoreId) => {
+    if (!operatoreId) {
+      setOperatoreAssignments([]);
+      setOperatoreGiacenze([]);
+      return;
+    }
+    
+    try {
+      setLoadingOperatoreData(true);
+      
+      // Carica assegnazioni dell'operatore
+      const assignmentsData = await apiCall(`/assegnazioni?userId=${operatoreId}`, {}, token);
+      setOperatoreAssignments(assignmentsData || []);
+      
+      // Carica giacenze dell'operatore
+      const giacenzeData = await apiCall(`/admin/giacenze?userId=${operatoreId}`, {}, token);
+      setOperatoreGiacenze(giacenzeData || []);
+      
+    } catch (err) {
+      console.error('Errore caricamento dati operatore:', err);
+      setError('Errore nel caricamento dati operatore: ' + err.message);
+    } finally {
+      setLoadingOperatoreData(false);
+    }
+  };
+
+  const handleOperatoreChange = async (operatoreId) => {
+    setSelectedOperatore(operatoreId);
+    await loadOperatoreData(operatoreId);
+    
+    // Reset assegnazione selezionata quando cambia operatore
+    setNuovoItem({...nuovoItem, assegnazioneId: ''});
+  };
+
+  const deleteItem = async (itemId, itemType) => {
+    // Trova l'item per controllare lo stato
+    const item = itemType === 'ordine' 
+      ? ordini.find(o => o._id === itemId)
+      : rdt.find(r => r._id === itemId);
+      
+    if (!item) {
+      setError(`${itemType} non trovato`);
+      return;
+    }
+    
+    // Avviso aggiuntivo per items non in stato CREATO
+    let warningMessage = `Sei sicuro di voler eliminare questo ${itemType}?\n\nQuesta azione è irreversibile e rimuoverà:\n- Il ${itemType} dal sistema\n- Eventuali collegamenti alle assegnazioni\n- I dati non potranno essere recuperati`;
+    
+    if (item.stato !== 'CREATO') {
+      warningMessage += `\n\n⚠️ ATTENZIONE: Questo ${itemType} ha stato "${item.stato}"\nL'eliminazione potrebbe influire su assegnazioni attive!`;
+    }
+    
+    const confirmDelete = window.confirm(warningMessage);
+    
+    if (!confirmDelete) return;
+    
+    try {
+      const endpoint = itemType === 'ordine' ? '/ordini' : '/rdt';
+      
+      // Prima rimuovi eventuali collegamenti alle assegnazioni
+      const assignments = getAssignazioniForItem(itemType, itemId);
+      if (assignments.length > 0) {
+        console.log(`🔗 Rimozione collegamenti da ${assignments.length} assegnazioni...`);
+        for (const assignment of assignments) {
+          if (itemType === 'ordine') {
+            await apiCall(`/assegnazioni/${assignment._id}`, {
+              method: 'PUT',
+              body: JSON.stringify({ ordine: null })
+            }, token);
+          } else {
+            await apiCall(`/assegnazioni/${assignment._id}`, {
+              method: 'PUT',
+              body: JSON.stringify({ rdt: null })
+            }, token);
+          }
+        }
+      }
+      
+      // Poi elimina l'ordine/RDT
+      await apiCall(`${endpoint}/${itemId}`, {
+        method: 'DELETE'
+      }, token);
+      
+      // Ricarica dati
+      await loadData();
+      
+      console.log(`🗑️ ${itemType} eliminato con successo`);
+    } catch (err) {
+      setError(`Errore nell'eliminazione ${itemType}: ` + err.message);
+      console.error('Errore eliminazione:', err);
+    }
+  };
+
+  const saveEdit = async (itemId, type) => {
+    try {
+      const endpoint = type === 'ordine' ? '/ordini' : '/rdt';
+      
+      const payload = {
+        numero: editForm.numero?.trim(),
+        cliente: editForm.cliente?.trim(),
+        dataConsegna: editForm.dataConsegna,
+        priorita: editForm.priorita,
+        note: editForm.note?.trim() || '',
+        indirizzo: {
+          via: editForm.indirizzo?.via?.trim() || '',
+          citta: editForm.indirizzo?.citta?.trim() || '',
+          cap: editForm.indirizzo?.cap?.trim() || '',
+          provincia: editForm.indirizzo?.provincia?.trim() || ''
+        },
+        contatti: {
+          telefono: editForm.contatti?.telefono?.trim() || '',
+          email: editForm.contatti?.email?.trim() || '',
+          referente: editForm.contatti?.referente?.trim() || ''
+        }
+      };
+
+      await apiCall(`${endpoint}/${itemId}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      }, token);
+
+      // Gestisci cambio assegnazione se necessario
+      if (editForm.assegnazioneId) {
+        // Trova l'assegnazione corrente dell'item
+        const currentAssignments = getAssignazioniForItem(type, itemId);
+        const currentAssignmentId = currentAssignments[0]?._id;
+        
+        // Se l'assegnazione è cambiata
+        if (currentAssignmentId !== editForm.assegnazioneId) {
+          // Rimuovi dall'assegnazione corrente
+          if (currentAssignmentId) {
+            if (type === 'ordine') {
+              await apiCall(`/assegnazioni/${currentAssignmentId}/ordine`, {
+                method: 'DELETE'
+              }, token);
+            } else {
+              await apiCall(`/assegnazioni/${currentAssignmentId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ rdt: null })
+              }, token);
+            }
+          }
+          
+          // Aggiungi alla nuova assegnazione
+          if (type === 'ordine') {
+            await apiCall(`/assegnazioni/${editForm.assegnazioneId}/ordini`, {
+              method: 'POST',
+              body: JSON.stringify({ ordineId: itemId })
+            }, token);
+          } else {
+            await apiCall(`/assegnazioni/${editForm.assegnazioneId}`, {
+              method: 'PUT',
+              body: JSON.stringify({ rdt: itemId })
+            }, token);
+          }
+        }
+      }
+
+      // Reset editing
+      cancelEdit();
+      
+      // Ricarica dati
+      await loadData();
+      
+      console.log(`✅ ${type} aggiornato con successo`);
+    } catch (err) {
+      setError(`Errore nell'aggiornamento ${type}: ` + err.message);
+    }
+  };
+
+  const checkGiacenzeDisponibili = async (productId, assegnazioneId, quantita) => {
+    if (!productId || !assegnazioneId || !quantita) return null;
+    
+    try {
+      setLoadingGiacenze(true);
+      
+      // Trova l'assegnazione per ottenere l'operatore
+      const assegnazione = assegnazioni.find(ass => ass._id === assegnazioneId);
+      if (!assegnazione) return null;
+      
+      const operatoreId = assegnazione.userId?._id || assegnazione.userId;
+      
+      // Ottieni giacenze attuali dell'operatore per questo prodotto
+      const giacenzeData = await apiCall(`/admin/giacenze?userId=${operatoreId}&productId=${productId}`, {}, token);
+      
+      const giacenzaAttuale = giacenzeData?.[0];
+      const quantitaDisponibile = giacenzaAttuale?.quantitaDisponibile || 0;
+      const nuovaQuantita = quantitaDisponibile + parseInt(quantita);
+      
+      return {
+        quantitaAttuale: quantitaDisponibile,
+        nuovaQuantita: nuovaQuantita,
+        prodotto: products.find(p => p._id === productId),
+        operatore: users.find(u => u._id === operatoreId)
+      };
+    } catch (err) {
+      console.error('Errore controllo giacenze:', err);
+      return null;
+    } finally {
+      setLoadingGiacenze(false);
+    }
+  };
+
   const executeFinalization = async () => {
     try {
       if (!finalizeAssignment) {
@@ -510,7 +820,7 @@ const OrdiniManagement = () => {
 
             if (prodottoSistema) {
               // AGGIUNGE alla giacenza dell'operatore specifico
-              await apiCall(`/add-product`, {
+              await apiCall(`/add-product-to-operator`, {
                 method: 'POST',
                 body: JSON.stringify({
                   productId: prodottoSistema._id,
@@ -541,6 +851,16 @@ const OrdiniManagement = () => {
       
       // Ricarica dati
       await loadData();
+      
+      // Notifica successo
+      console.log(`✅ ${finalizeItemType === 'ordine' ? 'Ordine' : 'RDT'} ${finalizeItem.numero} finalizzato con successo`);
+      console.log(`🎯 Prodotti aggiunti alle giacenze dell'operatore`);
+      
+      // Emetti evento per aggiornare giacenze se altri componenti sono in ascolto
+      const finalizedAssignment = assegnazioni.find(ass => ass._id === finalizeAssignment);
+      window.dispatchEvent(new CustomEvent('giacenzeUpdated', {
+        detail: { operatoreId: finalizedAssignment?.userId?._id || finalizedAssignment?.userId }
+      }));
       
     } catch (err) {
       setError(`Errore nella finalizzazione ${finalizeItemType}: ` + err.message);
@@ -681,6 +1001,215 @@ const OrdiniManagement = () => {
     'IN_CORSO': 'bg-purple-100 text-purple-800',
     'COMPLETATO': 'bg-green-100 text-green-800',
     'ANNULLATO': 'bg-red-100 text-red-800'
+  };
+
+  const renderTableRow = (item, type, index) => {
+    const isEditing = editingItem === item._id;
+    const assignments = getAssignazioniForItem(type, item._id);
+    
+    return (
+      <tr 
+        key={item._id}
+        className={`glass-row ${index % 2 === 0 ? 'even' : 'odd'} hover:bg-white/5 transition-all duration-300`}
+      >
+        {/* Numero */}
+        <td className="px-6 py-4 whitespace-nowrap">
+          {isEditing ? (
+            <input
+              type="text"
+              value={editForm.numero || ''}
+              onChange={(e) => setEditForm({...editForm, numero: e.target.value})}
+              className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+              placeholder="Numero"
+            />
+          ) : (
+            <div className="text-sm font-medium text-white">{item.numero}</div>
+          )}
+        </td>
+
+        {/* Cliente */}
+        <td className="px-6 py-4 whitespace-nowrap">
+          {isEditing ? (
+            <input
+              type="text"
+              value={editForm.cliente || ''}
+              onChange={(e) => setEditForm({...editForm, cliente: e.target.value})}
+              className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+              placeholder="Cliente"
+            />
+          ) : (
+            <div className="text-sm text-white">{item.cliente}</div>
+          )}
+        </td>
+
+        {/* Data Consegna */}
+        <td className="px-6 py-4 whitespace-nowrap">
+          {isEditing ? (
+            <input
+              type="date"
+              value={editForm.dataConsegna ? new Date(editForm.dataConsegna).toISOString().split('T')[0] : ''}
+              onChange={(e) => setEditForm({...editForm, dataConsegna: e.target.value})}
+              className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+            />
+          ) : (
+            <div className="text-sm text-white">{new Date(item.dataConsegna).toLocaleDateString('it-IT')}</div>
+          )}
+        </td>
+
+        {/* Priorità */}
+        <td className="px-6 py-4 whitespace-nowrap">
+          {isEditing ? (
+            <select
+              value={editForm.priorita || ''}
+              onChange={(e) => setEditForm({...editForm, priorita: e.target.value})}
+              className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+            >
+              <option value="BASSA">Bassa</option>
+              <option value="MEDIA">Media</option>
+              <option value="ALTA">Alta</option>
+              <option value="URGENTE">Urgente</option>
+            </select>
+          ) : (
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColors[item.priorita]}`}>
+              {item.priorita}
+            </span>
+          )}
+        </td>
+
+        {/* Operatore */}
+        <td className="px-6 py-4 whitespace-nowrap">
+          {isEditing ? (
+            <select
+              value={editForm.assegnazioneId || ''}
+              onChange={(e) => {
+                const selectedAssignmentId = e.target.value;
+                const selectedAssignment = assegnazioni.find(ass => ass._id === selectedAssignmentId);
+                setEditForm({
+                  ...editForm, 
+                  assegnazioneId: selectedAssignmentId,
+                  operatoreId: selectedAssignment?.userId,
+                  settimanaId: selectedAssignment?.settimanaId
+                });
+              }}
+              className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+            >
+              <option value="">-- Seleziona assegnazione --</option>
+              {assegnazioni.map(ass => {
+                const operatore = typeof ass.userId === 'object' ? ass.userId : users.find(u => u._id === ass.userId);
+                const settimana = typeof ass.settimanaId === 'object' ? ass.settimanaId : settimane.find(s => s._id === ass.settimanaId);
+                return (
+                  <option key={ass._id} value={ass._id}>
+                    {operatore?.username || 'N/A'} - Sett. {settimana?.numero || settimana?.numeroSettimana || 'N/A'}
+                  </option>
+                );
+              })}
+            </select>
+          ) : (
+            <div className="text-sm text-white">
+              {(() => {
+                const assignment = assignments[0];
+                if (!assignment) return 'Non assegnato';
+                const operatore = typeof assignment.userId === 'object' ? assignment.userId : users.find(u => u._id === assignment.userId);
+                return operatore?.username || 'N/A';
+              })()}
+            </div>
+          )}
+        </td>
+
+        {/* Settimana */}
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="text-sm text-white">
+            {(() => {
+              const assignment = assignments[0];
+              if (!assignment) return 'N/A';
+              const settimana = typeof assignment.settimanaId === 'object' ? assignment.settimanaId : settimane.find(s => s._id === assignment.settimanaId);
+              return `Sett. ${settimana?.numero || settimana?.numeroSettimana || 'N/A'}`;
+            })()}
+          </div>
+        </td>
+
+        {/* Stato */}
+        <td className="px-6 py-4 whitespace-nowrap">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.stato]}`}>
+            {item.stato}
+          </span>
+        </td>
+
+        {/* Valore */}
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="text-sm text-white">€{item.valore?.toFixed(2) || '0.00'}</div>
+        </td>
+
+        {/* Prodotti */}
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="text-sm text-white">{item.prodotti?.length || 0} prodotti</div>
+        </td>
+
+        {/* Azioni */}
+        <td className="px-6 py-4 whitespace-nowrap">
+          {isEditing ? (
+            <div className="flex space-x-2">
+              <button
+                onClick={() => saveEdit(item._id, type)}
+                className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300 text-green-400"
+                title="Salva modifiche"
+              >
+                <Save className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => cancelEdit()}
+                className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300 text-red-400"
+                title="Annulla"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex space-x-2">
+              <button
+                onClick={() => openDetailsModal(item._id, type)}
+                className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300 text-blue-400"
+                title="Gestisci prodotti"
+              >
+                <Package className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => startEdit(item, type)}
+                className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300 text-yellow-400"
+                title="Modifica"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              {item.stato === 'CREATO' && (
+                <button
+                  onClick={() => openFinalizeModal(item._id, type)}
+                  className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300 text-green-400"
+                  title="Finalizza"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                </button>
+              )}
+              {(item.stato === 'COMPLETATO' || item.stato === 'FINALIZZATO' || item.stato === 'ASSEGNATO') && (
+                <button
+                  onClick={() => reopenItem(item._id, type)}
+                  className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300 text-blue-400"
+                  title={`Riapri ${type} (Stato attuale: ${item.stato})`}
+                >
+                  <PlayCircle className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={() => deleteItem(item._id, type)}
+                className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300 text-red-400"
+                title={`Elimina ${type}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </td>
+      </tr>
+    );
   };
 
   const renderItemCard = (item, type) => {
@@ -865,39 +1394,83 @@ const OrdiniManagement = () => {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {activeTab === 'lista' && (
-          <div>
-            {/* Ordini */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <ShoppingCart className="w-6 h-6 mr-2" />
-                Ordini ({ordini.length})
-              </h2>
+          <div className="space-y-8">
+            {/* Tabella Ordini */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                  <ShoppingCart className="w-6 h-6 mr-2" />
+                  Ordini ({ordini.length})
+                </h2>
+              </div>
               
               {loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {ordini.filter(ordine => ordine && ordine._id).map(ordine => renderItemCard(ordine, 'ordine'))}
+                <div className="glass-table-container overflow-hidden rounded-2xl">
+                  <table className="w-full">
+                    <thead className="glass-header">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Numero</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Cliente</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Data Consegna</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Priorità</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Operatore</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Settimana</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Stato</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Valore</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Prodotti</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody className="glass-body">
+                      {ordini.filter(ordine => ordine && ordine._id).map((ordine, index) => 
+                        renderTableRow(ordine, 'ordine', index)
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
 
-            {/* RDT */}
+            {/* Tabella RDT */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <Truck className="w-6 h-6 mr-2" />
-                RDT ({rdt.length})
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                  <Truck className="w-6 h-6 mr-2" />
+                  RDT ({rdt.length})
+                </h2>
+              </div>
               
               {loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {rdt.filter(rdtItem => rdtItem && rdtItem._id).map(rdtItem => renderItemCard(rdtItem, 'rdt'))}
+                <div className="glass-table-container overflow-hidden rounded-2xl">
+                  <table className="w-full">
+                    <thead className="glass-header">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Numero</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Cliente</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Data Consegna</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Priorità</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Operatore</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Settimana</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Stato</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Valore</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Prodotti</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody className="glass-body">
+                      {rdt.filter(rdtItem => rdtItem && rdtItem._id).map((rdtItem, index) => 
+                        renderTableRow(rdtItem, 'rdt', index)
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
@@ -1200,7 +1773,26 @@ const OrdiniManagement = () => {
                     <div className="md:col-span-2">
                       <select
                         value={newProduct.productId}
-                        onChange={(e) => setNewProduct({...newProduct, productId: e.target.value})}
+                        onChange={async (e) => {
+                          const productId = e.target.value;
+                          setNewProduct({...newProduct, productId});
+                          
+                          // Controllo giacenze quando si seleziona il prodotto
+                          if (productId && newProduct.quantita > 0 && nuovoItem.assegnazioneId) {
+                            const giacenzeInfo = await checkGiacenzeDisponibili(
+                              productId, 
+                              nuovoItem.assegnazioneId, 
+                              newProduct.quantita
+                            );
+                            
+                            if (giacenzeInfo) {
+                              setGiacenzeDisponibili({
+                                ...giacenzeDisponibili,
+                                [productId]: giacenzeInfo
+                              });
+                            }
+                          }
+                        }}
                         className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
                         <option value="">-- Seleziona prodotto --</option>
@@ -1215,16 +1807,61 @@ const OrdiniManagement = () => {
                       </select>
                     </div>
 
-                    {/* Quantità */}
-                    <div>
+                    {/* Quantità con controllo giacenze */}
+                    <div className="space-y-2">
                       <input
                         type="number"
                         min="1"
                         value={newProduct.quantita}
-                        onChange={(e) => setNewProduct({...newProduct, quantita: e.target.value})}
+                        onChange={async (e) => {
+                          const quantita = e.target.value;
+                          setNewProduct({...newProduct, quantita});
+                          
+                          // Controllo giacenze in tempo reale per form creazione
+                          if (newProduct.productId && quantita > 0 && nuovoItem.assegnazioneId) {
+                            const giacenzeInfo = await checkGiacenzeDisponibili(
+                              newProduct.productId, 
+                              nuovoItem.assegnazioneId, 
+                              quantita
+                            );
+                            
+                            if (giacenzeInfo) {
+                              setGiacenzeDisponibili({
+                                ...giacenzeDisponibili,
+                                [newProduct.productId]: giacenzeInfo
+                              });
+                            }
+                          }
+                        }}
                         className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                         placeholder="Qtà"
                       />
+                      
+                      {/* Visualizzazione giacenze disponibili */}
+                      {newProduct.productId && giacenzeDisponibili[newProduct.productId] && (
+                        <div className="text-xs p-2 bg-gray-50 rounded">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Disponibile:</span>
+                            <span className={`font-medium ${
+                              giacenzeDisponibili[newProduct.productId].quantitaAttuale >= parseInt(newProduct.quantita) 
+                                ? 'text-green-600' 
+                                : 'text-red-600'
+                            }`}>
+                              {giacenzeDisponibili[newProduct.productId].quantitaAttuale}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center mt-1">
+                            <span className="text-gray-600">Dopo aggiunta:</span>
+                            <span className={`font-medium ${
+                              giacenzeDisponibili[newProduct.productId].nuovaQuantita >= 0 
+                                ? 'text-blue-600' 
+                                : 'text-red-600'
+                            }`}>
+                              {giacenzeDisponibili[newProduct.productId].nuovaQuantita}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Pulsante aggiungi */}
@@ -1270,6 +1907,14 @@ const OrdiniManagement = () => {
                 className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
               >
                 Annulla
+              </button>
+              <button
+                onClick={resetNewItemForm}
+                className="flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+                title="Pulisci tutti i campi del form"
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                Pulisci Form
               </button>
               <button
                 onClick={createItem}
@@ -1616,9 +2261,25 @@ const OrdiniManagement = () => {
                                 .map(product => (
                                   <button
                                     key={product._id}
-                                    onClick={() => {
+                                    onClick={async () => {
                                       setNewProduct({...newProduct, productId: product._id});
                                       setProductSearch(product.nome);
+                                      
+                                      // Controlla giacenze disponibili per il prodotto selezionato
+                                      if (detailsItem?.assegnazioneId && newProduct.quantita > 0) {
+                                        const giacenzeInfo = await checkGiacenzeDisponibili(
+                                          product._id, 
+                                          detailsItem.assegnazioneId, 
+                                          newProduct.quantita
+                                        );
+                                        
+                                        if (giacenzeInfo) {
+                                          setGiacenzeDisponibili({
+                                            ...giacenzeDisponibili,
+                                            [product._id]: giacenzeInfo
+                                          });
+                                        }
+                                      }
                                     }}
                                     className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b last:border-b-0"
                                   >
@@ -1636,7 +2297,26 @@ const OrdiniManagement = () => {
                       ) : (
                         <select
                           value={newProduct.productId}
-                          onChange={(e) => setNewProduct({...newProduct, productId: e.target.value})}
+                          onChange={async (e) => {
+                            const productId = e.target.value;
+                            setNewProduct({...newProduct, productId});
+                            
+                            // Controlla giacenze disponibili per il prodotto selezionato
+                            if (productId && detailsItem?.assegnazioneId && newProduct.quantita > 0) {
+                              const giacenzeInfo = await checkGiacenzeDisponibili(
+                                productId, 
+                                detailsItem.assegnazioneId, 
+                                newProduct.quantita
+                              );
+                              
+                              if (giacenzeInfo) {
+                                setGiacenzeDisponibili({
+                                  ...giacenzeDisponibili,
+                                  [productId]: giacenzeInfo
+                                });
+                              }
+                            }
+                          }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         >
                           <option value="">-- Seleziona prodotto --</option>
@@ -1654,16 +2334,61 @@ const OrdiniManagement = () => {
                       )}
                     </div>
 
-                    {/* Quantità */}
-                    <div>
+                    {/* Quantità con controllo giacenze */}
+                    <div className="space-y-2">
                       <input
                         type="number"
                         min="1"
                         value={newProduct.quantita}
-                        onChange={(e) => setNewProduct({...newProduct, quantita: e.target.value})}
+                        onChange={async (e) => {
+                          const quantita = e.target.value;
+                          setNewProduct({...newProduct, quantita});
+                          
+                          // Controllo giacenze in tempo reale
+                          if (newProduct.productId && quantita > 0 && detailsItem?.assegnazioneId) {
+                            const giacenzeInfo = await checkGiacenzeDisponibili(
+                              newProduct.productId, 
+                              detailsItem.assegnazioneId, 
+                              quantita
+                            );
+                            
+                            if (giacenzeInfo) {
+                              setGiacenzeDisponibili({
+                                ...giacenzeDisponibili,
+                                [newProduct.productId]: giacenzeInfo
+                              });
+                            }
+                          }
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         placeholder="Qtà"
                       />
+                      
+                      {/* Visualizzazione giacenze disponibili */}
+                      {newProduct.productId && giacenzeDisponibili[newProduct.productId] && (
+                        <div className="text-xs p-2 bg-gray-50 rounded">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Disponibile:</span>
+                            <span className={`font-medium ${
+                              giacenzeDisponibili[newProduct.productId].quantitaAttuale >= parseInt(newProduct.quantita) 
+                                ? 'text-green-600' 
+                                : 'text-red-600'
+                            }`}>
+                              {giacenzeDisponibili[newProduct.productId].quantitaAttuale}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center mt-1">
+                            <span className="text-gray-600">Dopo aggiunta:</span>
+                            <span className={`font-medium ${
+                              giacenzeDisponibili[newProduct.productId].nuovaQuantita >= 0 
+                                ? 'text-blue-600' 
+                                : 'text-red-600'
+                            }`}>
+                              {giacenzeDisponibili[newProduct.productId].nuovaQuantita}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1687,11 +2412,32 @@ const OrdiniManagement = () => {
                     
                     <button
                       onClick={addProductToDetails}
-                      disabled={!newProduct.productId || !newProduct.quantita || newProduct.quantita <= 0}
-                      className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                      disabled={
+                        !newProduct.productId || 
+                        !newProduct.quantita || 
+                        newProduct.quantita <= 0 ||
+                        (giacenzeDisponibili[newProduct.productId] && 
+                         giacenzeDisponibili[newProduct.productId].quantitaAttuale < parseInt(newProduct.quantita))
+                      }
+                      className={`flex items-center px-3 py-2 rounded-md text-sm ${
+                        giacenzeDisponibili[newProduct.productId] && 
+                        giacenzeDisponibili[newProduct.productId].quantitaAttuale < parseInt(newProduct.quantita)
+                          ? 'bg-red-600 text-white hover:bg-red-700' 
+                          : 'bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400'
+                      } disabled:cursor-not-allowed`}
                     >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Aggiungi
+                      {giacenzeDisponibili[newProduct.productId] && 
+                       giacenzeDisponibili[newProduct.productId].quantitaAttuale < parseInt(newProduct.quantita) ? (
+                        <>
+                          <AlertTriangle className="w-4 h-4 mr-1" />
+                          Giacenza insufficiente
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-1" />
+                          Aggiungi
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1839,15 +2585,87 @@ const OrdiniManagement = () => {
                         ? ass.settimanaId 
                         : settimane.find(s => s._id === ass.settimanaId);
                       
+                      // Dettagli collegati
+                      let statusText = '';
+                      if (ass.ordine) {
+                        const ordineCollegato = typeof ass.ordine === 'object' ? ass.ordine : ordini.find(o => o._id === ass.ordine);
+                        statusText = ordineCollegato ? ` - ORDINE: ${ordineCollegato.numero}` : ' - Ha ordine collegato';
+                      }
+                      if (ass.rdt) {
+                        const rdtCollegato = typeof ass.rdt === 'object' ? ass.rdt : rdt.find(r => r._id === ass.rdt);
+                        statusText += rdtCollegato ? ` - RDT: ${rdtCollegato.numero}` : ' - Ha RDT collegato';
+                      }
+                      if (!ass.ordine && !ass.rdt) {
+                        statusText = ' - ✅ LIBERA';
+                      }
+                      
                       return (
                         <option key={ass._id} value={ass._id}>
-                          {operatore?.username || 'Operatore N/A'} - Settimana {settimana?.numero || settimana?.numeroSettimana || 'N/A'}
+                          {operatore?.username || 'Operatore N/A'} - Sett. {settimana?.numero || settimana?.numeroSettimana || 'N/A'}{statusText}
                         </option>
                       );
                     })
                   }
                 </select>
               </div>
+
+              {/* Dettagli assegnazione selezionata */}
+              {finalizeAssignment && (() => {
+                const selectedAssignment = assegnazioni.find(ass => ass._id === finalizeAssignment);
+                if (!selectedAssignment) return null;
+                
+                const operatore = (typeof selectedAssignment.userId === 'object' && selectedAssignment.userId) 
+                  ? selectedAssignment.userId 
+                  : users.find(u => u._id === selectedAssignment.userId);
+                const settimana = (typeof selectedAssignment.settimanaId === 'object' && selectedAssignment.settimanaId) 
+                  ? selectedAssignment.settimanaId 
+                  : settimane.find(s => s._id === selectedAssignment.settimanaId);
+                
+                return (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-center mb-2">
+                      <User className="w-4 h-4 text-blue-600 mr-2" />
+                      <span className="font-medium text-blue-900">
+                        {operatore?.username || 'Operatore N/A'} - Settimana {settimana?.numero || settimana?.numeroSettimana || 'N/A'}
+                      </span>
+                    </div>
+                    
+                    {/* Ordini/RDT già collegati */}
+                    <div className="text-sm text-blue-800 space-y-1">
+                      {selectedAssignment.ordine && (() => {
+                        const ordineCollegato = typeof selectedAssignment.ordine === 'object' 
+                          ? selectedAssignment.ordine 
+                          : ordini.find(o => o._id === selectedAssignment.ordine);
+                        return (
+                          <div className="flex items-center">
+                            <ShoppingCart className="w-3 h-3 mr-1" />
+                            <span>Ordine collegato: {ordineCollegato?.numero || 'N/A'}</span>
+                          </div>
+                        );
+                      })()}
+                      
+                      {selectedAssignment.rdt && (() => {
+                        const rdtCollegato = typeof selectedAssignment.rdt === 'object' 
+                          ? selectedAssignment.rdt 
+                          : rdt.find(r => r._id === selectedAssignment.rdt);
+                        return (
+                          <div className="flex items-center">
+                            <Truck className="w-3 h-3 mr-1" />
+                            <span>RDT collegato: {rdtCollegato?.numero || 'N/A'}</span>
+                          </div>
+                        );
+                      })()}
+                      
+                      {!selectedAssignment.ordine && !selectedAssignment.rdt && (
+                        <div className="flex items-center text-green-700">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          <span>Assegnazione libera - pronta per nuovo {finalizeItemType}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Avviso giacenze */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
