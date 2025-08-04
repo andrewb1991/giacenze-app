@@ -223,13 +223,13 @@ const assegnazioneSchema = new mongoose.Schema({
   },
   // ✅ NUOVI CAMPI AGGIUNTI
   ordine: { 
-    type: String,
-    trim: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Ordine',
     default: null
   },
   rdt: { 
-    type: String,
-    trim: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'RDT',
     default: null
   },
   // CAMPI ESISTENTI
@@ -284,10 +284,10 @@ const ordineSchema = new mongoose.Schema({
     required: true 
   },
   indirizzo: {
-    via: { type: String, required: true, trim: true },
-    citta: { type: String, required: true, trim: true },
-    cap: { type: String, required: true, trim: true },
-    provincia: { type: String, required: true, trim: true },
+    via: { type: String, trim: true },
+    citta: { type: String, trim: true },
+    cap: { type: String, trim: true },
+    provincia: { type: String, trim: true },
     coordinate: {
       lat: { type: Number },
       lng: { type: Number }
@@ -445,6 +445,106 @@ const GiacenzaUtente = mongoose.model('GiacenzaUtente', giacenzaUtenteSchema);
 const Utilizzo = mongoose.model('Utilizzo', utilizzoSchema);
 const Aggiunta = mongoose.model('Aggiunta', aggiuntaSchema);
 const Ordine = mongoose.model('Ordine', ordineSchema);
+
+// Schema RDT (Richiesta Di Trasferimento)
+const rdtSchema = new mongoose.Schema({
+  numero: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    trim: true
+  },
+  cliente: { 
+    type: String, 
+    required: true,
+    trim: true
+  },
+  dataConsegna: { 
+    type: Date, 
+    required: true 
+  },
+  priorita: { 
+    type: String, 
+    enum: ['BASSA', 'MEDIA', 'ALTA', 'URGENTE'], 
+    default: 'MEDIA' 
+  },
+  stato: { 
+    type: String, 
+    enum: ['CREATO', 'ASSEGNATO', 'IN_CORSO', 'COMPLETATO', 'ANNULLATO'], 
+    default: 'CREATO' 
+  },
+  prodotti: [{
+    nome: { type: String, required: true, trim: true },
+    quantita: { type: Number, required: true, min: 0 },
+    unita: { type: String, default: 'pz', trim: true },
+    prezzo: { type: Number, min: 0 }
+  }],
+  valore: { 
+    type: Number, 
+    default: 0, 
+    min: 0 
+  },
+  tempoStimato: { 
+    type: Number, 
+    default: 60, 
+    min: 0 
+  },
+  indirizzo: {
+    via: { type: String, trim: true },
+    citta: { type: String, trim: true },
+    cap: { type: String, trim: true },
+    provincia: { type: String, trim: true },
+    coordinate: {
+      lat: Number,
+      lng: Number
+    }
+  },
+  contatti: {
+    telefono: { type: String, trim: true },
+    email: { type: String, trim: true, lowercase: true },
+    referente: { type: String, trim: true }
+  },
+  note: { 
+    type: String,
+    trim: true
+  },
+  documenti: [{
+    nome: { type: String, required: true },
+    url: { type: String, required: true },
+    tipo: { type: String, enum: ['CONTRATTO', 'FATTURA', 'PREVENTIVO', 'ALTRO'], default: 'ALTRO' },
+    dataCaricamento: { type: Date, default: Date.now }
+  }],
+  createdBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  },
+  lastModifiedBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  },
+  deleted: { 
+    type: Boolean, 
+    default: false 
+  },
+  deletedAt: Date,
+  deletedBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  }
+}, { 
+  timestamps: true 
+});
+
+// Indici per performance
+rdtSchema.index({ numero: 1 });
+rdtSchema.index({ cliente: 1 });
+rdtSchema.index({ stato: 1 });
+rdtSchema.index({ priorita: 1 });
+rdtSchema.index({ dataConsegna: 1 });
+rdtSchema.index({ createdAt: -1 });
+rdtSchema.index({ deleted: 1 });
+
+const RDT = mongoose.model('RDT', rdtSchema);
 const RicaricaGiacenza = mongoose.model('RicaricaGiacenza', ricaricaGiacenzaSchema);
 const Postazione = mongoose.model('Postazione', postazioneSchema);
 // Middleware
@@ -2869,6 +2969,372 @@ app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// =============================================================================
+// RDT ROUTES (Richiesta Di Trasferimento)
+// =============================================================================
+
+// GET - Lista RDT con filtri
+app.get('/api/rdt', authenticateToken, async (req, res) => {
+  try {
+    const { 
+      stato, 
+      priorita, 
+      cliente, 
+      dataInizio, 
+      dataFine, 
+      limit = 50, 
+      offset = 0,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // Costruisci filtro base
+    const filter = { deleted: false };
+
+    // Filtri opzionali
+    if (stato && stato !== 'TUTTI') {
+      filter.stato = stato;
+    }
+    if (priorita && priorita !== 'TUTTE') {
+      filter.priorita = priorita;
+    }
+    if (cliente) {
+      filter.cliente = new RegExp(cliente, 'i');
+    }
+    if (dataInizio || dataFine) {
+      filter.dataConsegna = {};
+      if (dataInizio) filter.dataConsegna.$gte = new Date(dataInizio);
+      if (dataFine) filter.dataConsegna.$lte = new Date(dataFine);
+    }
+
+    // Costruisci sort object
+    const sortObj = {};
+    sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    const rdt = await RDT.find(filter)
+      .populate('createdBy', 'username')
+      .populate('lastModifiedBy', 'username')
+      .sort(sortObj)
+      .limit(parseInt(limit))
+      .skip(parseInt(offset));
+
+    const total = await RDT.countDocuments(filter);
+
+    res.json({
+      rdt,
+      pagination: {
+        total,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Errore caricamento RDT:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - Singolo RDT per ID
+app.get('/api/rdt/:id', authenticateToken, async (req, res) => {
+  try {
+    const rdt = await RDT.findOne({ 
+      _id: req.params.id, 
+      deleted: false 
+    })
+    .populate('createdBy', 'username email')
+    .populate('lastModifiedBy', 'username email');
+
+    if (!rdt) {
+      return res.status(404).json({ message: 'RDT non trovato' });
+    }
+
+    res.json(rdt);
+  } catch (error) {
+    console.error('Errore caricamento RDT:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Crea nuovo RDT
+app.post('/api/rdt', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const {
+      numero,
+      cliente,
+      dataConsegna,
+      priorita,
+      prodotti,
+      valore,
+      tempoStimato,
+      indirizzo,
+      contatti,
+      note
+    } = req.body;
+
+    // Validazione campi obbligatori
+    if (!numero || !cliente || !dataConsegna) {
+      return res.status(400).json({ 
+        message: 'Campi obbligatori mancanti: numero, cliente, dataConsegna' 
+      });
+    }
+
+    // Verifica unicità numero RDT
+    console.log(`🔍 Controllo duplicati per RDT numero: "${numero}"`);
+    const existingRdt = await RDT.findOne({ numero, deleted: false });
+    console.log('📋 RDT esistente trovato:', existingRdt ? {
+      _id: existingRdt._id,
+      numero: existingRdt.numero,
+      cliente: existingRdt.cliente,
+      stato: existingRdt.stato,
+      deleted: existingRdt.deleted,
+      createdAt: existingRdt.createdAt
+    } : 'Nessuno');
+    
+    if (existingRdt) {
+      console.log(`❌ RDT con numero "${numero}" già esiste`);
+      return res.status(400).json({ 
+        message: 'Numero RDT già esistente' 
+      });
+    }
+    
+    console.log(`✅ Numero RDT "${numero}" disponibile`);
+
+    // Calcola valore totale se non fornito
+    let valoreCalcolato = valore || 0;
+    if (prodotti && prodotti.length > 0 && !valore) {
+      valoreCalcolato = prodotti.reduce((sum, prod) => {
+        return sum + (prod.quantita * (prod.prezzo || 0));
+      }, 0);
+    }
+
+    const nuovoRdt = new RDT({
+      numero,
+      cliente,
+      dataConsegna: new Date(dataConsegna),
+      priorita: priorita || 'MEDIA',
+      prodotti: prodotti || [],
+      valore: valoreCalcolato,
+      tempoStimato: tempoStimato || 60,
+      indirizzo: indirizzo || {},
+      contatti: contatti || {},
+      note: note || '',
+      createdBy: req.user.userId,
+      lastModifiedBy: req.user.userId
+    });
+
+    await nuovoRdt.save();
+
+    const rdtPopulated = await RDT.findById(nuovoRdt._id)
+      .populate('createdBy', 'username')
+      .populate('lastModifiedBy', 'username');
+
+    res.status(201).json(rdtPopulated);
+  } catch (error) {
+    console.error('Errore creazione RDT:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// PUT - Aggiorna RDT
+app.put('/api/rdt/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    delete updates._id; // Rimuovi _id dagli updates
+    
+    // Aggiungi metadata di modifica
+    updates.lastModifiedBy = req.user.userId;
+
+    // Se cambiano i prodotti, ricalcola il valore
+    if (updates.prodotti && !updates.valore) {
+      updates.valore = updates.prodotti.reduce((sum, prod) => {
+        return sum + (prod.quantita * (prod.prezzo || 0));
+      }, 0);
+    }
+
+    const rdt = await RDT.findOneAndUpdate(
+      { _id: req.params.id, deleted: false },
+      updates,
+      { new: true, runValidators: true }
+    )
+    .populate('createdBy', 'username')
+    .populate('lastModifiedBy', 'username');
+
+    if (!rdt) {
+      return res.status(404).json({ message: 'RDT non trovato' });
+    }
+
+    res.json(rdt);
+  } catch (error) {
+    console.error('Errore aggiornamento RDT:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE - Elimina RDT (soft delete)
+app.delete('/api/rdt/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const rdt = await RDT.findOneAndUpdate(
+      { _id: req.params.id, deleted: false },
+      { 
+        deleted: true, 
+        deletedAt: new Date(),
+        deletedBy: req.user.userId
+      },
+      { new: true }
+    );
+
+    if (!rdt) {
+      return res.status(404).json({ message: 'RDT non trovato' });
+    }
+
+    res.json({ message: 'RDT eliminato con successo' });
+  } catch (error) {
+    console.error('Errore eliminazione RDT:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - RDT disponibili per assegnazione
+app.get('/api/rdt/disponibili', authenticateToken, async (req, res) => {
+  try {
+    const rdt = await RDT.find({ 
+      deleted: false,
+      stato: { $in: ['CREATO', 'ASSEGNATO'] }
+    })
+    .select('numero cliente dataConsegna priorita stato valore')
+    .sort({ dataConsegna: 1, priorita: -1 });
+
+    res.json(rdt);
+  } catch (error) {
+    console.error('Errore caricamento RDT disponibili:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - Ricerca RDT
+app.get('/api/rdt/ricerca', authenticateToken, async (req, res) => {
+  try {
+    const { q, limit = 10 } = req.query;
+    
+    if (!q || q.length < 2) {
+      return res.json([]);
+    }
+
+    const searchFilter = {
+      deleted: false,
+      $or: [
+        { numero: new RegExp(q, 'i') },
+        { cliente: new RegExp(q, 'i') },
+        { 'contatti.referente': new RegExp(q, 'i') }
+      ]
+    };
+
+    const rdt = await RDT.find(searchFilter)
+      .select('numero cliente dataConsegna priorita stato valore')
+      .limit(parseInt(limit))
+      .sort({ createdAt: -1 });
+
+    res.json(rdt);
+  } catch (error) {
+    console.error('Errore ricerca RDT:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Aggiorna giacenze globali per ordini/RDT
+app.post('/api/admin/giacenze/update-global', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { productId, quantitaUtilizzata, operazione, nota } = req.body;
+
+    if (!productId || !quantitaUtilizzata || !operazione) {
+      return res.status(400).json({ 
+        message: 'Campi obbligatori: productId, quantitaUtilizzata, operazione' 
+      });
+    }
+
+    // Trova tutte le giacenze globali per questo prodotto
+    const giacenzeGlobali = await GiacenzaUtente.find({
+      productId: productId,
+      isGlobale: true,
+      attiva: true
+    }).populate('productId', 'nome');
+
+    if (giacenzeGlobali.length === 0) {
+      return res.status(404).json({ 
+        message: 'Nessuna giacenza globale trovata per questo prodotto' 
+      });
+    }
+
+    // Calcola la quantità da sottrarre per ogni giacenza
+    const quantitaTotaleDisponibile = giacenzeGlobali.reduce((sum, g) => sum + g.quantitaDisponibile, 0);
+    
+    if (operazione === 'sottrai' && quantitaTotaleDisponibile < quantitaUtilizzata) {
+      return res.status(400).json({ 
+        message: `Quantità insufficiente. Disponibile: ${quantitaTotaleDisponibile}, Richiesta: ${quantitaUtilizzata}` 
+      });
+    }
+
+    let quantitaRimanente = quantitaUtilizzata;
+    const aggiornamenti = [];
+
+    // Distribuisci la sottrazione/aggiunta tra le giacenze disponibili
+    for (const giacenza of giacenzeGlobali) {
+      if (quantitaRimanente <= 0) break;
+
+      let quantitaDaModificare = 0;
+      
+      if (operazione === 'sottrai') {
+        quantitaDaModificare = Math.min(giacenza.quantitaDisponibile, quantitaRimanente);
+        giacenza.quantitaDisponibile -= quantitaDaModificare;
+      } else if (operazione === 'aggiungi') {
+        quantitaDaModificare = Math.min(
+          giacenza.quantitaAssegnata - giacenza.quantitaDisponibile, 
+          quantitaRimanente
+        );
+        giacenza.quantitaDisponibile += quantitaDaModificare;
+      }
+
+      if (quantitaDaModificare > 0) {
+        await giacenza.save();
+        quantitaRimanente -= quantitaDaModificare;
+        
+        aggiornamenti.push({
+          giacenzaId: giacenza._id,
+          quantitaModificata: quantitaDaModificare,
+          nuovaQuantitaDisponibile: giacenza.quantitaDisponibile
+        });
+
+        // Registra il movimento come utilizzo se sottrazione
+        if (operazione === 'sottrai') {
+          const utilizzo = new Utilizzo({
+            userId: giacenza.userId,
+            productId: productId,
+            quantitaUtilizzata: quantitaDaModificare,
+            dataUtilizzo: new Date(),
+            note: nota || `Ordine/RDT - Aggiornamento automatico giacenze`,
+            assegnazioneId: null, // Nessuna assegnazione specifica
+            postazioneId: null
+          });
+          await utilizzo.save();
+        }
+      }
+    }
+
+    res.json({
+      message: `Giacenze aggiornate con successo (${operazione})`,
+      prodotto: giacenzeGlobali[0].productId.nome,
+      quantitaProcessata: quantitaUtilizzata - quantitaRimanente,
+      quantitaRimanente: quantitaRimanente,
+      aggiornamenti: aggiornamenti
+    });
+
+  } catch (error) {
+    console.error('Errore aggiornamento giacenze globali:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Route di test
 app.get('/api/test', (req, res) => {
   res.json({ 
@@ -4277,6 +4743,31 @@ app.post('/api/postazioni/copy', authenticateToken, requireAdmin, async (req, re
 // =====================================================
 
 // GET - Lista tutti gli ordini con filtri
+// DEBUG - Controlla numeri ordini esistenti
+app.get('/api/debug/ordini-numeri', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const ordini = await Ordine.find({}, 'numero cliente stato createdAt').sort({ numero: 1 });
+    const rdt = await RDT.find({ deleted: false }, 'numero cliente stato createdAt').sort({ numero: 1 });
+    
+    res.json({
+      ordini: ordini.map(o => ({ 
+        numero: o.numero, 
+        cliente: o.cliente, 
+        stato: o.stato, 
+        createdAt: o.createdAt 
+      })),
+      rdt: rdt.map(r => ({ 
+        numero: r.numero, 
+        cliente: r.cliente, 
+        stato: r.stato, 
+        createdAt: r.createdAt 
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.get('/api/ordini', authenticateToken, async (req, res) => {
   try {
     const { 
@@ -4395,19 +4886,46 @@ app.post('/api/ordini', authenticateToken, requireAdmin, async (req, res) => {
     } = req.body;
     
     // Validazioni
-    if (!numero || !cliente || !dataConsegna || !indirizzo) {
+    if (!numero || !cliente || !dataConsegna) {
       return res.status(400).json({ 
-        message: 'Campi obbligatori: numero, cliente, dataConsegna, indirizzo' 
+        message: 'Campi obbligatori: numero, cliente, dataConsegna' 
       });
     }
     
-    // Controlla numero ordine univoco
+    // Controlla numero ordine univoco con controlli multipli
+    console.log(`🔍 Controllo duplicati per ordine numero: "${numero}" (tipo: ${typeof numero})`);
+    
+    // Controllo principale
     const esistente = await Ordine.findOne({ numero });
-    if (esistente) {
+    
+    // Controllo alternativo per sicurezza (caso-insensitive e trim)
+    const esistenteAlt = await Ordine.findOne({ 
+      numero: { $regex: new RegExp(`^${numero.toString().trim()}$`, 'i') }
+    });
+    
+    console.log('📋 Ordine esistente trovato:', esistente ? {
+      _id: esistente._id,
+      numero: esistente.numero,
+      tipo: typeof esistente.numero,
+      cliente: esistente.cliente,
+      stato: esistente.stato,
+      createdAt: esistente.createdAt
+    } : 'Nessuno');
+    
+    console.log('📋 Ordine alternativo trovato:', esistenteAlt ? {
+      _id: esistenteAlt._id,
+      numero: esistenteAlt.numero,
+      tipo: typeof esistenteAlt.numero
+    } : 'Nessuno');
+    
+    if (esistente || esistenteAlt) {
+      console.log(`❌ Ordine con numero "${numero}" già esiste`);
       return res.status(400).json({ 
-        message: 'Numero ordine già esistente' 
+        message: `Numero ordine già esistente: "${numero}"` 
       });
     }
+    
+    console.log(`✅ Numero ordine "${numero}" disponibile`);
     
     const ordine = new Ordine({
       numero,
@@ -4549,9 +5067,9 @@ app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
     
     // Filtro per assegnazioni con/senza ordini
     if (conOrdini === 'true') {
-      filter['ordini.0'] = { $exists: true };
+      filter.ordine = { $exists: true, $ne: null };
     } else if (conOrdini === 'false') {
-      filter['ordini.0'] = { $exists: false };
+      filter.ordine = { $exists: false };
     }
     
     const assegnazioni = await Assegnazione.find(filter)
@@ -4560,8 +5078,16 @@ app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
       .populate('mezzoId', 'nome')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
       .populate('postazioneId', 'nome')
-      .populate('ordini.ordineId', 'numero cliente dataConsegna priorita stato valore')
+      .populate('ordine', 'numero cliente dataConsegna priorita stato valore')
+      .populate('rdt', 'numero cliente dataConsegna priorita stato valore')
       .sort({ createdAt: -1 });
+    
+    // Debug logging per verificare populate
+    console.log('🔍 Assegnazioni con populate:', assegnazioni.slice(0, 2).map(a => ({
+      _id: a._id,
+      ordine: a.ordine,
+      rdt: a.rdt
+    })));
     
     res.json(assegnazioni);
   } catch (error) {
@@ -4685,7 +5211,7 @@ app.post('/api/assegnazioni/:id/ordini', authenticateToken, requireAdmin, async 
     
     // Controlla se già assegnato altrove
     const giaAssegnato = await Assegnazione.findOne({
-      'ordini.ordineId': ordineId,
+      ordine: ordineId,
       attiva: true
     });
     if (giaAssegnato) {
@@ -4694,14 +5220,24 @@ app.post('/api/assegnazioni/:id/ordini', authenticateToken, requireAdmin, async 
       });
     }
     
-    // Aggiungi ordine all'assegnazione
-    await assegnazione.aggiungiOrdine(ordineId, priorita, tempoStimato, note);
+    // Controlla se l'assegnazione ha già un ordine
+    if (assegnazione.ordine && assegnazione.ordine !== ordineId) {
+      return res.status(400).json({ 
+        message: 'Assegnazione ha già un ordine collegato. Usare una nuova assegnazione.' 
+      });
+    }
+    
+    // Aggiungi ordine all'assegnazione (assicurati che sia ObjectId)
+    assegnazione.ordine = mongoose.Types.ObjectId(ordineId);
+    await assegnazione.save();
     
     // Aggiorna stato ordine
     await Ordine.findByIdAndUpdate(ordineId, { stato: 'ASSEGNATO' });
     
     const updated = await Assegnazione.findById(id)
-      .populate('ordini.ordineId', 'numero cliente dataConsegna priorita valore');
+      .populate('userId', 'username email')
+      .populate('poloId', 'nome')
+      .populate('settimanaId', 'numero anno');
     
     res.json({
       message: 'Ordine aggiunto all\'assegnazione',
