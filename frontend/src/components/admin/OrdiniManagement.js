@@ -272,7 +272,6 @@ const OrdiniManagement = () => {
       {/* Main Content */}
       <div className="relative z-10 space-y-6">
               <div className="relative z-10">
-        <Navigation/>
       </div>
         {/* Header */}
         <div className="glass-card p-6 rounded-2xl">
