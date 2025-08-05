@@ -18,6 +18,7 @@ import AdminProdottiSection from './components/admin/sections/AdminProdottiSecti
 import AdminPostazioniSection from './components/admin/sections/AdminPostazioniSection';
 import AdminReportsSection from './components/admin/sections/AdminReportsSection';
 import AdminOrdiniSection from './components/admin/sections/AdminOrdiniSection';
+import AdminCreaOrdiniSection from './components/admin/sections/AdminCreaOrdiniSection';
 import ErrorMessage from './components/shared/ErrorMessage';
 import OrdiniManagement from './components/admin/OrdiniManagement';
 import CreaOrdini from './components/admin/CreaOrdini';
@@ -218,9 +219,9 @@ const AppContent = () => {
       case 'reports':
         return <ReportsPage />;
       case 'ordini':
-        return <OrdiniManagement />;
+        return user?.role === 'admin' ? <AdminOrdiniSection /> : <Dashboard />;
       case 'crea-ordini':
-        return <CreaOrdini />;
+        return user?.role === 'admin' ? <AdminCreaOrdiniSection /> : <Dashboard />;
       case 'admin':
         return user?.role === 'admin' ? <AdminDashboard /> : <Dashboard />;
       // Sezioni Admin specifiche

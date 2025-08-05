@@ -24,10 +24,11 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { apiCall } from '../../services/api';
+import OrdiniRdtTable from './shared/OrdiniRdtTable';
 
 const CreaOrdini = () => {
   const { token, setError, setCurrentPage } = useAuth();
-  const { users, settimane, assegnazioni, prodotti } = useGiacenze();
+  const { users, settimane, assegnazioni, allProducts } = useGiacenze();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   // Stati per il form
@@ -47,11 +48,12 @@ const CreaOrdini = () => {
   const [availableAssignments, setAvailableAssignments] = useState([]);
   const [showProductForm, setShowProductForm] = useState(false);
   const [newProduct, setNewProduct] = useState({
-    nome: '',
+    productId: '',
     quantita: '',
-    unita: 'pz',
-    prezzo: ''
+    note: ''
   });
+  const [productSearch, setProductSearch] = useState('');
+  const [userGiacenze, setUserGiacenze] = useState([]);
 
   // Stati per visualizzazione ordini/RDT esistenti
   const [existingItems, setExistingItems] = useState([]);
@@ -81,7 +83,7 @@ const CreaOrdini = () => {
     }
   }, [token]);
 
-  // Filtra assegnazioni quando cambia operatore
+  // Filtra assegnazioni e carica giacenze quando cambia operatore
   useEffect(() => {
     if (formData.operatoreId && assegnazioni) {
       const userAssignments = assegnazioni.filter(a => 
@@ -93,11 +95,35 @@ const CreaOrdini = () => {
       if (formData.assegnazioneId && !userAssignments.find(a => a._id === formData.assegnazioneId)) {
         setFormData(prev => ({ ...prev, assegnazioneId: '' }));
       }
+      
+      // Carica giacenze utente
+      loadUserGiacenze(formData.operatoreId);
     } else {
       setAvailableAssignments([]);
+      setUserGiacenze([]);
       setFormData(prev => ({ ...prev, assegnazioneId: '' }));
     }
   }, [formData.operatoreId, assegnazioni]);
+
+  // Mostra automaticamente il form prodotti quando operatore e assegnazione sono selezionati
+  useEffect(() => {
+    if (formData.operatoreId && formData.assegnazioneId) {
+      setShowProductForm(true);
+    } else {
+      setShowProductForm(false);
+    }
+  }, [formData.operatoreId, formData.assegnazioneId]);
+  
+  const loadUserGiacenze = async (userId) => {
+    try {
+      const response = await apiCall(`/admin/giacenze?userId=${userId}`, {}, token);
+      setUserGiacenze(response || []);
+      console.log(`🔄 Caricate ${response?.length || 0} giacenze per operatore ${userId}`);
+    } catch (err) {
+      console.error('Errore caricamento giacenze utente:', err);
+      setUserGiacenze([]);
+    }
+  };
 
   const loadExistingItems = async () => {
     try {
@@ -108,14 +134,8 @@ const CreaOrdini = () => {
         apiCall('/rdt', {}, token)
       ]);
       
-      console.log('Risposta ordini:', ordiniData);
-      console.log('Risposta RDT:', rdtData);
-      
       const ordiniArray = ordiniData?.ordini || [];
       const rdtArray = rdtData?.rdt || [];
-      
-      console.log('Ordini estratti:', ordiniArray.length);
-      console.log('RDT estratti:', rdtArray.length);
       
       const ordiniWithType = ordiniArray.map(item => ({ ...item, itemType: 'ordine' }));
       const rdtWithType = rdtArray.map(item => ({ ...item, itemType: 'rdt' }));
@@ -134,17 +154,34 @@ const CreaOrdini = () => {
   };
 
   const addProduct = () => {
-    if (!newProduct.nome || !newProduct.quantita) {
-      setError('Nome prodotto e quantità sono obbligatori');
+    if (!newProduct.productId || !newProduct.quantita) {
+      setError('Prodotto e quantità sono obbligatori');
+      return;
+    }
+    
+    const selectedProduct = allProducts?.find(p => p._id === newProduct.productId);
+    const userGiacenza = userGiacenze.find(g => g.productId._id === newProduct.productId);
+    
+    if (!selectedProduct) {
+      setError('Prodotto non trovato');
+      return;
+    }
+    
+    const quantitaNum = parseFloat(newProduct.quantita);
+    
+    // Validazione quantità minima
+    if (quantitaNum <= 0) {
+      setError('La quantità deve essere maggiore di zero');
       return;
     }
 
     const product = {
       id: Date.now(),
-      nome: newProduct.nome.trim(),
-      quantita: parseFloat(newProduct.quantita),
-      unita: newProduct.unita,
-      prezzo: parseFloat(newProduct.prezzo) || 0
+      productId: newProduct.productId, // Manteniamo per riferimento interno
+      nome: selectedProduct.nome,
+      quantita: quantitaNum,
+      unita: selectedProduct.unita,
+      note: newProduct.note.trim()
     };
 
     setFormData(prev => ({
@@ -153,12 +190,12 @@ const CreaOrdini = () => {
     }));
 
     setNewProduct({
-      nome: '',
+      productId: '',
       quantita: '',
-      unita: 'pz',
-      prezzo: ''
+      note: ''
     });
     setShowProductForm(false);
+    setError('');
   };
 
   const removeProduct = (productId) => {
@@ -187,7 +224,7 @@ const CreaOrdini = () => {
       // Calcola valore totale
       const valoreCalcolato = formData.prodotti.reduce((sum, p) => sum + (p.quantita * p.prezzo), 0);
 
-      // Prepara dati per l'API
+      // Prepara dati per l'API 
       const dataToSend = {
         numero: formData.nome,
         cliente: formData.cliente,
@@ -196,9 +233,9 @@ const CreaOrdini = () => {
           nome: p.nome,
           quantita: p.quantita,
           unita: p.unita,
-          prezzo: p.prezzo || 0
+          note: p.note || '',
+          productId: p.productId // Aggiungiamo per gestione giacenze nel backend
         })),
-        valore: valoreCalcolato,
         note: formData.note || '',
         operatoreId: formData.operatoreId,
         assegnazioneId: formData.assegnazioneId || null
@@ -225,6 +262,11 @@ const CreaOrdini = () => {
 
       await loadExistingItems();
       setError(`✅ ${formData.tipo} creato con successo!`);
+      
+      // Reindirizza a OrdiniManagement dopo il salvataggio
+      setTimeout(() => {
+        setCurrentPage('ordini');
+      }, 1500);
     } catch (err) {
       setError('Errore nella creazione: ' + err.message);
     } finally {
@@ -289,6 +331,9 @@ const CreaOrdini = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6">
+      {/* Navigation */}
+      {/* Navigation rimossa - usa quella globale */}
+      
       {/* Background Effects */}
       <div className="absolute inset-0">
         <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
@@ -304,7 +349,7 @@ const CreaOrdini = () => {
           }}
         />
       </div>
-
+      
       {/* Main Content */}
       <div className="relative z-10 space-y-6">
         {/* Header */}
@@ -346,30 +391,72 @@ const CreaOrdini = () => {
             </div>
           </div>
 
-          {/* Checkbox per selezione tipo */}
+          {/* Radio buttons per selezione tipo */}
           <div className="mb-6">
-            <label className="glass-checkbox-container flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.tipo === 'rdt'}
-                onChange={(e) => updateFormData({ tipo: e.target.checked ? 'rdt' : 'ordine' })}
-                className="sr-only"
-              />
-              <div className={`glass-checkbox w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${
-                formData.tipo === 'rdt' 
-                  ? 'border-green-400 bg-green-400/20' 
-                  : 'border-white/30 bg-transparent'
-              }`}>
-                {formData.tipo === 'rdt' && (
-                  <svg className="w-3 h-3 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </div>
-              <span className="ml-3 text-white font-medium">
-                {formData.tipo === 'rdt' ? '📋 RDT (Richiesta Di Trasferimento)' : '📦 Ordine'}
-              </span>
-            </label>
+            <h3 className="text-lg font-semibold text-white mb-4">Tipo di documento</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="glass-radio-container flex items-center cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02]" 
+                     style={{
+                       borderColor: formData.tipo === 'ordine' ? 'rgba(59, 130, 246, 0.5)' : 'rgba(255, 255, 255, 0.2)',
+                       backgroundColor: formData.tipo === 'ordine' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255, 255, 255, 0.05)'
+                     }}>
+                <input
+                  type="radio"
+                  name="tipo"
+                  value="ordine"
+                  checked={formData.tipo === 'ordine'}
+                  onChange={(e) => updateFormData({ tipo: e.target.value })}
+                  className="sr-only"
+                />
+                <div className={`glass-radio w-5 h-5 rounded-full border-2 transition-all duration-200 flex items-center justify-center mr-3 ${
+                  formData.tipo === 'ordine' 
+                    ? 'border-blue-400 bg-blue-400/20' 
+                    : 'border-white/30 bg-transparent'
+                }`}>
+                  {formData.tipo === 'ordine' && (
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <Hash className="w-6 h-6 text-blue-400 mr-3" />
+                  <div>
+                    <div className="text-white font-medium">📦 Ordine</div>
+                    <div className="text-white/60 text-sm">Ordine da fornitore</div>
+                  </div>
+                </div>
+              </label>
+              
+              <label className="glass-radio-container flex items-center cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02]"
+                     style={{
+                       borderColor: formData.tipo === 'rdt' ? 'rgba(34, 197, 94, 0.5)' : 'rgba(255, 255, 255, 0.2)',
+                       backgroundColor: formData.tipo === 'rdt' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255, 255, 255, 0.05)'
+                     }}>
+                <input
+                  type="radio"
+                  name="tipo"
+                  value="rdt"
+                  checked={formData.tipo === 'rdt'}
+                  onChange={(e) => updateFormData({ tipo: e.target.value })}
+                  className="sr-only"
+                />
+                <div className={`glass-radio w-5 h-5 rounded-full border-2 transition-all duration-200 flex items-center justify-center mr-3 ${
+                  formData.tipo === 'rdt' 
+                    ? 'border-green-400 bg-green-400/20' 
+                    : 'border-white/30 bg-transparent'
+                }`}>
+                  {formData.tipo === 'rdt' && (
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  )}
+                </div>
+                <div className="flex items-center">
+                  <Clipboard className="w-6 h-6 text-green-400 mr-3" />
+                  <div>
+                    <div className="text-white font-medium">📋 RDT</div>
+                    <div className="text-white/60 text-sm">Richiesta Di Trasferimento</div>
+                  </div>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Campi principali */}
@@ -490,20 +577,102 @@ const CreaOrdini = () => {
 
             {/* Form aggiunta prodotto */}
             {showProductForm && (
-              <div className="glass-card p-4 rounded-xl mb-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <input
-                      type="text"
-                      placeholder="Nome prodotto"
-                      className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                      value={newProduct.nome}
-                      onChange={(e) => setNewProduct(prev => ({ ...prev, nome: e.target.value }))}
-                    />
+              <div className="glass-card p-6 rounded-xl mb-4 space-y-4">
+                <h4 className="text-lg font-semibold text-white">Aggiungi Prodotto</h4>
+                
+                {/* Ricerca prodotto */}
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-2">Cerca Prodotto *</label>
+                  <div className="glass-input-container rounded-xl mb-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4" />
+                      <input
+                        type="text"
+                        placeholder="Cerca prodotto per nome..."
+                        className="glass-input w-full pl-10 pr-4 py-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                        value={productSearch}
+                        onChange={(e) => {
+                          setProductSearch(e.target.value);
+                          // Reset selezione prodotto quando cambia la ricerca
+                          setNewProduct(prev => ({ ...prev, productId: '' }));
+                        }}
+                      />
+                    </div>
                   </div>
+                  
+                  {/* Dropdown prodotti filtrati */}
+                  <select
+                    className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
+                    value={newProduct.productId}
+                    onChange={(e) => setNewProduct(prev => ({ ...prev, productId: e.target.value }))}
+                  >
+                    <option value="" className="bg-gray-800">
+                      {productSearch ? `Cerca: "${productSearch}"` : 'Seleziona prodotto'}
+                    </option>
+                    {allProducts?.filter(p => 
+                      p.attivo && 
+                      (productSearch === '' || p.nome.toLowerCase().includes(productSearch.toLowerCase()))
+                    ).map(product => {
+                      const userGiacenza = userGiacenze.find(g => g.productId._id === product._id);
+                      const disponibile = userGiacenza ? userGiacenza.quantitaDisponibile : 0;
+                      const assegnata = userGiacenza ? userGiacenza.quantitaAssegnata : 0;
+                      
+                      return (
+                        <option key={product._id} value={product._id} className="bg-gray-800">
+                          {product.nome} - Ass: {assegnata}, Disp: {disponibile} {product.unita}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  
+                  {/* Mostra info giacenze per prodotto selezionato */}
+                  {newProduct.productId && (() => {
+                    const selectedProduct = allProducts?.find(p => p._id === newProduct.productId);
+                    const userGiacenza = userGiacenze.find(g => g.productId._id === newProduct.productId);
+                    
+                    if (selectedProduct) {
+                      return (
+                        <div className="mt-2 p-3 bg-white/5 rounded-lg">
+                          <div className="text-sm text-white/80">
+                            <div className="mb-2">
+                              <span className="font-medium">Prodotto selezionato:</span>
+                              <span className="ml-2 text-white">{selectedProduct.nome} ({selectedProduct.unita})</span>
+                            </div>
+                            {userGiacenza ? (
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <span className="font-medium">Giacenza Assegnata:</span>
+                                  <span className="ml-2 text-white">{userGiacenza.quantitaAssegnata} {selectedProduct.unita}</span>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Giacenza Disponibile:</span>
+                                  <span className="ml-2 text-white">{userGiacenza.quantitaDisponibile} {selectedProduct.unita}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-yellow-300">
+                                ⚠️ L'operatore non ha giacenze per questo prodotto
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-2 text-xs text-green-300">
+                            💡 {formData.tipo === 'ordine' ? 'Ordine' : 'RDT'}: La quantità verrà AGGIUNTA alla giacenza disponibile dell'operatore
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+                
+                {/* Quantità e Note */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
+                    <label className="block text-sm font-medium text-white/80 mb-2">Quantità *</label>
                     <input
                       type="number"
+                      step="0.01"
+                      min="0"
                       placeholder="Quantità"
                       className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
                       value={newProduct.quantita}
@@ -511,39 +680,38 @@ const CreaOrdini = () => {
                     />
                   </div>
                   <div>
-                    <select
-                      className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                      value={newProduct.unita}
-                      onChange={(e) => setNewProduct(prev => ({ ...prev, unita: e.target.value }))}
-                    >
-                      <option value="pz" className="bg-gray-800">pz</option>
-                      <option value="kg" className="bg-gray-800">kg</option>
-                      <option value="litri" className="bg-gray-800">litri</option>
-                      <option value="metri" className="bg-gray-800">metri</option>
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
+                    <label className="block text-sm font-medium text-white/80 mb-2">Note</label>
                     <input
-                      type="number"
-                      step="0.01"
-                      placeholder="Prezzo"
-                      className="glass-input flex-1 p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                      value={newProduct.prezzo}
-                      onChange={(e) => setNewProduct(prev => ({ ...prev, prezzo: e.target.value }))}
+                      type="text"
+                      placeholder="Note per questo prodotto"
+                      className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                      value={newProduct.note}
+                      onChange={(e) => setNewProduct(prev => ({ ...prev, note: e.target.value }))}
                     />
-                    <button
-                      onClick={addProduct}
-                      className="glass-button-primary px-4 py-3 rounded-xl hover:scale-105 transition-all duration-300"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setShowProductForm(false)}
-                      className="glass-action-button px-4 py-3 rounded-xl hover:scale-105 transition-all duration-300"
-                    >
-                      <X className="w-4 h-4 text-red-400" />
-                    </button>
                   </div>
+                </div>
+                
+                {/* Pulsanti */}
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={() => {
+                      setShowProductForm(false);
+                      setNewProduct({ productId: '', quantita: '', note: '' });
+                      setProductSearch('');
+                    }}
+                    className="glass-action-button px-4 py-3 rounded-xl hover:scale-105 transition-all duration-300 flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4 text-red-400" />
+                    <span className="text-red-400">Annulla</span>
+                  </button>
+                  <button
+                    onClick={addProduct}
+                    disabled={!newProduct.productId || !newProduct.quantita}
+                    className="glass-button-primary px-4 py-3 rounded-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Aggiungi</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -552,36 +720,50 @@ const CreaOrdini = () => {
             {formData.prodotti.length > 0 && (
               <div className="glass-card p-4 rounded-xl">
                 <div className="space-y-2">
-                  {formData.prodotti.map(product => (
-                    <div key={product.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4">
-                          <span className="text-white font-medium">{product.nome}</span>
-                          <span className="text-white/70">{product.quantita} {product.unita}</span>
-                          {product.prezzo > 0 && (
-                            <span className="text-green-300">€{product.prezzo.toFixed(2)}</span>
+                  {formData.prodotti.map(product => {
+                    const userGiacenza = userGiacenze.find(g => g.productId._id === product.productId);
+                    return (
+                      <div key={product.id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4 mb-2">
+                            <span className="text-white font-medium">{product.nome}</span>
+                            <span className="text-white/70 font-semibold">{product.quantita} {product.unita}</span>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              formData.tipo === 'ordine' 
+                                ? 'bg-blue-400/20 text-blue-300 border border-blue-400/30'
+                                : 'bg-green-400/20 text-green-300 border border-green-400/30'
+                            }`}>
+                              ➕ Incremento giacenza
+                            </span>
+                          </div>
+                          {product.note && (
+                            <div className="text-white/50 text-sm italic">📝 {product.note}</div>
+                          )}
+                          {userGiacenza && (
+                            <div className="text-xs text-white/60 mt-1">
+                              Giacenza operatore: {userGiacenza.quantitaAssegnata} ass., {userGiacenza.quantitaDisponibile} disp.
+                            </div>
                           )}
                         </div>
+                        <button
+                          onClick={() => removeProduct(product.id)}
+                          className="glass-action-button p-2 rounded-lg hover:scale-110 transition-all duration-300"
+                          title="Rimuovi prodotto"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => removeProduct(product.id)}
-                        className="glass-action-button p-2 rounded-lg hover:scale-110 transition-all duration-300"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-400" />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                   
-                  {formData.prodotti.some(p => p.prezzo > 0) && (
-                    <div className="border-t border-white/10 pt-3 mt-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-white font-medium">Valore Totale:</span>
-                        <span className="text-green-300 font-bold text-lg">
-                          €{formData.prodotti.reduce((sum, p) => sum + (p.quantita * p.prezzo), 0).toFixed(2)}
-                        </span>
-                      </div>
+                  <div className="border-t border-white/10 pt-3 mt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white font-medium">Totale Prodotti:</span>
+                      <span className="text-white font-bold text-lg">
+                        {formData.prodotti.length} prodotti
+                      </span>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             )}
@@ -617,200 +799,11 @@ const CreaOrdini = () => {
           </button>
         </div>
 
-        {/* Tabella Ordini/RDT esistenti */}
-        <div className="glass-card-large rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/10">
-            <h3 className="text-lg font-semibold text-white flex items-center">
-              <Package className="w-5 h-5 mr-2" />
-              Ordini e RDT Esistenti
-              {!loading && (
-                <span className="ml-2 text-sm text-white/50">
-                  ({filteredExisting.length} risultati)
-                </span>
-              )}
-            </h3>
-          </div>
-
-          {/* Filtri rapidi */}
-          <div className="px-6 py-4 border-b border-white/5">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="glass-input-container rounded-xl">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Cerca..."
-                    className="glass-input w-full pl-10 pr-4 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    value={filters.searchTerm}
-                    onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-                  />
-                </div>
-              </div>
-              
-              <select
-                className="glass-input px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
-                value={filters.tipo}
-                onChange={(e) => setFilters(prev => ({ ...prev, tipo: e.target.value }))}
-              >
-                <option value="" className="bg-gray-800">Tutti i tipi</option>
-                <option value="ordine" className="bg-gray-800">Solo Ordini</option>
-                <option value="rdt" className="bg-gray-800">Solo RDT</option>
-              </select>
-
-              <select
-                className="glass-input px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
-                value={filters.operatore}
-                onChange={(e) => setFilters(prev => ({ ...prev, operatore: e.target.value }))}
-              >
-                <option value="" className="bg-gray-800">Tutti gli operatori</option>
-                {users?.filter(u => u.role === 'user').map(user => (
-                  <option key={user._id} value={user._id} className="bg-gray-800">
-                    {user.username}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="glass-input px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
-                value={filters.stato}
-                onChange={(e) => setFilters(prev => ({ ...prev, stato: e.target.value }))}
-              >
-                <option value="" className="bg-gray-800">Tutti gli stati</option>
-                <option value="CREATO" className="bg-gray-800">Creato</option>
-                <option value="ASSEGNATO" className="bg-gray-800">Assegnato</option>
-                <option value="IN_CORSO" className="bg-gray-800">In Corso</option>
-                <option value="COMPLETATO" className="bg-gray-800">Completato</option>
-              </select>
-            </div>
-          </div>
-          
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="text-white/70">Caricamento...</div>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-white/10">
-                <thead className="glass-table-header">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Tipo/Numero
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Cliente
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Operatore
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Prodotti
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Valore
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Stato
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Azioni
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredExisting.map(item => {
-                    const assegnazione = assegnazioni?.find(a => 
-                      (item.itemType === 'ordine' ? a.ordine === item.numero : a.rdt === item.numero) && a.attiva
-                    );
-                    
-                    return (
-                      <tr key={item._id} className="glass-table-row hover:bg-white/5 transition-all duration-300">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="glass-avatar w-10 h-10 rounded-xl flex items-center justify-center mr-3">
-                              {item.itemType === 'ordine' ? 
-                                <Hash className="w-5 h-5 text-blue-400" /> : 
-                                <Clipboard className="w-5 h-5 text-green-400" />
-                              }
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-white">
-                                {item.numero}
-                              </div>
-                              <div className="text-sm text-white/50">
-                                {item.itemType === 'ordine' ? 'Ordine' : 'RDT'}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-white">{item.cliente}</div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-white">
-                            {assegnazione?.userId?.username || (
-                              <span className="text-white/40 italic">Non assegnato</span>
-                            )}
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-white">
-                            {item.prodotti?.length || 0} prodotti
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-green-300 font-medium">
-                            €{(item.valore || 0).toFixed(2)}
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`glass-status-badge inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
-                            item.stato === 'COMPLETATO' ? 'text-green-200 border-green-300/30 bg-green-400/20' :
-                            item.stato === 'IN_CORSO' ? 'text-blue-200 border-blue-300/30 bg-blue-400/20' :
-                            item.stato === 'ASSEGNATO' ? 'text-purple-200 border-purple-300/30 bg-purple-400/20' :
-                            'text-yellow-200 border-yellow-300/30 bg-yellow-400/20'
-                          }`}>
-                            {item.stato || 'CREATO'}
-                          </span>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            {item.stato === 'CREATO' && (
-                              <button
-                                onClick={() => finalizeItem(item)}
-                                className="glass-button-primary px-3 py-2 rounded-xl hover:scale-105 transition-all duration-300 text-xs"
-                                title="Finalizza e aggiungi alle giacenze"
-                              >
-                                Finalizza
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-
-              {filteredExisting.length === 0 && !loading && (
-                <div className="text-center py-12">
-                  <div className="glass-icon w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center">
-                    <Package className="w-8 h-8 text-white/50" />
-                  </div>
-                  <p className="text-white/70 text-lg mb-2">Nessun elemento trovato</p>
-                  <p className="text-sm text-white/50">
-                    Crea il tuo primo ordine o RDT usando il form sopra
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        {/* Tabella Ordini/RDT esistenti - Componente unificato */}
+        <OrdiniRdtTable 
+          title="Ordini e RDT Esistenti" 
+          showActions={true}
+        />
       </div>
 
       {/* Custom Styles */}
@@ -829,25 +822,7 @@ const CreaOrdini = () => {
           box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
         }
 
-        .glass-assignment-card {
-          background: rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .glass-card-header {
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-          padding-bottom: 1.5rem;
-        }
-
         .glass-icon {
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .glass-avatar {
           background: rgba(255, 255, 255, 0.15);
           backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.2);
@@ -879,18 +854,10 @@ const CreaOrdini = () => {
           background: rgba(255, 255, 255, 0.12);
         }
 
-        .glass-table-header {
-          background: rgba(255, 255, 255, 0.05);
+        .glass-button {
+          background: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(10px);
-        }
-
-        .glass-table-row {
-          background: rgba(255, 255, 255, 0.02);
-          backdrop-filter: blur(5px);
-        }
-
-        .glass-status-badge {
-          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .glass-button-primary {
@@ -906,37 +873,9 @@ const CreaOrdini = () => {
           box-shadow: 0 12px 32px rgba(59, 130, 246, 0.3);
         }
 
-        .glass-button-secondary {
-          background: rgba(107, 114, 128, 0.3);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(107, 114, 128, 0.4);
-          box-shadow: 0 4px 16px rgba(107, 114, 128, 0.2);
-          color: white;
-        }
-
-        .glass-button-secondary:hover {
-          background: rgba(107, 114, 128, 0.4);
-          box-shadow: 0 8px 24px rgba(107, 114, 128, 0.3);
-        }
-
-        .glass-action-button {
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          transition: all 0.3s ease;
-        }
-
-        .glass-action-button:hover {
-          background: rgba(255, 255, 255, 0.15);
-          box-shadow: 0 4px 16px rgba(255, 255, 255, 0.1);
-        }
-
-        .glass-checkbox-container {
-          transition: all 0.3s ease;
-        }
-
-        .glass-checkbox {
-          transition: all 0.3s ease;
+        .glass-button-primary:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         @keyframes blob {
@@ -968,22 +907,6 @@ const CreaOrdini = () => {
 
         .bg-gradient-radial {
           background: radial-gradient(circle, var(--tw-gradient-stops));
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-          .glass-assignment-card {
-            padding: 1rem;
-          }
-          
-          .grid {
-            grid-template-columns: 1fr;
-          }
-          
-          .px-6 {
-            padding-left: 1rem;
-            padding-right: 1rem;
-          }
         }
       `}</style>
     </div>

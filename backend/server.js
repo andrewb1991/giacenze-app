@@ -223,13 +223,11 @@ const assegnazioneSchema = new mongoose.Schema({
   },
   // ✅ NUOVI CAMPI AGGIUNTI
   ordine: { 
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Ordine',
+    type: String,
     default: null
   },
   rdt: { 
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'RDT',
+    type: String,
     default: null
   },
   // CAMPI ESISTENTI
@@ -2489,8 +2487,8 @@ app.get('/api/assegnazioni/stats', authenticateToken, async (req, res) => {
     });
     
     // ✅ NUOVE STATISTICHE per Ordine e RDT
-    const ordiniAssegnati = assegnazioni.filter(a => a.ordine && a.ordine.trim()).length;
-    const rdtAssegnati = assegnazioni.filter(a => a.rdt && a.rdt.trim()).length;
+    const ordiniAssegnati = assegnazioni.filter(a => a.ordine && typeof a.ordine === 'string' && a.ordine.trim()).length;
+    const rdtAssegnati = assegnazioni.filter(a => a.rdt && typeof a.rdt === 'string' && a.rdt.trim()).length;
     
     const stats = {
       totaleAssegnazioni: assegnazioni.length,
@@ -3075,12 +3073,7 @@ app.get('/api/rdt', authenticateToken, async (req, res) => {
     } = req.query;
 
     // Costruisci filtro base
-    // DEBUG: Rimuoviamo temporaneamente il filtro deleted per vedere tutti i RDT
-    const filter = req.query.debug ? {} : { deleted: false };
-    
-    if (req.query.debug) {
-      console.log('🔍 DEBUG RDT - Filtro applicato:', filter);
-    }
+    const filter = { deleted: false };
 
     // Filtri opzionali
     if (stato && stato !== 'TUTTI') {
@@ -3110,19 +3103,6 @@ app.get('/api/rdt', authenticateToken, async (req, res) => {
       .skip(parseInt(offset));
 
     const total = await RDT.countDocuments(filter);
-    
-    if (req.query.debug) {
-      console.log('🔍 DEBUG RDT - Trovati:', rdt.length, 'RDT di', total, 'totali');
-      if (rdt.length > 0) {
-        console.log('🔍 DEBUG RDT - Primo RDT:', {
-          id: rdt[0]._id,
-          numero: rdt[0].numero,
-          cliente: rdt[0].cliente,
-          deleted: rdt[0].deleted,
-          stato: rdt[0].stato
-        });
-      }
-    }
 
     res.json({
       rdt,
@@ -3173,7 +3153,9 @@ app.post('/api/rdt', authenticateToken, requireAdmin, async (req, res) => {
       tempoStimato,
       indirizzo,
       contatti,
-      note
+      note,
+      operatoreId,
+      assegnazioneId
     } = req.body;
 
     // Validazione campi obbligatori
@@ -3215,6 +3197,36 @@ app.post('/api/rdt', authenticateToken, requireAdmin, async (req, res) => {
     });
 
     await nuovoRdt.save();
+
+    // Se è stata fornita un'assegnazione, collega l'RDT
+    if (assegnazioneId) {
+      const assegnazione = await Assegnazione.findById(assegnazioneId);
+      if (assegnazione && assegnazione.attiva) {
+        // Aggiorna l'assegnazione aggiungendo il riferimento all'RDT (numero)
+        assegnazione.rdt = numero;
+        await assegnazione.save();
+      }
+    }
+
+    // Per RDT: incrementa le giacenze disponibili dell'operatore (come ordini)
+    if (operatoreId && prodotti && prodotti.length > 0) {
+      for (const prodotto of prodotti) {
+        if (prodotto.productId && prodotto.quantita > 0) {
+          // Trova la giacenza dell'operatore per questo prodotto
+          const giacenza = await GiacenzaUtente.findOne({
+            userId: operatoreId,
+            productId: prodotto.productId
+          });
+          
+          if (giacenza) {
+            // Incrementa sempre la quantità disponibile anche per RDT
+            giacenza.quantitaDisponibile += prodotto.quantita;
+            await giacenza.save();
+            console.log(`✅ RDT: Incrementata giacenza ${prodotto.nome} di ${prodotto.quantita} per operatore ${operatoreId}`);
+          }
+        }
+      }
+    }
 
     const rdtPopulated = await RDT.findById(nuovoRdt._id)
       .populate('createdBy', 'username')
@@ -3262,24 +3274,51 @@ app.put('/api/rdt/:id', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// DELETE - Elimina RDT (soft delete)
+// POST - Finalizza RDT (cambia stato a COMPLETATO e aggiorna giacenze)
+app.post('/api/rdt/:id/finalize', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Trova l'RDT
+    const rdt = await RDT.findById(id);
+    if (!rdt) {
+      return res.status(404).json({ message: 'RDT non trovato' });
+    }
+    
+    // Cambia stato a COMPLETATO
+    rdt.stato = 'COMPLETATO';
+    await rdt.save();
+    
+    console.log(`✅ RDT ${rdt.numero} finalizzato con successo`);
+    
+    res.json({
+      message: 'RDT finalizzato con successo',
+      rdt: rdt
+    });
+  } catch (error) {
+    console.error('Errore finalizzazione RDT:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE - Elimina RDT (hard delete)
 app.delete('/api/rdt/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const rdt = await RDT.findOneAndUpdate(
-      { _id: req.params.id, deleted: false },
-      { 
-        deleted: true, 
-        deletedAt: new Date(),
-        deletedBy: req.user.userId
-      },
-      { new: true }
-    );
+    // HARD DELETE: Rimuovi fisicamente l'RDT dal database
+    const rdt = await RDT.findByIdAndDelete(req.params.id);
 
     if (!rdt) {
       return res.status(404).json({ message: 'RDT non trovato' });
     }
 
-    res.json({ message: 'RDT eliminato con successo' });
+    res.json({ 
+      message: 'RDT eliminato definitivamente dal database',
+      rdtDeletato: {
+        id: rdt._id,
+        numero: rdt.numero,
+        cliente: rdt.cliente
+      }
+    });
   } catch (error) {
     console.error('Errore eliminazione RDT:', error);
     res.status(500).json({ message: error.message });
@@ -4849,12 +4888,7 @@ app.get('/api/ordini', authenticateToken, async (req, res) => {
       limit = 50 
     } = req.query;
     
-    // DEBUG: Rimuoviamo temporaneamente il filtro attivo per vedere tutti gli ordini
-    const filter = req.query.debug ? {} : { attivo: true };
-    
-    if (req.query.debug) {
-      console.log('🔍 DEBUG ORDINI - Filtro applicato:', filter);
-    }
+    const filter = { attivo: true };
     
     // Filtri
     if (stato) filter.stato = stato;
@@ -4886,19 +4920,6 @@ app.get('/api/ordini', authenticateToken, async (req, res) => {
         .populate('createdBy', 'username'),
       Ordine.countDocuments(filter)
     ]);
-    
-    if (req.query.debug) {
-      console.log('🔍 DEBUG ORDINI - Trovati:', ordini.length, 'ordini di', totale, 'totali');
-      if (ordini.length > 0) {
-        console.log('🔍 DEBUG ORDINI - Primo ordine:', {
-          id: ordini[0]._id,
-          numero: ordini[0].numero,
-          cliente: ordini[0].cliente,
-          attivo: ordini[0].attivo,
-          stato: ordini[0].stato
-        });
-      }
-    }
     
     res.json({
       ordini,
@@ -4967,7 +4988,9 @@ app.post('/api/ordini', authenticateToken, requireAdmin, async (req, res) => {
       note,
       prodotti,
       valore,
-      tempoStimato
+      tempoStimato,
+      operatoreId,
+      assegnazioneId
     } = req.body;
     
     // Validazioni
@@ -5000,6 +5023,36 @@ app.post('/api/ordini', authenticateToken, requireAdmin, async (req, res) => {
     });
     
     await ordine.save();
+    
+    // Se è stata fornita un'assegnazione, collega l'ordine
+    if (assegnazioneId) {
+      const assegnazione = await Assegnazione.findById(assegnazioneId);
+      if (assegnazione && assegnazione.attiva) {
+        // Aggiorna l'assegnazione aggiungendo il riferimento all'ordine (numero)
+        assegnazione.ordine = numero;
+        await assegnazione.save();
+      }
+    }
+    
+    // Per ordini: incrementa le giacenze disponibili dell'operatore
+    if (operatoreId && prodotti && prodotti.length > 0) {
+      for (const prodotto of prodotti) {
+        if (prodotto.productId && prodotto.quantita > 0) {
+          // Trova la giacenza dell'operatore per questo prodotto
+          const giacenza = await GiacenzaUtente.findOne({
+            userId: operatoreId,
+            productId: prodotto.productId
+          });
+          
+          if (giacenza) {
+            // Incrementa sempre la quantità disponibile per ordini
+            giacenza.quantitaDisponibile += prodotto.quantita;
+            await giacenza.save();
+            console.log(`✅ Ordine: Incrementata giacenza ${prodotto.nome} di ${prodotto.quantita} per operatore ${operatoreId}`);
+          }
+        }
+      }
+    }
     
     const ordinePopolato = await Ordine.findById(ordine._id)
       .populate('createdBy', 'username');
@@ -5056,7 +5109,34 @@ app.put('/api/ordini/:id', authenticateToken, requireAdmin, async (req, res) => 
   }
 });
 
-// DELETE - Soft delete ordine
+// POST - Finalizza ordine (cambia stato a COMPLETATO e aggiorna giacenze)
+app.post('/api/ordini/:id/finalize', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Trova l'ordine
+    const ordine = await Ordine.findById(id);
+    if (!ordine) {
+      return res.status(404).json({ message: 'Ordine non trovato' });
+    }
+    
+    // Cambia stato a COMPLETATO
+    ordine.stato = 'COMPLETATO';
+    await ordine.save();
+    
+    console.log(`✅ Ordine ${ordine.numero} finalizzato con successo`);
+    
+    res.json({
+      message: 'Ordine finalizzato con successo',
+      ordine: ordine
+    });
+  } catch (error) {
+    console.error('Errore finalizzazione ordine:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE - Elimina ordine (hard delete)
 app.delete('/api/ordini/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -5077,17 +5157,21 @@ app.delete('/api/ordini/:id', authenticateToken, requireAdmin, async (req, res) 
       });
     }
     
-    const ordine = await Ordine.findByIdAndUpdate(
-      id,
-      { attivo: false },
-      { new: true }
-    );
+    // HARD DELETE: Rimuovi fisicamente l'ordine dal database
+    const ordine = await Ordine.findByIdAndDelete(id);
     
     if (!ordine) {
       return res.status(404).json({ message: 'Ordine non trovato' });
     }
     
-    res.json({ message: 'Ordine eliminato con successo' });
+    res.json({ 
+      message: 'Ordine eliminato definitivamente dal database',
+      ordineDeletato: {
+        id: ordine._id,
+        numero: ordine.numero,
+        cliente: ordine.cliente
+      }
+    });
   } catch (error) {
     console.error('Errore eliminazione ordine:', error);
     res.status(500).json({ message: error.message });
@@ -5898,6 +5982,8 @@ app.post('/api/assegnazioni/verifica-conflitti', authenticateToken, requireAdmin
     res.status(500).json({ message: error.message });
   }
 });
+
+
 // Avvia il server
 app.listen(process.env.PORT, '0.0.0.0', async () => {
   console.log(`🚀 Server giacenze multi-settimana su porta ${PORT}`);

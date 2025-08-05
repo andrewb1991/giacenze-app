@@ -1,10 +1,10 @@
-// components/admin/sections/AdminOrdiniSection.js
+// components/admin/sections/AdminCreaOrdiniSection.js
 import React from 'react';
 import Navigation, { SidebarProvider } from '../../shared/Navigation';
 import SidebarMenu from '../../shared/SidebarMenu';
-import OrdiniManagement from '../OrdiniManagement';
+import CreaOrdini from '../CreaOrdini';
 
-const AdminOrdiniSection = () => {
+const AdminCreaOrdiniSection = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
@@ -13,16 +13,16 @@ const AdminOrdiniSection = () => {
         
         {/* Navigation */}
         <div className="relative z-10">
-          <Navigation title="📊 Gestione Ordini" showBackToDashboard={true} showSidebarToggle={true} />
+          <Navigation title="📊 Crea Ordini" showBackToDashboard={true} showSidebarToggle={true} />
         </div>
 
         {/* Content */}
         <div className="relative z-10 w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <OrdiniManagement />
+          <CreaOrdini />
         </div>
       </div>
     </SidebarProvider>
   );
 };
 
-export default AdminOrdiniSection;
+export default AdminCreaOrdiniSection;
