@@ -326,6 +326,60 @@ export const getCurrentWeekFromList = (settimane) => {
 export const sortWeeksCenteredOnCurrent = (settimane) => {
   if (!settimane || settimane.length === 0) return [];
   
-  // Simply return chronological order - earliest to latest
-  return sortWeeksChronologically(settimane);
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentWeekNumber = getISOWeek(today);
+  
+  // Separate weeks into current, past and future
+  const currentWeek = [];
+  const pastWeeks = [];
+  const futureWeeks = [];
+  
+  settimane.forEach(settimana => {
+    if (!settimana || !settimana.numero || !settimana.anno) return;
+    
+    if (settimana.anno === currentYear && settimana.numero === currentWeekNumber) {
+      currentWeek.push(settimana);
+    } else if (settimana.anno < currentYear || 
+               (settimana.anno === currentYear && settimana.numero < currentWeekNumber)) {
+      pastWeeks.push(settimana);
+    } else {
+      futureWeeks.push(settimana);
+    }
+  });
+  
+  // Sort past weeks in ascending order (più vecchie prima) così appaiono nell'ordine giusto sopra la corrente
+  pastWeeks.sort((a, b) => {
+    if (a.anno !== b.anno) return a.anno - b.anno;
+    return a.numero - b.numero;
+  });
+  
+  // Mostra TUTTE le settimane precedenti (non limitare)
+  const limitedPastWeeks = pastWeeks;
+  
+  // Sort future weeks in ascending order (più vicine prima)
+  futureWeeks.sort((a, b) => {
+    if (a.anno !== b.anno) return a.anno - b.anno;
+    return a.numero - b.numero;
+  });
+  
+  // Mostra TUTTE le settimane future (non limitare)
+  const limitedFutureWeeks = futureWeeks;
+  
+  // Ordine: precedenti (reverse), corrente, successive
+  const result = [...limitedPastWeeks, ...currentWeek, ...limitedFutureWeeks];
+  
+  return result;
 };
+
+function getISOWeek(date) {
+  const target = new Date(date.valueOf());
+  const dayNr = (date.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = target.valueOf();
+  target.setMonth(0, 1);
+  if (target.getDay() !== 4) {
+    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+  }
+  return 1 + Math.ceil((firstThursday - target) / 604800000);
+}

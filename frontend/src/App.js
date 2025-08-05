@@ -20,6 +20,7 @@ import AdminReportsSection from './components/admin/sections/AdminReportsSection
 import AdminOrdiniSection from './components/admin/sections/AdminOrdiniSection';
 import ErrorMessage from './components/shared/ErrorMessage';
 import OrdiniManagement from './components/admin/OrdiniManagement';
+import CreaOrdini from './components/admin/CreaOrdini';
 
 // 🔄 Componente di Loading
   // const LoadingScreen = () => (
@@ -218,6 +219,8 @@ const AppContent = () => {
         return <ReportsPage />;
       case 'ordini':
         return <OrdiniManagement />;
+      case 'crea-ordini':
+        return <CreaOrdini />;
       case 'admin':
         return user?.role === 'admin' ? <AdminDashboard /> : <Dashboard />;
       // Sezioni Admin specifiche
@@ -237,6 +240,8 @@ const AppContent = () => {
         return user?.role === 'admin' ? <AdminReportsSection /> : <Dashboard />;
       case 'admin-ordini':
         return user?.role === 'admin' ? <AdminOrdiniSection /> : <Dashboard />;
+      case 'admin-crea-ordini':
+        return user?.role === 'admin' ? <CreaOrdini /> : <Dashboard />;
       default:
         return <Dashboard />;
     }

@@ -2197,6 +2197,8 @@ app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
       .populate('mezzoId', 'nome')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
       .populate('postazioneId', 'nome')
+      .populate('ordine', 'numero cliente dataConsegna priorita stato')
+      .populate('rdt', 'numero cliente dataConsegna priorita stato')
       .sort({ createdAt: -1 });
     
     console.log(`📊 Risultati trovati: ${assegnazioni.length}`);
@@ -3073,7 +3075,12 @@ app.get('/api/rdt', authenticateToken, async (req, res) => {
     } = req.query;
 
     // Costruisci filtro base
-    const filter = { deleted: false };
+    // DEBUG: Rimuoviamo temporaneamente il filtro deleted per vedere tutti i RDT
+    const filter = req.query.debug ? {} : { deleted: false };
+    
+    if (req.query.debug) {
+      console.log('🔍 DEBUG RDT - Filtro applicato:', filter);
+    }
 
     // Filtri opzionali
     if (stato && stato !== 'TUTTI') {
@@ -3103,6 +3110,19 @@ app.get('/api/rdt', authenticateToken, async (req, res) => {
       .skip(parseInt(offset));
 
     const total = await RDT.countDocuments(filter);
+    
+    if (req.query.debug) {
+      console.log('🔍 DEBUG RDT - Trovati:', rdt.length, 'RDT di', total, 'totali');
+      if (rdt.length > 0) {
+        console.log('🔍 DEBUG RDT - Primo RDT:', {
+          id: rdt[0]._id,
+          numero: rdt[0].numero,
+          cliente: rdt[0].cliente,
+          deleted: rdt[0].deleted,
+          stato: rdt[0].stato
+        });
+      }
+    }
 
     res.json({
       rdt,
@@ -4829,7 +4849,12 @@ app.get('/api/ordini', authenticateToken, async (req, res) => {
       limit = 50 
     } = req.query;
     
-    const filter = { attivo: true };
+    // DEBUG: Rimuoviamo temporaneamente il filtro attivo per vedere tutti gli ordini
+    const filter = req.query.debug ? {} : { attivo: true };
+    
+    if (req.query.debug) {
+      console.log('🔍 DEBUG ORDINI - Filtro applicato:', filter);
+    }
     
     // Filtri
     if (stato) filter.stato = stato;
@@ -4861,6 +4886,19 @@ app.get('/api/ordini', authenticateToken, async (req, res) => {
         .populate('createdBy', 'username'),
       Ordine.countDocuments(filter)
     ]);
+    
+    if (req.query.debug) {
+      console.log('🔍 DEBUG ORDINI - Trovati:', ordini.length, 'ordini di', totale, 'totali');
+      if (ordini.length > 0) {
+        console.log('🔍 DEBUG ORDINI - Primo ordine:', {
+          id: ordini[0]._id,
+          numero: ordini[0].numero,
+          cliente: ordini[0].cliente,
+          attivo: ordini[0].attivo,
+          stato: ordini[0].stato
+        });
+      }
+    }
     
     res.json({
       ordini,

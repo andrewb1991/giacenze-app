@@ -1,0 +1,1677 @@
+🚀 Server giacenze multi-settimana su porta 7070
+🔑 JWT Secret: Configurato
+🗄️  MongoDB: mongodb+srv://andreabramucci:qWREkLZknWIxlawS@automando.fwkavbr.mongodb.net
+🌐 Test API: http://localhost:7070/api/test
+Dati utenti già presenti nel database
+ℹ️ Indice numeroOrdine_1 non trovato (già rimosso)
+🏢 Postazioni già presenti: 22
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG ORDINI - Filtro applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+🔍 DEBUG RDT - Filtro applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati trovati: 7
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati: 0 di 0 giacenze
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📊 Risultati trovati: 7
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+🔍 DEBUG RDT - Filtro applicato: {}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📊 Risultati trovati: 7
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📊 Risultati trovati: 7
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+🔍 DEBUG RDT - Filtro applicato: {}
+📋 Filter applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Filtro applicato: {}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+Errore aggiornamento ordine: Error: Validation failed: stato: `BOZZA` is not a valid enum value for path `stato`.
+    at ValidationError.inspect (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/error/validation.js:50:26)
+    at formatValue (node:internal/util/inspect:806:19)
+    at inspect (node:internal/util/inspect:365:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2304:40)
+    at formatWithOptions (node:internal/util/inspect:2166:10)
+    at console.value (node:internal/console/constructor:358:14)
+    at console.error (node:internal/console/constructor:395:61)
+    at /Users/andri/SVILUPPO/automando/backend/server.js:5054:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  errors: {
+    stato: ValidatorError: `BOZZA` is not a valid enum value for path `stato`.
+        at validate (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/schematype.js:1365:13)
+        at SchemaType.doValidate (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/schematype.js:1349:7)
+        at /Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/helpers/updateValidators.js:151:22
+        at module.exports (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/helpers/updateValidators.js:202:7)
+        at /Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/query.js:3945:7
+        at new Promise (<anonymous>)
+        at model.Query.validate (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/query.js:3944:11)
+        at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+        at async model.Query._findOneAndUpdate (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/query.js:3373:5)
+        at async model.Query.exec (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/query.js:4447:11) {
+      properties: [Object],
+      kind: 'enum',
+      path: 'stato',
+      value: 'BOZZA',
+      reason: undefined,
+      [Symbol(mongoose:validatorError)]: true
+    }
+  },
+  _message: 'Validation failed'
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📊 Risultati trovati: 7
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Filtro applicato: {}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati: 0 di 0 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🏢 Filtri postazioni: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+📊 Postazioni risultati: 22 di 22
+🏢 Filtri postazioni: {}
+Primo utilizzo note: 
+Primo utilizzo note: undefined
+📊 Postazioni risultati: 22 di 22
+Primo utilizzo note: 
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+Primo utilizzo note: 
+Primo utilizzo note: 
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati: 0 di 0 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📊 Risultati trovati: 7
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📊 Risultati trovati: 7
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Filtro applicato: {}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG RDT - Filtro applicato: {}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Filtro applicato: {}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📊 Risultati trovati: 7
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📊 Risultati trovati: 7
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+🔍 DEBUG RDT - Filtro applicato: {}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Filtro applicato: {}
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati trovati: 7
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG RDT - Filtro applicato: {}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+📊 Risultati: 0 di 0 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 0 di 0 giacenze
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+🔍 DEBUG ORDINI - Filtro applicato: {}
+🔍 DEBUG RDT - Filtro applicato: {}
+📊 Risultati trovati: 7
+🔍 DEBUG ORDINI - Trovati: 4 ordini di 4 totali
+🔍 DEBUG ORDINI - Primo ordine: {
+  id: new ObjectId("689132c720092d488445d977"),
+  numero: '3',
+  cliente: 'testa',
+  attivo: false,
+  stato: 'CREATO'
+}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 7
+🔍 DEBUG RDT - Trovati: 4 RDT di 4 totali
+🔍 DEBUG RDT - Primo RDT: {
+  id: new ObjectId("689132e720092d488445d997"),
+  numero: '4',
+  cliente: 'test',
+  deleted: true,
+  stato: 'CREATO'
+}
+📦 Giacenze caricate: 55
+✅ Risultati finali: 55 di 55 giacenze
