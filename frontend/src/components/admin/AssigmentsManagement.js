@@ -32,16 +32,27 @@ import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
 import { apiCall } from '../../services/api';
 import { formatWeek, sortAssignmentsByCurrentWeekFirst, sortWeeksChronologically, getCurrentWeekIndex, getCurrentWeekFromList, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
+import { listenToOrdiniRdtUpdates } from '../../utils/events';
+// import OrdineRdtModal from './shared/OrdineRdtModal'; // Non più necessario - usiamo DOM puro
 
 const AssignmentsManagement = () => {
   const { token, setError } = useAuth();
   const { users, poli, mezzi, settimane } = useGiacenze();
   const { state, dispatch } = useAppContext();
-  const { assegnazioneForm, editAssignmentId, editForm } = state;
+  const { assegnazioneForm, editAssignmentId, editForm, activeTab } = state;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [postazioni, setPostazioni] = useState([]);
   const [showCalendarView, setShowCalendarView] = useState(false);
   const [stats, setStats] = useState({});
+  
+  // Stati per ordini e RDT completi
+  const [ordiniData, setOrdiniData] = useState([]);
+  const [rdtData, setRdtData] = useState([]);
+  
+  // Stati per il modal ordine/RDT
+  const [selectedOrdineRdt, setSelectedOrdineRdt] = useState(null);
+  const [showOrdineRdtModal, setShowOrdineRdtModal] = useState(false);
+
 
   // Stati per filtri - ✅ AGGIUNTI ordine e rdt
   const [filters, setFilters] = useState({
@@ -137,11 +148,12 @@ const AssignmentsManagement = () => {
     dispatch({ type: 'SET_EDIT_FORM', payload: updates });
   };
 
-  // ✅ CARICA STATISTICHE
+  // ✅ CARICA STATISTICHE - TEMPORANEAMENTE DISABILITATO PER DEBUGGING
   const loadStats = async () => {
     try {
-      const data = await apiCall('/assegnazioni/stats', {}, token);
-      setStats(data || {});
+      console.log('⚠️ DEBUG: Skipping stats caricamento per evitare errori API');
+      // const data = await apiCall('/assegnazioni/stats', {}, token);
+      setStats({});
     } catch (err) {
       console.error('Errore caricamento statistiche:', err);
     }
@@ -262,6 +274,77 @@ const AssignmentsManagement = () => {
   };
 
   // Carica assegnazioni con filtri aggiornati
+  // Carica dati di ordini e RDT
+  const loadOrdiniRdtData = async (showNotification = false) => {
+    try {
+      const [ordiniResponse, rdtResponse] = await Promise.all([
+        apiCall('/ordini', {}, token),
+        apiCall('/rdt', {}, token)
+      ]);
+      
+      const newOrdiniData = ordiniResponse?.ordini || [];
+      const newRdtData = rdtResponse?.rdt || [];
+      
+      // Controlla se ci sono cambiamenti nei dati
+      const hasChanges = JSON.stringify(newOrdiniData) !== JSON.stringify(ordiniData) ||
+                        JSON.stringify(newRdtData) !== JSON.stringify(rdtData);
+      
+      setOrdiniData(newOrdiniData);
+      setRdtData(newRdtData);
+      
+      // Mostra notifica solo se richiesta e ci sono cambiamenti
+      if (showNotification && hasChanges && (newOrdiniData.length > 0 || newRdtData.length > 0)) {
+        showUpdateNotification();
+      }
+      
+    } catch (err) {
+      console.error('Errore nel caricamento ordini/RDT:', err);
+      setOrdiniData([]);
+      setRdtData([]);
+    }
+  };
+
+  // Funzione per mostrare notifica di aggiornamento
+  const showUpdateNotification = () => {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(34, 197, 94, 0.9);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      z-index: 1000000;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    `;
+    notification.textContent = '🔄 Dati ordini/RDT aggiornati';
+    document.body.appendChild(notification);
+    
+    // Rimuovi notifica dopo 3 secondi
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 3000);
+  };
+
+  // Funzione utility per inviare evento di aggiornamento (esportabile per altri componenti)
+  const triggerOrdiniRdtUpdate = (details = {}) => {
+    const event = new CustomEvent('ordini-rdt-updated', { 
+      detail: { 
+        timestamp: Date.now(), 
+        source: 'AssignmentsManagement',
+        ...details 
+      } 
+    });
+    window.dispatchEvent(event);
+    console.log('📡 Evento ordini-rdt-updated inviato', details);
+  };
+
   const loadAssegnazioni = async () => {
     try {
       setLoading(true);
@@ -324,11 +407,379 @@ const AssignmentsManagement = () => {
   useEffect(() => {
     loadAssegnazioni();
     loadStats(); // ✅ CARICA STATISTICHE INIZIALI
+    loadOrdiniRdtData(); // ✅ CARICA DATI ORDINI E RDT
+  }, []);
+
+  // Aggiornamento automatico dei dati quando si torna alla tab assegnazioni
+  useEffect(() => {
+    if (activeTab === 'assegnazioni') {
+      loadOrdiniRdtData();
+    }
+  }, [activeTab]);
+
+  // Sistema di eventi per aggiornamento immediato quando dati vengono modificati
+  useEffect(() => {
+    const handleOrdiniRdtUpdate = (event) => {
+      console.log('🔔 Evento ricevuto: dati ordini/RDT modificati', event.detail);
+      loadOrdiniRdtData();
+      showUpdateNotification();
+    };
+
+    // Ascolta eventi di aggiornamento ordini/RDT
+    window.addEventListener('ordini-rdt-updated', handleOrdiniRdtUpdate);
+    
+    return () => {
+      window.removeEventListener('ordini-rdt-updated', handleOrdiniRdtUpdate);
+    };
   }, []);
 
   // Aggiorna filtri
   const updateFilters = (newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  // Helper per trovare i dati completi di un ordine
+  const getOrdineCompleto = (numeroOrdine) => {
+    if (!numeroOrdine) return null;
+    return ordiniData.find(ordine => ordine.numero === numeroOrdine);
+  };
+
+  // Helper per trovare i dati completi di un RDT
+  const getRdtCompleto = (numeroRdt) => {
+    if (!numeroRdt) return null;
+    return rdtData.find(rdt => rdt.numero === numeroRdt);
+  };
+
+  // Apri modal per ordine/RDT
+  const openOrdineRdtModal = (numeroOrdine, numeroRdt) => {
+    let itemData = null;
+    
+    // Trova i dati reali dell'ordine/RDT
+    if (numeroOrdine) {
+      itemData = getOrdineCompleto(numeroOrdine);
+      if (itemData) {
+        itemData.itemType = 'ordine';
+      }
+    } else if (numeroRdt) {
+      itemData = getRdtCompleto(numeroRdt);
+      if (itemData) {
+        itemData.itemType = 'rdt';
+      }
+    }
+    
+    if (itemData) {
+      createDOMModal(itemData);
+    } else {
+      setError('Dati non trovati per ' + (numeroOrdine ? 'ordine ' + numeroOrdine : 'RDT ' + numeroRdt));
+    }
+  };
+  
+  // Funzione per creare modal con DOM puro usando dati reali
+  const createDOMModal = (itemData) => {
+    // Rimuovi modal esistente
+    const existingModal = document.getElementById('real-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+    
+    const modalDiv = document.createElement('div');
+    modalDiv.id = 'real-modal';
+    modalDiv.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 999999;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    `;
+    
+    modalDiv.innerHTML = `
+      <div class="glass-card-large" style="
+        max-width: 900px;
+        width: 95%;
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 24px;
+        padding: 2rem;
+        margin: 1rem;
+      ">
+        <!-- Header del modal -->
+        <div class="glass-card-header" style="
+          display: flex; 
+          justify-content: space-between; 
+          align-items: center; 
+          margin-bottom: 2rem;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+          padding-bottom: 1.5rem;
+        ">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div class="glass-icon" style="
+              width: 3rem; 
+              height: 3rem; 
+              border-radius: 12px; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center;
+              font-size: 1.5rem;
+            ">
+              ${itemData.itemType === 'ordine' ? '📦' : '📋'}
+            </div>
+            <h2 style="
+              margin: 0; 
+              font-size: 1.875rem; 
+              font-weight: 700; 
+              color: white;
+              text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            ">
+              ${itemData.itemType === 'ordine' ? 'Dettagli Ordine' : 'Dettagli RDT'}
+            </h2>
+          </div>
+          <button id="close-real-modal" style="
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 0.75rem;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: white;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+          " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
+            ✕
+          </button>
+        </div>
+        
+        <!-- Contenuto principale -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+          <div class="glass-card" style="padding: 1.5rem; border-radius: 16px;">
+            <label style="
+              display: block; 
+              font-weight: 600; 
+              color: rgba(255, 255, 255, 0.9); 
+              margin-bottom: 0.75rem;
+              font-size: 0.875rem;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            ">Numero</label>
+            <div style="
+              font-size: 1.125rem;
+              font-weight: 600;
+              color: white;
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            ">
+              ${itemData.numero}
+            </div>
+          </div>
+          
+          <div class="glass-card" style="padding: 1.5rem; border-radius: 16px;">
+            <label style="
+              display: block; 
+              font-weight: 600; 
+              color: rgba(255, 255, 255, 0.9); 
+              margin-bottom: 0.75rem;
+              font-size: 0.875rem;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            ">Cliente</label>
+            <div style="
+              font-size: 1.125rem;
+              font-weight: 600;
+              color: white;
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            ">
+              ${itemData.cliente}
+            </div>
+          </div>
+          
+          <div class="glass-card" style="grid-column: 1 / -1; padding: 1.5rem; border-radius: 16px;">
+            <label style="
+              display: block; 
+              font-weight: 600; 
+              color: rgba(255, 255, 255, 0.9); 
+              margin-bottom: 0.75rem;
+              font-size: 0.875rem;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            ">Descrizione</label>
+            <div style="
+              font-size: 1rem;
+              color: rgba(255, 255, 255, 0.9);
+              line-height: 1.5;
+            ">
+              ${itemData.descrizione || 'Nessuna descrizione'}
+            </div>
+          </div>
+          
+          <div class="glass-card" style="padding: 1.5rem; border-radius: 16px;">
+            <label style="
+              display: block; 
+              font-weight: 600; 
+              color: rgba(255, 255, 255, 0.9); 
+              margin-bottom: 0.75rem;
+              font-size: 0.875rem;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            ">Data Consegna</label>
+            <div style="
+              font-size: 1.125rem;
+              font-weight: 600;
+              color: white;
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            ">
+              ${new Date(itemData.dataConsegna).toLocaleDateString('it-IT')}
+            </div>
+          </div>
+          
+          <div class="glass-card" style="padding: 1.5rem; border-radius: 16px;">
+            <label style="
+              display: block; 
+              font-weight: 600; 
+              color: rgba(255, 255, 255, 0.9); 
+              margin-bottom: 0.75rem;
+              font-size: 0.875rem;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            ">Priorità</label>
+            <div style="
+              font-size: 1.125rem;
+              font-weight: 600;
+              color: white;
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            ">
+              ${itemData.priorita}
+            </div>
+          </div>
+        </div>
+        
+        ${itemData.prodotti && itemData.prodotti.length > 0 ? `
+        <div class="glass-card" style="margin-bottom: 2rem; padding: 1.5rem; border-radius: 16px;">
+          <label style="
+            display: block; 
+            font-weight: 600; 
+            color: rgba(255, 255, 255, 0.9); 
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          ">Prodotti</label>
+          <div style="space-y: 0.5rem;">
+            ${itemData.prodotti.map(p => `
+              <div style="
+                padding: 1rem;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                margin-bottom: 0.5rem;
+              ">
+                <div style="
+                  font-weight: 600;
+                  color: white;
+                  margin-bottom: 0.25rem;
+                ">${p.nome}</div>
+                <div style="
+                  font-size: 0.875rem;
+                  color: rgba(255, 255, 255, 0.8);
+                ">
+                  Quantità: ${p.quantita} ${p.unita || 'pz'}
+                  ${p.prezzo ? ` • €${p.prezzo.toFixed(2)}` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        ` : ''}
+        
+        <!-- Pulsanti -->
+        <div style="
+          display: flex; 
+          justify-content: flex-end; 
+          gap: 1rem; 
+          margin-top: 2rem;
+        ">
+          <button id="close-real-modal-btn" class="glass-card" style="
+            padding: 0.875rem 1.75rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+          " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.transform='translateY(0)'">
+            Chiudi
+          </button>
+          <button id="goto-management-btn" class="glass-card" style="
+            padding: 0.875rem 1.75rem;
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            background: rgba(59, 130, 246, 0.2);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+          " onmouseover="this.style.background='rgba(59, 130, 246, 0.3)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.2)'; this.style.transform='translateY(0)'">
+            ${itemData.itemType === 'ordine' ? 'Vai a Ordini' : 'Vai a RDT'}
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modalDiv);
+    
+    // Event listeners
+    document.getElementById('close-real-modal').onclick = () => modalDiv.remove();
+    document.getElementById('close-real-modal-btn').onclick = () => modalDiv.remove();
+    
+    // Pulsante "Vai a Ordini/RDT" - naviga a OrdiniManagement
+    document.getElementById('goto-management-btn').onclick = () => {
+      console.log('🔍 DEBUG: Click su Vai a Ordini');
+      console.log('🔍 DEBUG: activeTab attuale:', activeTab);
+      
+      modalDiv.remove();
+      
+      try {
+        if (activeTab !== 'ordini') {
+          // Solo naviga se non siamo già nella sezione ordini
+          dispatch({ type: 'SET_ACTIVE_TAB', payload: 'ordini' });
+          console.log('✅ DEBUG: Navigato alla sezione ordini');
+        } else {
+          console.log('✅ DEBUG: Già nella sezione ordini - scroll verso alto');
+        }
+        
+        // Scroll verso l'alto per una migliore UX
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (error) {
+        console.error('❌ DEBUG: Errore nel dispatch:', error);
+        alert('Errore nella navigazione: ' + error.message);
+      }
+    };
+    
+    // Chiudi cliccando fuori dal modal
+    modalDiv.onclick = (e) => {
+      if (e.target === modalDiv) {
+        modalDiv.remove();
+      }
+    };
+  };
+
+  // Chiudi modal
+  const closeOrdineRdtModal = () => {
+    setSelectedOrdineRdt(null);
+    setShowOrdineRdtModal(false);
+  };
+
+  // Callback per aggiornamenti dal modal
+  const handleOrdineRdtModalSave = () => {
+    loadOrdiniRdtData(); // Ricarica i dati aggiornati
+    loadAssegnazioni();  // Ricarica le assegnazioni per vedere i cambiamenti
+    closeOrdineRdtModal();
   };
 
   // Soft delete (disattiva)
@@ -1059,7 +1510,7 @@ const AssignmentsManagement = () => {
                         </div>
                       </td>
 
-                      {/* ✅ ORDINE - con modifica inline */}
+                      {/* ✅ ORDINE - cliccabile con dati completi */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {editAssignmentId === assegnazione._id ? (
@@ -1077,9 +1528,27 @@ const AssignmentsManagement = () => {
                               <Hash className="w-4 h-4 mr-2 text-green-400" />
                               <div className="text-sm text-white">
                                 {assegnazione.ordine ? (
-                                  typeof assegnazione.ordine === 'object' 
-                                    ? assegnazione.ordine.numero 
-                                    : assegnazione.ordine
+                                  (() => {
+                                    const numeroOrdine = typeof assegnazione.ordine === 'object' 
+                                      ? assegnazione.ordine.numero 
+                                      : assegnazione.ordine;
+                                    const ordineCompleto = getOrdineCompleto(numeroOrdine);
+                                    
+                                    return (
+                                      <button
+                                        onClick={() => openOrdineRdtModal(numeroOrdine, null)}
+                                        className="text-blue-400 hover:text-blue-300 transition-colors underline"
+                                        title={ordineCompleto ? `Cliente: ${ordineCompleto.cliente}` : 'Clicca per vedere dettagli'}
+                                      >
+                                        {numeroOrdine}
+                                        {ordineCompleto && (
+                                          <div className="text-xs text-white/60 mt-1">
+                                            {ordineCompleto.cliente}
+                                          </div>
+                                        )}
+                                      </button>
+                                    );
+                                  })()
                                 ) : (
                                   <span className="text-white/40 italic">Non assegnato</span>
                                 )}
@@ -1089,7 +1558,7 @@ const AssignmentsManagement = () => {
                         </div>
                       </td>
 
-                      {/* ✅ RDT - con modifica inline */}
+                      {/* ✅ RDT - cliccabile con dati completi */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {editAssignmentId === assegnazione._id ? (
@@ -1107,9 +1576,27 @@ const AssignmentsManagement = () => {
                               <Clipboard className="w-4 h-4 mr-2 text-purple-400" />
                               <div className="text-sm text-white">
                                 {assegnazione.rdt ? (
-                                  typeof assegnazione.rdt === 'object' 
-                                    ? assegnazione.rdt.numero 
-                                    : assegnazione.rdt
+                                  (() => {
+                                    const numeroRdt = typeof assegnazione.rdt === 'object' 
+                                      ? assegnazione.rdt.numero 
+                                      : assegnazione.rdt;
+                                    const rdtCompleto = getRdtCompleto(numeroRdt);
+                                    
+                                    return (
+                                      <button
+                                        onClick={() => openOrdineRdtModal(null, numeroRdt)}
+                                        className="text-purple-400 hover:text-purple-300 transition-colors underline"
+                                        title={rdtCompleto ? `Cliente: ${rdtCompleto.cliente}` : 'Clicca per vedere dettagli'}
+                                      >
+                                        {numeroRdt}
+                                        {rdtCompleto && (
+                                          <div className="text-xs text-white/60 mt-1">
+                                            {rdtCompleto.cliente}
+                                          </div>
+                                        )}
+                                      </button>
+                                    );
+                                  })()
                                 ) : (
                                   <span className="text-white/40 italic">Non assegnato</span>
                                 )}
@@ -1765,6 +2252,8 @@ const CalendarView = ({ assegnazioni, poli, settimane, onBackToList }) => {
           z-index: 10;
         }
       `}</style>
+
+      {/* Modal gestito con DOM JavaScript puro - vedi funzione createDOMModal */}
     </div>
   );
 };

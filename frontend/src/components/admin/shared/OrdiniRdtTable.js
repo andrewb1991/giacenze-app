@@ -252,9 +252,30 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
       }, token);
 
       await loadData();
-      setError(`✅ ${item.itemType} finalizzato! Stato aggiornato a COMPLETATO.`);
+      setError(`✅ ${item.itemType} finalizzato! Stato aggiornato a COMPLETATO e giacenze incrementate.`);
     } catch (err) {
       setError('Errore nella finalizzazione: ' + err.message);
+    }
+  };
+
+  // Riapri elemento completato con ripristino giacenze
+  const reopenItem = async (item) => {
+    if (!window.confirm(`Sei sicuro di voler riaprire questo ${item.itemType}? Le giacenze dei prodotti associati verranno decrementate dalle giacenze disponibili dell'operatore.`)) {
+      return;
+    }
+
+    try {
+      setError('');
+      const endpoint = item.itemType === 'ordine' ? '/ordini' : '/rdt';
+      
+      await apiCall(`${endpoint}/${item._id}/reopen`, {
+        method: 'POST'
+      }, token);
+
+      await loadData();
+      setError(`✅ ${item.itemType} riaperto! Stato aggiornato a CREATO e giacenze decrementate.`);
+    } catch (err) {
+      setError('Errore nella riapertura: ' + err.message);
     }
   };
 
@@ -631,13 +652,21 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
                                   <Eye className="w-4 h-4 text-yellow-400" />
                                 </button>
                                 
-                                {item.stato !== 'COMPLETATO' && (
+                                {item.stato !== 'COMPLETATO' ? (
                                   <button
                                     onClick={() => finalizeItem(item)}
                                     className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"
                                     title="Finalizza e cambia stato a COMPLETATO"
                                   >
                                     <CheckCircle className="w-4 h-4 text-green-400" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => reopenItem(item)}
+                                    className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"
+                                    title="Riapri e ripristina giacenze"
+                                  >
+                                    <Package className="w-4 h-4 text-orange-400" />
                                   </button>
                                 )}
                                 

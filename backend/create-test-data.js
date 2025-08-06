@@ -44,9 +44,11 @@ const ordineSchema = new mongoose.Schema({
     default: 'BOZZA' 
   },
   prodotti: [{
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-    quantita: Number,
-    note: String
+    nome: { type: String, required: true, trim: true },
+    quantita: { type: Number, required: true, min: 0 },
+    unita: { type: String, default: 'pz', trim: true },
+    prezzo: { type: Number, min: 0 },
+    note: { type: String, trim: true }
   }],
   attivo: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
@@ -81,17 +83,19 @@ const rdtSchema = new mongoose.Schema({
     default: 'BOZZA' 
   },
   prodotti: [{
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-    quantita: Number,
-    note: String
+    nome: { type: String, required: true, trim: true },
+    quantita: { type: Number, required: true, min: 0 },
+    unita: { type: String, default: 'pz', trim: true },
+    prezzo: { type: Number, min: 0 },
+    note: { type: String, trim: true }
   }],
   deleted: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-const Ordine = mongoose.model('Ordine', ordineSchema);
-const RDT = mongoose.model('RDT', rdtSchema);
+const Ordine = mongoose.model('Ordine', ordineSchema, 'ordines');
+const RDT = mongoose.model('RDT', rdtSchema, 'rdts');
 
 async function createTestData() {
   try {
@@ -116,7 +120,22 @@ async function createTestData() {
         },
         priorita: 'ALTA',
         stato: 'BOZZA',
-        prodotti: []
+        prodotti: [
+          {
+            nome: 'Viti M6x20',
+            quantita: 100,
+            unita: 'pz',
+            prezzo: 0.15,
+            note: 'Acciaio inox'
+          },
+          {
+            nome: 'Rondelle Ø6',
+            quantita: 200,
+            unita: 'pz',
+            prezzo: 0.05,
+            note: 'Acciaio zincato'
+          }
+        ]
       },
       {
         numero: 'ORD-2025-002',
@@ -131,7 +150,15 @@ async function createTestData() {
         },
         priorita: 'MEDIA',
         stato: 'ASSEGNATO',
-        prodotti: []
+        prodotti: [
+          {
+            nome: 'Bulloni M8x30',
+            quantita: 50,
+            unita: 'pz',
+            prezzo: 0.25,
+            note: 'Testa esagonale'
+          }
+        ]
       },
       {
         numero: 'ORD-2025-003',
@@ -145,8 +172,23 @@ async function createTestData() {
           provincia: 'NA'
         },
         priorita: 'URGENTE',
-        stato: 'IN_CORSO',
-        prodotti: []
+        stato: 'COMPLETATO',
+        prodotti: [
+          {
+            nome: 'Dadi M8',
+            quantita: 75,
+            unita: 'pz',
+            prezzo: 0.10,
+            note: 'Autobloccanti'
+          },
+          {
+            nome: 'Guarnizioni',
+            quantita: 30,
+            unita: 'pz',
+            prezzo: 0.80,
+            note: 'NBR 70 Shore'
+          }
+        ]
       }
     ];
 
@@ -158,7 +200,14 @@ async function createTestData() {
         dataConsegna: new Date('2025-01-18'),
         priorita: 'MEDIA',
         stato: 'BOZZA',
-        prodotti: []
+        prodotti: [
+          {
+            nome: 'Spine cilindriche',
+            quantita: 120,
+            unita: 'pz',
+            prezzo: 0.18
+          }
+        ]
       },
       {
         numero: 'RDT-2025-002',
@@ -166,7 +215,20 @@ async function createTestData() {
         dataConsegna: new Date('2025-01-22'),
         priorita: 'ALTA',
         stato: 'COMPLETATO',
-        prodotti: []
+        prodotti: [
+          {
+            nome: 'Molle di compressione',
+            quantita: 85,
+            unita: 'pz',
+            prezzo: 1.20
+          },
+          {
+            nome: 'Cuscinetti 608',
+            quantita: 40,
+            unita: 'pz',
+            prezzo: 2.50
+          }
+        ]
       },
       {
         numero: 'RDT-2025-003',
@@ -174,7 +236,14 @@ async function createTestData() {
         dataConsegna: new Date('2025-01-28'),
         priorita: 'BASSA',
         stato: 'ANNULLATO',
-        prodotti: []
+        prodotti: [
+          {
+            nome: 'Anelli elastici',
+            quantita: 200,
+            unita: 'pz',
+            prezzo: 0.08
+          }
+        ]
       }
     ];
 

@@ -3274,7 +3274,7 @@ app.put('/api/rdt/:id', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// POST - Finalizza RDT (cambia stato a COMPLETATO e aggiorna giacenze)
+// POST - Finalizza RDT (cambia stato a COMPLETATO e incrementa giacenze)
 app.post('/api/rdt/:id/finalize', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -3285,18 +3285,163 @@ app.post('/api/rdt/:id/finalize', authenticateToken, requireAdmin, async (req, r
       return res.status(404).json({ message: 'RDT non trovato' });
     }
     
+    // Verifica che l'RDT non sia già COMPLETATO
+    if (rdt.stato === 'COMPLETATO') {
+      return res.status(400).json({ message: 'RDT già completato' });
+    }
+    
+    // Trova l'assegnazione per determinare l'operatore
+    const assegnazione = await Assegnazione.findOne({
+      rdt: rdt.numero,
+      attiva: true
+    }).populate('userId');
+    
+    if (!assegnazione || !assegnazione.userId) {
+      return res.status(400).json({ message: 'Assegnazione non trovata per questo RDT' });
+    }
+    
+    const operatoreId = assegnazione.userId._id;
+    
+    // Incrementa le giacenze per ogni prodotto nell'RDT (prodotti completati)
+    if (rdt.prodotti && rdt.prodotti.length > 0) {
+      for (const prodotto of rdt.prodotti) {
+        try {
+          // Trova il prodotto usando il nome per ottenere il productId
+          const product = await Product.findOne({ nome: prodotto.nome, attivo: true });
+          if (!product) {
+            console.warn(`⚠️ Prodotto non trovato: ${prodotto.nome}`);
+            continue;
+          }
+
+          // Trova la giacenza dell'operatore per questo prodotto
+          let giacenza = await GiacenzaUtente.findOne({
+            userId: operatoreId,
+            productId: product._id,
+            attiva: true
+          });
+          
+          if (giacenza) {
+            // Incrementa la quantitaDisponibile (prodotti completati aggiunti alla giacenza)
+            giacenza.quantitaDisponibile += prodotto.quantita;
+            await giacenza.save();
+            console.log(`✅ Incrementate giacenze per prodotto ${prodotto.nome}: +${prodotto.quantita} per operatore ${assegnazione.userId.username}`);
+          } else {
+            // Crea nuova giacenza se non esiste
+            giacenza = new GiacenzaUtente({
+              userId: operatoreId,
+              productId: product._id,
+              quantitaAssegnata: prodotto.quantita,
+              quantitaDisponibile: prodotto.quantita,
+              quantitaMinima: 0,
+              attiva: true,
+              note: `Giacenza creata automaticamente dalla finalizzazione RDT ${rdt.numero}`,
+              assegnatoDa: assegnazione.userId._id
+            });
+            await giacenza.save();
+            console.log(`✅ Creata nuova giacenza per prodotto ${prodotto.nome}: +${prodotto.quantita} per operatore ${assegnazione.userId.username}`);
+          }
+        } catch (prodottoError) {
+          console.error(`Errore aggiornamento giacenze per prodotto ${prodotto.nome}:`, prodottoError);
+        }
+      }
+    }
+    
     // Cambia stato a COMPLETATO
     rdt.stato = 'COMPLETATO';
     await rdt.save();
     
-    console.log(`✅ RDT ${rdt.numero} finalizzato con successo`);
+    console.log(`✅ RDT ${rdt.numero} finalizzato con successo e giacenze incrementate`);
     
     res.json({
-      message: 'RDT finalizzato con successo',
+      message: 'RDT finalizzato con successo e giacenze aggiornate',
       rdt: rdt
     });
   } catch (error) {
     console.error('Errore finalizzazione RDT:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Riapri RDT completato (cambia stato a CREATO e ripristina giacenze)
+app.post('/api/rdt/:id/reopen', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Trova l'RDT
+    const rdt = await RDT.findById(id);
+    if (!rdt) {
+      return res.status(404).json({ message: 'RDT non trovato' });
+    }
+    
+    // Verifica che l'RDT sia COMPLETATO
+    if (rdt.stato !== 'COMPLETATO') {
+      return res.status(400).json({ message: 'Solo gli RDT completati possono essere riaperti' });
+    }
+    
+    // Trova l'assegnazione per determinare l'operatore
+    const assegnazione = await Assegnazione.findOne({
+      rdt: rdt.numero,
+      attiva: true
+    }).populate('userId');
+    
+    if (!assegnazione || !assegnazione.userId) {
+      return res.status(400).json({ message: 'Assegnazione non trovata per questo RDT' });
+    }
+    
+    const operatoreId = assegnazione.userId._id;
+    
+    // Decrementa le giacenze per ogni prodotto nell'RDT (rimuove prodotti dalla giacenza)
+    if (rdt.prodotti && rdt.prodotti.length > 0) {
+      for (const prodotto of rdt.prodotti) {
+        try {
+          // Trova il prodotto usando il nome per ottenere il productId
+          const product = await Product.findOne({ nome: prodotto.nome, attivo: true });
+          if (!product) {
+            console.warn(`⚠️ Prodotto non trovato nel database: ${prodotto.nome}`);
+            continue;
+          }
+
+          // Trova la giacenza dell'operatore per questo prodotto
+          const giacenza = await GiacenzaUtente.findOne({
+            userId: operatoreId,
+            productId: product._id,
+            attiva: true
+          });
+          
+          if (giacenza) {
+            const giacenzaPrima = giacenza.quantitaDisponibile;
+            
+            // Sottrai la quantità dalla quantitaDisponibile (decrementa giacenza)
+            giacenza.quantitaDisponibile -= prodotto.quantita;
+            
+            // Assicurati che non vada sotto zero
+            if (giacenza.quantitaDisponibile < 0) {
+              giacenza.quantitaDisponibile = 0;
+            }
+            
+            await giacenza.save();
+            console.log(`🔄 Decrementate giacenze per prodotto ${prodotto.nome}: ${giacenzaPrima} → ${giacenza.quantitaDisponibile} (-${prodotto.quantita}) per operatore ${assegnazione.userId.username}`);
+          } else {
+            console.warn(`⚠️ Giacenza non trovata per prodotto ${prodotto.nome} e operatore ${assegnazione.userId.username} - impossibile decrementare`);
+          }
+        } catch (prodottoError) {
+          console.error(`❌ Errore decremento giacenze per prodotto ${prodotto.nome}:`, prodottoError);
+        }
+      }
+    }
+    
+    // Cambia stato a CREATO
+    rdt.stato = 'CREATO';
+    await rdt.save();
+    
+    console.log(`✅ RDT ${rdt.numero} riaperto con successo, giacenze decrementate`);
+    
+    res.json({
+      message: 'RDT riaperto con successo e giacenze decrementate',
+      rdt: rdt
+    });
+  } catch (error) {
+    console.error('Errore riapertura RDT:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -5109,7 +5254,7 @@ app.put('/api/ordini/:id', authenticateToken, requireAdmin, async (req, res) => 
   }
 });
 
-// POST - Finalizza ordine (cambia stato a COMPLETATO e aggiorna giacenze)
+// POST - Finalizza ordine (cambia stato a COMPLETATO e incrementa giacenze)
 app.post('/api/ordini/:id/finalize', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -5120,18 +5265,163 @@ app.post('/api/ordini/:id/finalize', authenticateToken, requireAdmin, async (req
       return res.status(404).json({ message: 'Ordine non trovato' });
     }
     
+    // Verifica che l'ordine non sia già COMPLETATO
+    if (ordine.stato === 'COMPLETATO') {
+      return res.status(400).json({ message: 'Ordine già completato' });
+    }
+    
+    // Trova l'assegnazione per determinare l'operatore
+    const assegnazione = await Assegnazione.findOne({
+      ordine: ordine.numero,
+      attiva: true
+    }).populate('userId');
+    
+    if (!assegnazione || !assegnazione.userId) {
+      return res.status(400).json({ message: 'Assegnazione non trovata per questo ordine' });
+    }
+    
+    const operatoreId = assegnazione.userId._id;
+    
+    // Incrementa le giacenze per ogni prodotto nell'ordine (prodotti completati)
+    if (ordine.prodotti && ordine.prodotti.length > 0) {
+      for (const prodotto of ordine.prodotti) {
+        try {
+          // Trova il prodotto usando il nome per ottenere il productId
+          const product = await Product.findOne({ nome: prodotto.nome, attivo: true });
+          if (!product) {
+            console.warn(`⚠️ Prodotto non trovato: ${prodotto.nome}`);
+            continue;
+          }
+
+          // Trova la giacenza dell'operatore per questo prodotto
+          let giacenza = await GiacenzaUtente.findOne({
+            userId: operatoreId,
+            productId: product._id,
+            attiva: true
+          });
+          
+          if (giacenza) {
+            // Incrementa la quantitaDisponibile (prodotti completati aggiunti alla giacenza)
+            giacenza.quantitaDisponibile += prodotto.quantita;
+            await giacenza.save();
+            console.log(`✅ Incrementate giacenze per prodotto ${prodotto.nome}: +${prodotto.quantita} per operatore ${assegnazione.userId.username}`);
+          } else {
+            // Crea nuova giacenza se non esiste
+            giacenza = new GiacenzaUtente({
+              userId: operatoreId,
+              productId: product._id,
+              quantitaAssegnata: prodotto.quantita,
+              quantitaDisponibile: prodotto.quantita,
+              quantitaMinima: 0,
+              attiva: true,
+              note: `Giacenza creata automaticamente dalla finalizzazione ordine ${ordine.numero}`,
+              assegnatoDa: assegnazione.userId._id
+            });
+            await giacenza.save();
+            console.log(`✅ Creata nuova giacenza per prodotto ${prodotto.nome}: +${prodotto.quantita} per operatore ${assegnazione.userId.username}`);
+          }
+        } catch (prodottoError) {
+          console.error(`Errore aggiornamento giacenze per prodotto ${prodotto.nome}:`, prodottoError);
+        }
+      }
+    }
+    
     // Cambia stato a COMPLETATO
     ordine.stato = 'COMPLETATO';
     await ordine.save();
     
-    console.log(`✅ Ordine ${ordine.numero} finalizzato con successo`);
+    console.log(`✅ Ordine ${ordine.numero} finalizzato con successo e giacenze incrementate`);
     
     res.json({
-      message: 'Ordine finalizzato con successo',
+      message: 'Ordine finalizzato con successo e giacenze aggiornate',
       ordine: ordine
     });
   } catch (error) {
     console.error('Errore finalizzazione ordine:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Riapri ordine completato (cambia stato a CREATO e ripristina giacenze)
+app.post('/api/ordini/:id/reopen', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Trova l'ordine
+    const ordine = await Ordine.findById(id);
+    if (!ordine) {
+      return res.status(404).json({ message: 'Ordine non trovato' });
+    }
+    
+    // Verifica che l'ordine sia COMPLETATO
+    if (ordine.stato !== 'COMPLETATO') {
+      return res.status(400).json({ message: 'Solo gli ordini completati possono essere riaperti' });
+    }
+    
+    // Trova l'assegnazione per determinare l'operatore
+    const assegnazione = await Assegnazione.findOne({
+      ordine: ordine.numero,
+      attiva: true
+    }).populate('userId');
+    
+    if (!assegnazione || !assegnazione.userId) {
+      return res.status(400).json({ message: 'Assegnazione non trovata per questo ordine' });
+    }
+    
+    const operatoreId = assegnazione.userId._id;
+    
+    // Decrementa le giacenze per ogni prodotto nell'ordine (rimuove prodotti dalla giacenza)
+    if (ordine.prodotti && ordine.prodotti.length > 0) {
+      for (const prodotto of ordine.prodotti) {
+        try {
+          // Trova il prodotto usando il nome per ottenere il productId
+          const product = await Product.findOne({ nome: prodotto.nome, attivo: true });
+          if (!product) {
+            console.warn(`⚠️ Prodotto non trovato nel database: ${prodotto.nome}`);
+            continue;
+          }
+
+          // Trova la giacenza dell'operatore per questo prodotto
+          const giacenza = await GiacenzaUtente.findOne({
+            userId: operatoreId,
+            productId: product._id,
+            attiva: true
+          });
+          
+          if (giacenza) {
+            const giacenzaPrima = giacenza.quantitaDisponibile;
+            
+            // Sottrai la quantità dalla quantitaDisponibile (decrementa giacenza)
+            giacenza.quantitaDisponibile -= prodotto.quantita;
+            
+            // Assicurati che non vada sotto zero
+            if (giacenza.quantitaDisponibile < 0) {
+              giacenza.quantitaDisponibile = 0;
+            }
+            
+            await giacenza.save();
+            console.log(`🔄 Decrementate giacenze per prodotto ${prodotto.nome}: ${giacenzaPrima} → ${giacenza.quantitaDisponibile} (-${prodotto.quantita}) per operatore ${assegnazione.userId.username}`);
+          } else {
+            console.warn(`⚠️ Giacenza non trovata per prodotto ${prodotto.nome} e operatore ${assegnazione.userId.username} - impossibile decrementare`);
+          }
+        } catch (prodottoError) {
+          console.error(`❌ Errore decremento giacenze per prodotto ${prodotto.nome}:`, prodottoError);
+        }
+      }
+    }
+    
+    // Cambia stato a CREATO
+    ordine.stato = 'CREATO';
+    await ordine.save();
+    
+    console.log(`✅ Ordine ${ordine.numero} riaperto con successo, giacenze decrementate`);
+    
+    res.json({
+      message: 'Ordine riaperto con successo e giacenze decrementate',
+      ordine: ordine
+    });
+  } catch (error) {
+    console.error('Errore riapertura ordine:', error);
     res.status(500).json({ message: error.message });
   }
 });
