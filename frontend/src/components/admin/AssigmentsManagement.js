@@ -32,7 +32,7 @@ import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
 import { apiCall } from '../../services/api';
 import { formatWeek, sortAssignmentsByCurrentWeekFirst, sortWeeksChronologically, getCurrentWeekIndex, getCurrentWeekFromList, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
-import { listenToOrdiniRdtUpdates } from '../../utils/events';
+import { listenToOrdiniRdtUpdates, triggerOrdiniRdtUpdate } from '../../utils/events';
 // import OrdineRdtModal from './shared/OrdineRdtModal'; // Non più necessario - usiamo DOM puro
 
 const AssignmentsManagement = () => {
@@ -41,7 +41,6 @@ const AssignmentsManagement = () => {
   const { state, dispatch } = useAppContext();
   const { assegnazioneForm, editAssignmentId, editForm, activeTab } = state;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [postazioni, setPostazioni] = useState([]);
   const [showCalendarView, setShowCalendarView] = useState(false);
   const [stats, setStats] = useState({});
   
@@ -75,18 +74,6 @@ const AssignmentsManagement = () => {
   const [loading, setLoading] = useState(false);
 
   // Mouse tracking
-  useEffect(() => {
-    const loadPostazioni = async () => {
-      try {
-        const data = await apiCall('/postazioni', {}, token);
-        setPostazioni(data || []);
-      } catch (err) {
-        console.error('Errore caricamento postazioni:', err);
-      }
-    };
-    
-    loadPostazioni();
-  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -243,24 +230,261 @@ const AssignmentsManagement = () => {
     }
   };
 
+  // Trasferisce ordine/RDT da un'assegnazione all'altra
+  const transferOrderRdtToAssignment = async (fromAssignmentId, toAssignmentId, assignmentData) => {
+    try {
+      const fromAssignment = assegnazioni.find(a => a._id === fromAssignmentId);
+      const toAssignment = assegnazioni.find(a => a._id === toAssignmentId);
+      
+      if (!fromAssignment || !toAssignment) {
+        console.error('Assegnazioni non trovate per il trasferimento');
+        return;
+      }
+
+      const updates = [];
+
+      // Trasferisci ordine se presente
+      if (fromAssignment.ordine) {
+        const numeroOrdine = typeof fromAssignment.ordine === 'object' 
+          ? fromAssignment.ordine.numero 
+          : fromAssignment.ordine;
+
+        // Aggiorna l'ordine con i nuovi dati
+        const ordineCompleto = ordiniData.find(o => o.numero === numeroOrdine);
+        if (ordineCompleto) {
+          updates.push(
+            apiCall(`/ordini/${ordineCompleto._id}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                operatoreId: assignmentData.userId,
+                settimanaId: assignmentData.settimanaId,
+                poloId: assignmentData.poloId
+              })
+            }, token)
+          );
+        }
+
+        // Aggiungi ordine all'assegnazione di destinazione (solo il campo ordine)
+        updates.push(
+          apiCall(`/assegnazioni/${toAssignmentId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              ordine: numeroOrdine
+            })
+          }, token)
+        );
+
+        // Rimuovi ordine dall'assegnazione di origine (solo il campo ordine)
+        updates.push(
+          apiCall(`/assegnazioni/${fromAssignmentId}`, {
+            method: 'PUT', 
+            body: JSON.stringify({
+              ordine: null
+            })
+          }, token)
+        );
+      }
+
+      // Trasferisci RDT se presente
+      if (fromAssignment.rdt) {
+        const numeroRdt = typeof fromAssignment.rdt === 'object' 
+          ? fromAssignment.rdt.numero 
+          : fromAssignment.rdt;
+
+        // Aggiorna l'RDT con i nuovi dati
+        const rdtCompleto = rdtData.find(r => r.numero === numeroRdt);
+        if (rdtCompleto) {
+          updates.push(
+            apiCall(`/rdt/${rdtCompleto._id}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                operatoreId: assignmentData.userId,
+                settimanaId: assignmentData.settimanaId,
+                poloId: assignmentData.poloId
+              })
+            }, token)
+          );
+        }
+
+        // Aggiungi RDT all'assegnazione di destinazione (solo il campo rdt)
+        updates.push(
+          apiCall(`/assegnazioni/${toAssignmentId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              rdt: numeroRdt
+            })
+          }, token)
+        );
+
+        // Rimuovi RDT dall'assegnazione di origine (solo il campo rdt)
+        updates.push(
+          apiCall(`/assegnazioni/${fromAssignmentId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              rdt: null
+            })
+          }, token)
+        );
+      }
+
+      // Esegui tutti gli aggiornamenti
+      if (updates.length > 0) {
+        await Promise.all(updates);
+        console.log('✅ Trasferimento completato', { from: fromAssignmentId, to: toAssignmentId });
+      }
+
+    } catch (err) {
+      console.error('❌ Errore nel trasferimento:', err);
+      throw err; // Rilancia l'errore per gestirlo nel chiamante
+    }
+  };
+
+  // Sincronizza ordini/RDT con i dati aggiornati dell'assegnazione  
+  const syncOrdersRdtWithAssignment = async (assignmentId, assignmentData) => {
+    try {
+      // Trova l'assegnazione corrente per ottenere ordine/RDT collegati
+      const currentAssignment = assegnazioni.find(a => a._id === assignmentId);
+      if (!currentAssignment) return;
+
+      const updates = [];
+
+      // Sincronizza ordine se presente nell'assegnazione corrente
+      if (currentAssignment.ordine) {
+        const numeroOrdine = typeof currentAssignment.ordine === 'object' 
+          ? currentAssignment.ordine.numero 
+          : currentAssignment.ordine;
+        
+        const ordineCompleto = ordiniData.find(o => o.numero === numeroOrdine);
+        if (ordineCompleto) {
+          updates.push(
+            apiCall(`/ordini/${ordineCompleto._id}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                operatoreId: assignmentData.userId,
+                settimanaId: assignmentData.settimanaId,
+                poloId: assignmentData.poloId
+              })
+            }, token)
+          );
+        }
+      }
+
+      // Sincronizza RDT se presente nell'assegnazione corrente
+      if (currentAssignment.rdt) {
+        const numeroRdt = typeof currentAssignment.rdt === 'object' 
+          ? currentAssignment.rdt.numero 
+          : currentAssignment.rdt;
+        
+        const rdtCompleto = rdtData.find(r => r.numero === numeroRdt);
+        if (rdtCompleto) {
+          updates.push(
+            apiCall(`/rdt/${rdtCompleto._id}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                operatoreId: assignmentData.userId,
+                settimanaId: assignmentData.settimanaId,
+                poloId: assignmentData.poloId
+              })
+            }, token)
+          );
+        }
+      }
+
+      // Esegui tutti gli aggiornamenti
+      if (updates.length > 0) {
+        await Promise.all(updates);
+        console.log('✅ Ordini/RDT sincronizzati con l\'assegnazione', { assignmentId, updates: updates.length });
+      }
+    } catch (err) {
+      console.error('❌ Errore nella sincronizzazione ordini/RDT:', err);
+      // Non bloccare l'operazione principale per errori di sincronizzazione
+    }
+  };
+
   const handleUpdateAssignment = async (assignmentId) => {
     try {
-      // ✅ INCLUDI i nuovi campi nella modifica
+      // Controllo conflitti avanzato: verifica se la nuova assegnazione ha già ordini/RDT
+      if (editForm.userId && editForm.settimanaId) {
+        const targetAssignment = assegnazioni.find(a => 
+          a._id !== assignmentId && // Escludi l'assegnazione corrente
+          a.userId?._id === editForm.userId && 
+          a.settimanaId?._id === editForm.settimanaId && 
+          a.attiva
+        );
+
+        if (targetAssignment) {
+          // Controlla se la nuova assegnazione ha già ordini o RDT associati
+          if (targetAssignment.ordine || targetAssignment.rdt) {
+            const operatoreName = users.find(u => u._id === editForm.userId)?.username || 'Operatore';
+            const weekName = settimane.find(s => s._id === editForm.settimanaId)?.nome || 'Settimana';
+            const poloName = targetAssignment.poloId?.nome || 'Polo sconosciuto';
+            const hasOrdine = targetAssignment.ordine ? `ordine "${targetAssignment.ordine}"` : '';
+            const hasRdt = targetAssignment.rdt ? `RDT "${targetAssignment.rdt}"` : '';
+            const items = [hasOrdine, hasRdt].filter(Boolean).join(' e ');
+            
+            setError(`🚫 CONFLITTO: L'assegnazione di ${operatoreName} per ${weekName} al polo "${poloName}" ha già ${items} associati. Non è possibile trasferire ordini/RDT verso un'assegnazione già occupata.`);
+            return;
+          }
+          // Se non ha ordini/RDT, il trasferimento è possibile e continua
+        }
+      }
+
+      // Prepara i dati di aggiornamento preservando ordine/RDT esistenti
+      const currentAssignment = assegnazioni.find(a => a._id === assignmentId);
       const updateData = {
-        ...editForm,
-        ordine: editForm.ordine?.trim() || null,    // ✅ NUOVO CAMPO
-        rdt: editForm.rdt?.trim() || null           // ✅ NUOVO CAMPO
+        userId: editForm.userId,
+        poloId: editForm.poloId,
+        mezzoId: editForm.mezzoId,
+        settimanaId: editForm.settimanaId,
+        note: editForm.note,
+        // Preserva ordine e RDT esistenti
+        ordine: currentAssignment?.ordine || null,
+        rdt: currentAssignment?.rdt || null
       };
 
-      await apiCall(`/assegnazioni/${assignmentId}`, {
-        method: 'PUT',
-        body: JSON.stringify(updateData)
-      }, token);
+      // Implementa trasferimento se necessario
+      const targetAssignment = assegnazioni.find(a => 
+        a._id !== assignmentId &&
+        a.userId?._id === updateData.userId && 
+        a.settimanaId?._id === updateData.settimanaId && 
+        a.attiva
+      );
+
+      if (targetAssignment) {
+        // TRASFERIMENTO: Sposta ordine/RDT all'assegnazione esistente
+        await transferOrderRdtToAssignment(assignmentId, targetAssignment._id, updateData);
+      } else {
+        // AGGIORNAMENTO: Modifica direttamente l'assegnazione corrente
+        await apiCall(`/assegnazioni/${assignmentId}`, {
+          method: 'PUT',
+          body: JSON.stringify(updateData)
+        }, token);
+
+        // Sincronizza ordini/RDT collegati con i nuovi dati dell'assegnazione
+        await syncOrdersRdtWithAssignment(assignmentId, updateData);
+      }
 
       await loadAssegnazioni();
       await loadStats(); // ✅ RICARICA STATISTICHE
+      await loadOrdiniRdtData(); // ✅ RICARICA ORDINI/RDT DOPO SINCRONIZZAZIONE
       setEditAssignmentId(null);
-      setError('✅ Assegnazione modificata con successo');
+      
+      // Messaggio diverso per trasferimento o aggiornamento
+      const wasTransferred = targetAssignment && (currentAssignment?.ordine || currentAssignment?.rdt);
+      if (wasTransferred) {
+        setError('✅ Assegnazione modificata con successo. Ordini/RDT trasferiti all\'assegnazione esistente.');
+      } else {
+        setError('✅ Assegnazione modificata con successo. Ordini/RDT sincronizzati.');
+      }
+      
+      // Trigger evento per notificare OrdiniManagement della modifica
+      triggerOrdiniRdtUpdate({
+        action: 'assignment_sync_completed',
+        assignmentId: assignmentId,
+        operatorId: updateData.userId,
+        weekId: updateData.settimanaId,
+        poloId: updateData.poloId
+      });
     } catch (err) {
       // ✅ GESTISCE ERRORI SPECIFICI per ordine/rdt duplicati
       if (err.message.includes('ORDINE_ALREADY_ASSIGNED')) {
@@ -403,12 +627,14 @@ const AssignmentsManagement = () => {
     loadAssegnazioni();
   }, [filters.userId, filters.poloId, filters.mezzoId, filters.settimanaId, filters.attiva, filters.ordine, filters.rdt, showAllWeeks]);
 
-  // Carica dati iniziali
+  // Carica dati iniziali - dipende dal token
   useEffect(() => {
-    loadAssegnazioni();
-    loadStats(); // ✅ CARICA STATISTICHE INIZIALI
-    loadOrdiniRdtData(); // ✅ CARICA DATI ORDINI E RDT
-  }, []);
+    if (token) {
+      loadAssegnazioni();
+      loadStats(); // ✅ CARICA STATISTICHE INIZIALI
+      loadOrdiniRdtData(); // ✅ CARICA DATI ORDINI E RDT
+    }
+  }, [token]);
 
   // Aggiornamento automatico dei dati quando si torna alla tab assegnazioni
   useEffect(() => {
@@ -416,6 +642,21 @@ const AssignmentsManagement = () => {
       loadOrdiniRdtData();
     }
   }, [activeTab]);
+
+  // Ricarica dati quando il componente diventa visibile
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && token) {
+        loadOrdiniRdtData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [token]);
 
   // Sistema di eventi per aggiornamento immediato quando dati vengono modificati
   useEffect(() => {
@@ -1364,9 +1605,6 @@ const AssignmentsManagement = () => {
                       Polo
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Postazione
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Mezzo
                     </th>
                     {/* ✅ NUOVE COLONNE */}
@@ -1457,15 +1695,6 @@ const AssignmentsManagement = () => {
                         </div>
                       </td>
 
-                      {/* ✅ POSTAZIONE - sola visualizzazione */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <Building className="w-4 h-4 mr-2 text-orange-400" />
-                          <div className="text-sm text-white">
-                            {assegnazione.postazioneId?.nome || 'Non assegnata'}
-                          </div>
-                        </div>
-                      </td>
                       
                       {/* ✅ MEZZO - con modifica inline */}
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1514,14 +1743,11 @@ const AssignmentsManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {editAssignmentId === assegnazione._id ? (
-                            <div className="glass-input-container">
-                              <input
-                                type="text"
-                                placeholder="Numero Ordine"
-                                className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm placeholder-white/50"
-                                value={editForm.ordine || ''}
-                                onChange={(e) => updateEditForm({ ordine: e.target.value })}
-                              />
+                            <div className="text-white/70 italic text-sm">
+                              {editForm.ordine || 'Nessun ordine'}
+                              <div className="text-xs text-white/50 mt-1">
+                                Modificabile solo da Ordini Management
+                              </div>
                             </div>
                           ) : (
                             <>
@@ -1536,11 +1762,11 @@ const AssignmentsManagement = () => {
                                     
                                     return (
                                       <button
-                                        onClick={() => openOrdineRdtModal(numeroOrdine, null)}
+                                        onClick={() => openOrdineRdtModal(ordineCompleto?.numero || numeroOrdine, null)}
                                         className="text-blue-400 hover:text-blue-300 transition-colors underline"
                                         title={ordineCompleto ? `Cliente: ${ordineCompleto.cliente}` : 'Clicca per vedere dettagli'}
                                       >
-                                        {numeroOrdine}
+                                        {ordineCompleto?.numero || numeroOrdine}
                                         {ordineCompleto && (
                                           <div className="text-xs text-white/60 mt-1">
                                             {ordineCompleto.cliente}
@@ -1562,14 +1788,11 @@ const AssignmentsManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {editAssignmentId === assegnazione._id ? (
-                            <div className="glass-input-container">
-                              <input
-                                type="text"
-                                placeholder="Codice RDT"
-                                className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm placeholder-white/50"
-                                value={editForm.rdt || ''}
-                                onChange={(e) => updateEditForm({ rdt: e.target.value })}
-                              />
+                            <div className="text-white/70 italic text-sm">
+                              {editForm.rdt || 'Nessun RDT'}
+                              <div className="text-xs text-white/50 mt-1">
+                                Modificabile solo da Ordini Management
+                              </div>
                             </div>
                           ) : (
                             <>
@@ -1584,11 +1807,11 @@ const AssignmentsManagement = () => {
                                     
                                     return (
                                       <button
-                                        onClick={() => openOrdineRdtModal(null, numeroRdt)}
+                                        onClick={() => openOrdineRdtModal(null, rdtCompleto?.numero || numeroRdt)}
                                         className="text-purple-400 hover:text-purple-300 transition-colors underline"
                                         title={rdtCompleto ? `Cliente: ${rdtCompleto.cliente}` : 'Clicca per vedere dettagli'}
                                       >
-                                        {numeroRdt}
+                                        {rdtCompleto?.numero || numeroRdt}
                                         {rdtCompleto && (
                                           <div className="text-xs text-white/60 mt-1">
                                             {rdtCompleto.cliente}
@@ -1616,7 +1839,15 @@ const AssignmentsManagement = () => {
                               onChange={(e) => updateEditForm({ settimanaId: e.target.value })}
                             >
                               <option value="" className="bg-gray-800">Seleziona Settimana</option>
-                              {sortedSettimane.map(s => (
+                              {sortedSettimane.filter(s => {
+                                // Mostra solo settimane dove l'operatore selezionato ha assegnazioni attive
+                                if (!editForm.userId) return true; // Se nessun operatore selezionato, mostra tutte
+                                return assegnazioni.some(a => 
+                                  a.userId?._id === editForm.userId && 
+                                  a.settimanaId?._id === s._id && 
+                                  a.attiva
+                                );
+                              }).map(s => (
                                 <option key={s._id} value={s._id} className="bg-gray-800">
                                   {formatWeek(s)}
                                 </option>
@@ -2115,18 +2346,16 @@ const CalendarView = ({ assegnazioni, poli, settimane, onBackToList }) => {
                                     return null;
                                   })()}
                                 </div>
-                                {assignment.postazioneId && (
-                                  <div className="text-white/60 flex items-center justify-center gap-1 mt-1">
-                                    <Building className="w-3 h-3" />
-                                    {assignment.postazioneId.nome}
-                                  </div>
-                                )}
                                 {/* ✅ NUOVO: Mostra ordine nel calendario */}
                                 {assignment.ordine && (
                                   <div className="text-green-300 flex items-center justify-center gap-1 mt-1">
                                     <Hash className="w-3 h-3" />
                                     <span className="text-xs">
-                                      {typeof assignment.ordine === 'object' ? assignment.ordine.numero : assignment.ordine}
+                                      {(() => {
+                                        const numeroOrdine = typeof assignment.ordine === 'object' ? assignment.ordine.numero : assignment.ordine;
+                                        const ordineCompleto = getOrdineCompleto(numeroOrdine);
+                                        return ordineCompleto?.numero || numeroOrdine;
+                                      })()}
                                     </span>
                                   </div>
                                 )}
@@ -2135,7 +2364,11 @@ const CalendarView = ({ assegnazioni, poli, settimane, onBackToList }) => {
                                   <div className="text-purple-300 flex items-center justify-center gap-1 mt-1">
                                     <Clipboard className="w-3 h-3" />
                                     <span className="text-xs">
-                                      {typeof assignment.rdt === 'object' ? assignment.rdt.numero : assignment.rdt}
+                                      {(() => {
+                                        const numeroRdt = typeof assignment.rdt === 'object' ? assignment.rdt.numero : assignment.rdt;
+                                        const rdtCompleto = getRdtCompleto(numeroRdt);
+                                        return rdtCompleto?.numero || numeroRdt;
+                                      })()}
                                     </span>
                                   </div>
                                 )}

@@ -580,50 +580,81 @@ const CreaOrdini = () => {
               <div className="glass-card p-6 rounded-xl mb-4 space-y-4">
                 <h4 className="text-lg font-semibold text-white">Aggiungi Prodotto</h4>
                 
-                {/* Ricerca prodotto */}
-                <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">Cerca Prodotto *</label>
-                  <div className="glass-input-container rounded-xl mb-2">
+                {/* Campo ricerca prodotto con tendina automatica */}
+                <div className="relative z-[9999]">
+                  <label className="block text-sm font-medium text-white/80 mb-2">Cerca e Seleziona Prodotto *</label>
+                  <div className="glass-input-container rounded-xl relative">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4 z-10" />
                       <input
                         type="text"
-                        placeholder="Cerca prodotto per nome..."
+                        placeholder="Inizia a digitare per cercare un prodotto..."
                         className="glass-input w-full pl-10 pr-4 py-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
                         value={productSearch}
                         onChange={(e) => {
                           setProductSearch(e.target.value);
-                          // Reset selezione prodotto quando cambia la ricerca
                           setNewProduct(prev => ({ ...prev, productId: '' }));
                         }}
                       />
                     </div>
                   </div>
                   
-                  {/* Dropdown prodotti filtrati */}
-                  <select
-                    className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                    value={newProduct.productId}
-                    onChange={(e) => setNewProduct(prev => ({ ...prev, productId: e.target.value }))}
-                  >
-                    <option value="" className="bg-gray-800">
-                      {productSearch ? `Cerca: "${productSearch}"` : 'Seleziona prodotto'}
-                    </option>
-                    {allProducts?.filter(p => 
-                      p.attivo && 
-                      (productSearch === '' || p.nome.toLowerCase().includes(productSearch.toLowerCase()))
-                    ).map(product => {
-                      const userGiacenza = userGiacenze.find(g => g.productId._id === product._id);
-                      const disponibile = userGiacenza ? userGiacenza.quantitaDisponibile : 0;
-                      const assegnata = userGiacenza ? userGiacenza.quantitaAssegnata : 0;
-                      
-                      return (
-                        <option key={product._id} value={product._id} className="bg-gray-800">
-                          {product.nome} - Ass: {assegnata}, Disp: {disponibile} {product.unita}
-                        </option>
-                      );
-                    })}
-                  </select>
+                  {/* Tendina filtrata che appare automaticamente */}
+                  {(productSearch.length > 0) && (
+                    <div className="absolute top-full left-0 right-0 z-[9999] bg-gray-900 border border-white/20 rounded-xl mt-1 max-h-60 overflow-y-auto shadow-xl">
+                        {allProducts?.filter(p => 
+                          p.attivo && 
+                          p.nome.toLowerCase().includes(productSearch.toLowerCase())
+                        ).map(product => {
+                          const userGiacenza = userGiacenze.find(g => g.productId._id === product._id);
+                          const disponibile = userGiacenza ? userGiacenza.quantitaDisponibile : 0;
+                          
+                          return (
+                            <div
+                              key={product._id}
+                              className="p-3 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-b-0 transition-colors"
+                              onClick={() => {
+                                setNewProduct(prev => ({
+                                  ...prev,
+                                  productId: product._id
+                                }));
+                                setProductSearch(product.nome);
+                              }}
+                            >
+                              <div className="text-white font-medium">{product.nome}</div>
+                              <div className="text-white/60 text-sm">
+                                {product.codice && `Codice: ${product.codice} • `}
+                                Unità: {product.unita}
+                                {userGiacenza && (
+                                  <span className="text-green-400 ml-2">
+                                    • Disponibile: {disponibile}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        
+                        {allProducts?.filter(p => 
+                          p.attivo && 
+                          p.nome.toLowerCase().includes(productSearch.toLowerCase())
+                        ).length === 0 && (
+                          <div className="p-3 text-white/60 text-center">
+                            Nessun prodotto trovato per "{productSearch}"
+                          </div>
+                        )}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Prodotto selezionato */}
+                {newProduct.productId && (
+                  <div className="p-3 bg-green-500/20 border border-green-500/30 rounded-xl">
+                    <div className="text-green-400 font-medium">
+                      ✓ Prodotto selezionato: {allProducts?.find(p => p._id === newProduct.productId)?.nome}
+                    </div>
+                  </div>
+                )}
                   
                   {/* Mostra info giacenze per prodotto selezionato */}
                   {newProduct.productId && (() => {
@@ -663,7 +694,6 @@ const CreaOrdini = () => {
                     }
                     return null;
                   })()}
-                </div>
                 
                 {/* Quantità e Note */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -876,6 +906,31 @@ const CreaOrdini = () => {
         .glass-button-primary:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        .glass-button-secondary {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 24px rgba(255, 255, 255, 0.1);
+          color: white;
+        }
+
+        .glass-button-secondary:hover:not(:disabled) {
+          background: rgba(255, 255, 255, 0.15);
+          box-shadow: 0 12px 32px rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-action-button {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-action-button:hover {
+          background: rgba(255, 255, 255, 0.12);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
         }
 
         @keyframes blob {

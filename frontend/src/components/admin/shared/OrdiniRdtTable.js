@@ -19,6 +19,7 @@ import {
 import { useAuth } from '../../../hooks/useAuth';
 import { useGiacenze } from '../../../hooks/useGiacenze';
 import { apiCall } from '../../../services/api';
+import { triggerOrdiniRdtUpdate } from '../../../utils/events';
 import OrdineRdtModal from './OrdineRdtModal';
 
 const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsChange }) => {
@@ -53,6 +54,22 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
       loadData();
     }
   }, [token]);
+
+  // Listener per eventi di sincronizzazione da AssignmentsManagement
+  useEffect(() => {
+    const handleAssignmentSync = (event) => {
+      if (event.detail.action === 'assignment_sync_completed') {
+        console.log('🔔 Sincronizzazione assegnazioni ricevuta, ricarico dati ordini/RDT');
+        loadData();
+      }
+    };
+    
+    window.addEventListener('ordini-rdt-updated', handleAssignmentSync);
+    
+    return () => {
+      window.removeEventListener('ordini-rdt-updated', handleAssignmentSync);
+    };
+  }, []);
 
   const loadData = async () => {
     try {
@@ -169,52 +186,206 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
     });
   };
 
+  // Controlla conflitti di assegnazione operatore-settimana
+  const checkAssignmentConflict = (operatorId, weekId, currentAssignmentId = null) => {
+    if (!assegnazioni || !operatorId || !weekId) return null;
+    
+    return assegnazioni.find(a => 
+      a._id !== currentAssignmentId && // Escludi l'assegnazione corrente
+      a.userId?._id === operatorId && 
+      a.settimanaId?._id === weekId && 
+      a.attiva
+    );
+  };
+
+  // Funzione per trasferire ordine/RDT tra assegnazioni
+  const transferOrderRdtBetweenAssignments = async (fromAssignmentId, toAssignmentId, item, editValues) => {
+    try {
+      console.log(`🔄 Trasferisco ${item.itemType} "${editValues.numero}" dall'assegnazione ${fromAssignmentId} all'assegnazione ${toAssignmentId}`);
+      
+      // 1. Aggiorna l'assegnazione di destinazione con il nuovo ordine/RDT
+      const updateToData = {};
+      if (item.itemType === 'ordine') {
+        updateToData.ordine = editValues.numero;
+      } else if (item.itemType === 'rdt') {
+        updateToData.rdt = editValues.numero;
+      }
+      
+      await apiCall(`/assegnazioni/${toAssignmentId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updateToData)
+      }, token);
+      
+      // 2. Rimuovi l'ordine/RDT dall'assegnazione di origine
+      const updateFromData = {};
+      if (item.itemType === 'ordine') {
+        updateFromData.ordine = null;
+      } else if (item.itemType === 'rdt') {
+        updateFromData.rdt = null;
+      }
+      
+      await apiCall(`/assegnazioni/${fromAssignmentId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updateFromData)
+      }, token);
+      
+      console.log(`✅ Trasferimento ${item.itemType} completato`);
+    } catch (error) {
+      console.error('❌ Errore durante il trasferimento:', error);
+      throw error;
+    }
+  };
+
   // Salva modifiche inline
   const handleUpdate = async (item) => {
     try {
       setError('');
       
-      // Aggiorna l'ordine/rdt
-      const endpoint = item.itemType === 'ordine' ? '/ordini' : '/rdt';
-      const updateData = {
-        numero: editValues.numero,
-        cliente: editValues.cliente,
-        dataConsegna: editValues.dataConsegna,
-        stato: editValues.stato,
-        note: editValues.note
-      };
+      // Da OrdiniManagement permettiamo il trasferimento libero di ordini/RDT tra assegnazioni
+      console.log('📝 Modifica ordine/RDT da OrdiniManagement - trasferimento libero consentito');
+      console.log('🔍 Valori di edit:', editValues);
+      console.log('🔍 Item originale:', item);
 
-      await apiCall(`${endpoint}/${item._id}`, {
-        method: 'PUT',
-        body: JSON.stringify(updateData)
-      }, token);
-
-      // Gestisci l'assegnazione
+      // Prima gestisci l'assegnazione se operatore/settimana cambiano
       const assegnazione = getAssegnazioneForItem(item.itemType, item.numero);
+      let targetAssignment = null;
       
-      if (editValues.operatore && editValues.settimanaId) {
-        if (assegnazione && 
-            (editValues.operatore !== assegnazione.userId?._id || 
-             editValues.settimanaId !== assegnazione.settimanaId?._id)) {
-          // Aggiorna assegnazione esistente
+      if (editValues.operatore && editValues.settimanaId && assegnazione) {
+        // Trova l'assegnazione di destinazione (se diversa da quella corrente)
+        targetAssignment = assegnazioni.find(a => 
+          a._id !== assegnazione._id &&
+          a.userId?._id === editValues.operatore && 
+          a.settimanaId?._id === editValues.settimanaId && 
+          a.attiva
+        );
+
+        if (targetAssignment) {
+          // TRASFERIMENTO: Sposta ordine/RDT all'assegnazione esistente
+          console.log(`🔄 Trasferimento verso assegnazione esistente ${targetAssignment._id}`);
+          await transferOrderRdtBetweenAssignments(assegnazione._id, targetAssignment._id, item, editValues);
+        } else if (editValues.operatore !== assegnazione.userId?._id || 
+                   editValues.settimanaId !== assegnazione.settimanaId?._id) {
+          // CAMBIO OPERATORE/SETTIMANA: Nessuna assegnazione esistente trovata, aggiorna quella corrente
+          console.log(`📝 Aggiornamento assegnazione corrente ${assegnazione._id}`);
+          const updateBody = {};
+          if (item.itemType === 'ordine') {
+            updateBody.ordine = editValues.numero;
+          } else if (item.itemType === 'rdt') {
+            updateBody.rdt = editValues.numero;
+          }
+          updateBody.userId = editValues.operatore;
+          updateBody.settimanaId = editValues.settimanaId;
+          updateBody.poloId = assegnazione.poloId?._id;
+          
           await apiCall(`/assegnazioni/${assegnazione._id}`, {
             method: 'PUT',
-            body: JSON.stringify({
-              userId: editValues.operatore,
-              settimanaId: editValues.settimanaId
-            })
+            body: JSON.stringify(updateBody)
           }, token);
-        } else if (!assegnazione) {
-          // Crea nuova assegnazione (se possibile)
-          console.log('Necessaria creazione di nuova assegnazione - non implementata');
         }
+      }
+      
+      // Poi aggiorna l'ordine/RDT se necessario 
+      // NON aggiornare se si sta solo cambiando operatore/settimana
+      const isOnlyAssignmentChange = (
+        editValues.operatore && editValues.settimanaId && 
+        editValues.cliente === item.cliente &&
+        editValues.dataConsegna === (item.dataConsegna ? new Date(item.dataConsegna).toISOString().split('T')[0] : '') &&
+        editValues.stato === item.stato &&
+        editValues.note === item.note &&
+        editValues.numero === item.numero
+      );
+      
+      const needsOrderUpdate = !isOnlyAssignmentChange && (
+        editValues.cliente !== item.cliente ||
+        editValues.dataConsegna !== (item.dataConsegna ? new Date(item.dataConsegna).toISOString().split('T')[0] : '') ||
+        editValues.stato !== item.stato ||
+        editValues.note !== item.note ||
+        (editValues.numero !== item.numero && !targetAssignment)
+      );
+      
+      if (needsOrderUpdate) {
+        console.log('📝 Aggiornamento dati ordine/RDT');
+        const endpoint = item.itemType === 'ordine' ? '/ordini' : '/rdt';
+        const updateData = {
+          cliente: editValues.cliente,
+          dataConsegna: editValues.dataConsegna,
+          stato: editValues.stato,
+          note: editValues.note
+        };
+        
+        // Includi il numero solo se è effettivamente cambiato
+        if (editValues.numero !== item.numero) {
+          updateData.numero = editValues.numero;
+        }
+
+        await apiCall(`${endpoint}/${item._id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updateData)
+        }, token);
       }
       
       await loadData();
       setEditingItem(null);
       setEditValues({});
       setError('✅ Modifiche salvate con successo');
+      
+      // Trigger evento per sincronizzare AssignmentsManagement
+      const finalTargetAssignment = targetAssignment || assegnazioni.find(a => 
+        a.userId?._id === editValues.operatore && 
+        a.settimanaId?._id === editValues.settimanaId && 
+        a.attiva
+      );
+      
+      triggerOrdiniRdtUpdate({
+        action: 'assignment_updated',
+        itemType: item.itemType,
+        itemId: item._id,
+        operatorId: editValues.operatore,
+        weekId: editValues.settimanaId,
+        poloId: finalTargetAssignment?.poloId?._id
+      });
     } catch (err) {
+      // Gestisce errori specifici del backend per ordini/RDT già assegnati
+      if (err.message.includes('già assegnato ad un altro operatore') || 
+          err.message.includes('ORDINE_ALREADY_ASSIGNED') || 
+          err.message.includes('RDT_ALREADY_ASSIGNED')) {
+        console.log('⚠️ Ordine/RDT già assegnato - da OrdiniManagement forziamo il trasferimento');
+        
+        // Trova l'assegnazione corrente e quella di destinazione
+        const currentAssignment = getAssegnazioneForItem(item.itemType, item.numero);
+        const fallbackTargetAssignment = assegnazioni.find(a => 
+          a.userId?._id === editValues.operatore && 
+          a.settimanaId?._id === editValues.settimanaId && 
+          a.attiva
+        );
+        
+        if (currentAssignment && fallbackTargetAssignment && currentAssignment._id !== fallbackTargetAssignment._id) {
+          try {
+            // Forza il trasferimento anche se la destinazione ha già ordini/RDT
+            await transferOrderRdtBetweenAssignments(currentAssignment._id, fallbackTargetAssignment._id, item, editValues);
+            
+            await loadData();
+            setEditingItem(null);
+            setEditValues({});
+            setError('✅ Ordine/RDT trasferito con successo (sovrascrittura)');
+            
+            // Trigger evento di sincronizzazione
+            triggerOrdiniRdtUpdate({
+              action: 'assignment_transferred',
+              itemType: item.itemType,
+              itemId: item._id,
+              operatorId: editValues.operatore,
+              weekId: editValues.settimanaId,
+              poloId: fallbackTargetAssignment?.poloId?._id
+            });
+            return;
+          } catch (transferErr) {
+            setError('Errore nel trasferimento forzato: ' + transferErr.message);
+            return;
+          }
+        }
+      }
+      
       setError('Errore nel salvataggio: ' + err.message);
     }
   };
@@ -534,8 +705,8 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
                             {editValues.operatore && settimane?.filter(settimana => {
                               // Filtra settimane che hanno assegnazioni attive per l'operatore selezionato
                               return assegnazioni?.some(a => 
-                                a.userId._id === editValues.operatore && 
-                                a.settimanaId._id === settimana._id && 
+                                a.userId?._id === editValues.operatore && 
+                                a.settimanaId?._id === settimana._id && 
                                 a.attiva
                               );
                             }).map(settimana => (
@@ -636,14 +807,6 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
                               </>
                             ) : (
                               <>
-                                <button
-                                  onClick={() => startEdit(item)}
-                                  className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"
-                                  title="Modifica inline"
-                                >
-                                  <Edit className="w-4 h-4 text-blue-400" />
-                                </button>
-                                
                                 <button
                                   onClick={() => openModal(item)}
                                   className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"

@@ -15,7 +15,8 @@ import {
   Clock,
   FileText,
   Plus,
-  Trash2
+  Trash2,
+  Search
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useGiacenze } from '../../../hooks/useGiacenze';
@@ -49,6 +50,8 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
   const [newProduct, setNewProduct] = useState({
     productId: '',
     quantita: '',
+    quantitaAssegnata: '',
+    sogliaMinima: '',
     note: ''
   });
   const [productSearch, setProductSearch] = useState('');
@@ -142,7 +145,13 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
   };
 
   // Aggiungi prodotto
-  const addProduct = () => {
+  const addProduct = async () => {
+    // Verifica che l'ordine non sia finalizzato
+    if (formData.stato === 'COMPLETATO') {
+      setError('Non è possibile aggiungere prodotti a un ordine/RDT completato');
+      return;
+    }
+    
     if (!newProduct.productId || !newProduct.quantita) {
       setError('Prodotto e quantità sono obbligatori');
       return;
@@ -157,6 +166,8 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
     }
     
     const quantitaNum = parseFloat(newProduct.quantita);
+    const quantitaAssegnataNum = parseFloat(newProduct.quantitaAssegnata) || 0;
+    const sogliaMinimaNum = parseFloat(newProduct.sogliaMinima) || 0;
     
     // Validazione quantità minima
     if (quantitaNum <= 0) {
@@ -164,9 +175,52 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
       return;
     }
 
+    // Se il prodotto non è presente nelle giacenze operatore e abbiamo operatore/assegnazione
+    if (!userGiacenza && operatoreId && assegnazioneId) {
+      if (!newProduct.quantitaAssegnata || !newProduct.sogliaMinima) {
+        setError('Per prodotti non presenti nelle giacenze operatore sono obbligatori quantità assegnata e soglia minima');
+        return;
+      }
+      
+      // Crea nuova giacenza operatore
+      try {
+        await apiCall('/admin/assign-giacenza', {
+          method: 'POST',
+          body: JSON.stringify({
+            userId: operatoreId,
+            productId: newProduct.productId,
+            quantitaAssegnata: quantitaAssegnataNum,
+            quantitaMinima: sogliaMinimaNum
+          })
+        }, token);
+        
+        // Ricarica le giacenze operatore
+        await loadUserGiacenze(operatoreId);
+      } catch (err) {
+        setError('Errore nella creazione giacenza operatore: ' + err.message);
+        return;
+      }
+    } else if (userGiacenza && (quantitaAssegnataNum !== userGiacenza.quantitaAssegnata || sogliaMinimaNum !== userGiacenza.sogliaMinima)) {
+      // Aggiorna giacenza esistente se i valori sono cambiati
+      try {
+        await apiCall(`/admin/giacenze/${userGiacenza._id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            quantitaAssegnata: quantitaAssegnataNum,
+            quantitaMinima: sogliaMinimaNum
+          })
+        }, token);
+        
+        // Ricarica le giacenze operatore  
+        await loadUserGiacenze(operatoreId);
+      } catch (err) {
+        setError('Errore nell\'aggiornamento giacenza operatore: ' + err.message);
+        return;
+      }
+    }
+
     const product = {
-      id: Date.now(),
-      productId: newProduct.productId, // Manteniamo per riferimento interno
+      productId: newProduct.productId,
       nome: selectedProduct.nome,
       quantita: quantitaNum,
       unita: selectedProduct.unita,
@@ -181,16 +235,18 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
     setNewProduct({
       productId: '',
       quantita: '',
+      quantitaAssegnata: '',
+      sogliaMinima: '',
       note: ''
     });
     setError('');
   };
 
   // Rimuovi prodotto
-  const removeProduct = (productId) => {
+  const removeProduct = (index) => {
     setFormData(prev => ({
       ...prev,
-      prodotti: prev.prodotti.filter(p => p.id !== productId)
+      prodotti: prev.prodotti.filter((_, i) => i !== index)
     }));
   };
 
@@ -388,37 +444,26 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                     <label className="block text-sm font-medium text-white/80 mb-2">
                       Operatore
                     </label>
-                    <select
-                      className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                      value={operatoreId}
-                      onChange={(e) => setOperatoreId(e.target.value)}
-                    >
-                      <option value="" className="bg-gray-800">Seleziona operatore</option>
-                      {users?.filter(u => u.role === 'user').map(user => (
-                        <option key={user._id} value={user._id} className="bg-gray-800">
-                          {user.username}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="glass-input w-full p-3 rounded-xl bg-gray-800/50 text-white/70 cursor-not-allowed">
+                      {users?.find(u => u._id === operatoreId)?.username || 'Nessun operatore'}
+                      <div className="text-xs text-white/40 mt-1">
+                        ⚠️ Operatore non modificabile da questo modal
+                      </div>
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-white/80 mb-2">
                       Assegnazione
                     </label>
-                    <select
-                      className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                      value={assegnazioneId}
-                      onChange={(e) => setAssegnazioneId(e.target.value)}
-                      disabled={!operatoreId}
-                    >
-                      <option value="" className="bg-gray-800">Seleziona assegnazione</option>
-                      {availableAssignments.map(assignment => (
-                        <option key={assignment._id} value={assignment._id} className="bg-gray-800">
-                          {assignment.poloId?.nome} - Sett. {assignment.settimanaId?.numero}/{assignment.settimanaId?.anno}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="glass-input w-full p-3 rounded-xl bg-gray-800/50 text-white/70 cursor-not-allowed">
+                      {availableAssignments.find(a => a._id === assegnazioneId)?.poloId?.nome || 'Nessuna assegnazione'} - 
+                      Sett. {availableAssignments.find(a => a._id === assegnazioneId)?.settimanaId?.numero || 'N/A'}/
+                      {availableAssignments.find(a => a._id === assegnazioneId)?.settimanaId?.anno || 'N/A'}
+                      <div className="text-xs text-white/40 mt-1">
+                        ⚠️ Assegnazione modificabile solo da AssignmentsManagement
+                      </div>
+                    </div>
                   </div>
 
                   <div>
@@ -578,17 +623,17 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                 <h4 className="text-white font-medium mb-4">Aggiungi Nuovo Prodotto</h4>
                 
                 <div className="space-y-4">
-                  {/* Ricerca prodotto */}
-                  <div>
+                  {/* Campo ricerca prodotto con tendina automatica */}
+                  <div className="relative">
                     <label className="block text-sm font-medium text-white/80 mb-2">
-                      Ricerca Prodotto
+                      Cerca e Seleziona Prodotto
                     </label>
-                    <div className="glass-input-container rounded-xl">
+                    <div className="glass-input-container rounded-xl relative">
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4 z-10" />
                         <input
                           type="text"
-                          placeholder="Cerca prodotto per nome..."
+                          placeholder="Inizia a digitare per cercare un prodotto..."
                           className="glass-input w-full pl-10 pr-4 py-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
                           value={productSearch}
                           onChange={(e) => {
@@ -597,38 +642,68 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                           }}
                         />
                       </div>
+                      
+                      {/* Tendina filtrata che appare automaticamente */}
+                      {(productSearch.length > 0) && (
+                        <div className="absolute top-full left-0 right-0 z-[9999] bg-gray-900 border border-white/20 rounded-xl mt-1 max-h-60 overflow-y-auto shadow-xl">
+                          {allProducts?.filter(p => 
+                            p.attivo && 
+                            p.nome.toLowerCase().includes(productSearch.toLowerCase())
+                          ).map(product => {
+                            const userGiacenza = userGiacenze.find(g => g.productId._id === product._id);
+                            const disponibile = userGiacenza ? userGiacenza.quantitaDisponibile : 0;
+                            
+                            return (
+                              <div
+                                key={product._id}
+                                className="p-3 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-b-0 transition-colors"
+                                onClick={() => {
+                                  const userGiacenza = userGiacenze.find(g => g.productId._id === product._id);
+                                  
+                                  setNewProduct(prev => ({
+                                    ...prev,
+                                    productId: product._id,
+                                    quantitaAssegnata: userGiacenza && userGiacenza.quantitaAssegnata != null ? userGiacenza.quantitaAssegnata.toString() : '',
+                                    sogliaMinima: userGiacenza && userGiacenza.sogliaMinima != null ? userGiacenza.sogliaMinima.toString() : ''
+                                  }));
+                                  setProductSearch(product.nome);
+                                }}
+                              >
+                                <div className="text-white font-medium">{product.nome}</div>
+                                <div className="text-white/60 text-sm">
+                                  {product.codice && `Codice: ${product.codice} • `}
+                                  Unità: {product.unita}
+                                  {userGiacenza && (
+                                    <span className="text-green-400 ml-2">
+                                      • Disponibile: {disponibile}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                          
+                          {allProducts?.filter(p => 
+                            p.attivo && 
+                            p.nome.toLowerCase().includes(productSearch.toLowerCase())
+                          ).length === 0 && (
+                            <div className="p-3 text-white/60 text-center">
+                              Nessun prodotto trovato per "{productSearch}"
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
-                  {/* Dropdown prodotti filtrati */}
-                  <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">
-                      Seleziona Prodotto
-                    </label>
-                    <select
-                      className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                      value={newProduct.productId}
-                      onChange={(e) => setNewProduct(prev => ({ ...prev, productId: e.target.value }))}
-                    >
-                      <option value="" className="bg-gray-800">
-                        {productSearch ? `Cerca: "${productSearch}"` : 'Seleziona prodotto'}
-                      </option>
-                      {allProducts?.filter(p => 
-                        p.attivo && 
-                        (productSearch === '' || p.nome.toLowerCase().includes(productSearch.toLowerCase()))
-                      ).map(product => {
-                        const userGiacenza = userGiacenze.find(g => g.productId._id === product._id);
-                        const disponibile = userGiacenza ? userGiacenza.quantitaDisponibile : 0;
-                        const assegnata = userGiacenza ? userGiacenza.quantitaAssegnata : 0;
-                        
-                        return (
-                          <option key={product._id} value={product._id} className="bg-gray-800">
-                            {product.nome} - Ass: {assegnata}, Disp: {disponibile} {product.unita}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
+                  {/* Prodotto selezionato */}
+                  {newProduct.productId && (
+                    <div className="p-3 bg-green-500/20 border border-green-500/30 rounded-xl">
+                      <div className="text-green-400 font-medium">
+                        ✓ Prodotto selezionato: {allProducts?.find(p => p._id === newProduct.productId)?.nome}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Mostra info giacenze per prodotto selezionato */}
                   {newProduct.productId && (() => {
@@ -681,6 +756,38 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                         onChange={(e) => setNewProduct(prev => ({ ...prev, quantita: e.target.value }))}
                       />
                     </div>
+                    
+                    {/* Quantità Assegnata */}
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">
+                        Quantità Assegnata
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                        value={newProduct.quantitaAssegnata}
+                        onChange={(e) => setNewProduct(prev => ({ ...prev, quantitaAssegnata: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Soglia Minima */}
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">
+                        Soglia Minima
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                        value={newProduct.sogliaMinima}
+                        onChange={(e) => setNewProduct(prev => ({ ...prev, sogliaMinima: e.target.value }))}
+                      />
+                    </div>
 
                     {/* Note */}
                     <div>
@@ -720,7 +827,7 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
             {formData.prodotti.length > 0 ? (
               <div className="space-y-3">
                 {formData.prodotti.map((prodotto, index) => (
-                  <div key={prodotto.id || index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                     <div className="flex-1">
                       <div className="text-white font-medium">{prodotto.nome}</div>
                       <div className="text-white/60 text-sm">
@@ -729,7 +836,7 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                       </div>
                     </div>
                     <button
-                      onClick={() => removeProduct(prodotto.id)}
+                      onClick={() => removeProduct(index)}
                       className="glass-action-button p-2 rounded-lg hover:scale-110 transition-all duration-300 ml-4"
                       title="Rimuovi prodotto"
                     >

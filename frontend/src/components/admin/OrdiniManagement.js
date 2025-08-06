@@ -94,6 +94,94 @@ const OrdiniManagement = () => {
           color: white;
         }
 
+        .glass-button-primary:hover:not(:disabled) {
+          background: rgba(59, 130, 246, 0.4);
+          box-shadow: 0 12px 32px rgba(59, 130, 246, 0.3);
+        }
+
+        .glass-button-primary:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .glass-button-secondary {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 24px rgba(255, 255, 255, 0.1);
+          color: white;
+        }
+
+        .glass-button-secondary:hover:not(:disabled) {
+          background: rgba(255, 255, 255, 0.15);
+          box-shadow: 0 12px 32px rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-action-button {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-action-button:hover {
+          background: rgba(255, 255, 255, 0.12);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .glass-card-large {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-input-container {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 1rem;
+          transition: all 0.3s ease;
+        }
+
+        .glass-input {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          transition: all 0.3s ease;
+        }
+
+        .glass-input:focus {
+          background: rgba(255, 255, 255, 0.12);
+          border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .glass-table-header {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+        }
+
+        .glass-table-row {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(5px);
+        }
+
+        .glass-avatar {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-status-badge {
+          backdrop-filter: blur(10px);
+        }
+
+        .glass-icon {
+          background: rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
         @keyframes blob {
           0% {
             transform: translate(0px, 0px) scale(1);
