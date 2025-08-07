@@ -1,6 +1,6 @@
 // components/admin/OperatoriManagement.js
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, Users, Mail, UserCheck, UserX, Eye, EyeOff, Shield, Clock, Building } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Users, Mail, UserCheck, UserX, Eye, EyeOff, Shield, Clock, Building, ChevronUp, ChevronDown, ChevronsUpDown, Search, Filter } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { apiCall } from '../../services/api';
 import { formatDate } from '../../utils/formatters';
@@ -15,6 +15,7 @@ const OperatoriManagement = () => {
   
   // Stati per form nuovo operatore
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isClosingForm, setIsClosingForm] = useState(false);
   const [addForm, setAddForm] = useState({
     username: '',
     email: '',
@@ -32,6 +33,17 @@ const OperatoriManagement = () => {
 
   // Stati per UI
   const [showPasswords, setShowPasswords] = useState({});
+  
+  // Stati per ordinamento
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
+  
+  // Stati per filtro di ricerca
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Stati per modal reset password
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordResetData, setPasswordResetData] = useState({ userId: '', username: '', newPassword: '' });
 useEffect(() => {
   const loadPostazioni = async () => {
     try {
@@ -65,15 +77,29 @@ useEffect(() => {
     loadOperatori();
   }, []);
 
-  // Reset form nuovo operatore
-  const resetAddForm = () => {
+  // Chiusura animata del form
+  const closeAddForm = () => {
+    setIsClosingForm(true);
+    setTimeout(() => {
+      setShowAddForm(false);
+      setIsClosingForm(false);
+      resetAddFormData();
+    }, 300); // durata dell'animazione
+  };
+
+  // Reset dati form
+  const resetAddFormData = () => {
     setAddForm({
       username: '',
       email: '',
       password: '',
       role: 'user'
     });
-    setShowAddForm(false);
+  };
+
+  // Reset form nuovo operatore (mantenuto per compatibilità)
+  const resetAddForm = () => {
+    closeAddForm();
   };
 
   // Crea nuovo operatore
@@ -92,7 +118,7 @@ useEffect(() => {
       }, token);
 
       await loadOperatori();
-      resetAddForm();
+      closeAddForm();
       setError('Operatore creato con successo');
     } catch (err) {
       setError('Errore nella creazione: ' + err.message);
@@ -165,23 +191,86 @@ useEffect(() => {
     }));
   };
 
+  // Funzioni per ordinamento
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return <ChevronsUpDown className="w-4 h-4 text-white/50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ChevronUp className="w-4 h-4 text-white" />
+      : <ChevronDown className="w-4 h-4 text-white" />;
+  };
+
+  // Filtra e ordina operatori
+  const filteredOperatori = operatori.filter(operatore => {
+    if (!searchTerm) return true;
+    
+    const term = searchTerm.toLowerCase();
+    return (
+      (operatore.username && operatore.username.toLowerCase().includes(term)) ||
+      (operatore.email && operatore.email.toLowerCase().includes(term)) ||
+      (operatore.role && operatore.role.toLowerCase().includes(term))
+    );
+  });
+
+  const sortedOperatori = [...filteredOperatori].sort((a, b) => {
+    if (!sortField) return 0;
+
+    let aValue = a[sortField];
+    let bValue = b[sortField];
+
+    // Gestione casi speciali
+    if (sortField === 'createdAt') {
+      aValue = new Date(aValue);
+      bValue = new Date(bValue);
+    } else if (typeof aValue === 'string') {
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  // Apri modal reset password
+  const openPasswordModal = (operatoreId, username) => {
+    setPasswordResetData({ userId: operatoreId, username, newPassword: '' });
+    setShowPasswordModal(true);
+  };
+
+  // Chiudi modal reset password
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setPasswordResetData({ userId: '', username: '', newPassword: '' });
+  };
+
   // Reset password
-  const resetPassword = async (operatoreId, username) => {
-    const newPassword = prompt(`Inserisci la nuova password per ${username}:`);
-    if (!newPassword || newPassword.length < 6) {
-      alert('Password deve essere di almeno 6 caratteri');
+  const resetPassword = async () => {
+    if (!passwordResetData.newPassword || passwordResetData.newPassword.length < 6) {
+      setError('Password deve essere di almeno 6 caratteri');
       return;
     }
 
     try {
       setError('');
       
-      await apiCall(`/admin/users/${operatoreId}/reset-password`, {
+      await apiCall(`/admin/users/${passwordResetData.userId}/reset-password`, {
         method: 'POST',
-        body: JSON.stringify({ newPassword })
+        body: JSON.stringify({ newPassword: passwordResetData.newPassword })
       }, token);
 
       setError('Password aggiornata con successo');
+      closePasswordModal();
     } catch (err) {
       setError('Errore nel reset password: ' + err.message);
     }
@@ -216,7 +305,7 @@ useEffect(() => {
 
         {/* Form Nuovo Operatore */}
         {showAddForm && (
-          <div className="glass-operators-card p-8 rounded-3xl border-l-4 border-green-400">
+          <div className={`glass-operators-card p-8 rounded-3xl border-l-4 border-green-400 ${isClosingForm ? 'glass-form-slide-up' : 'glass-form-slide-down'}`}>
             <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
               <Plus className="w-6 h-6 mr-3" />
               Crea Nuovo Operatore
@@ -304,73 +393,35 @@ useEffect(() => {
           </div>
         )}
 
-        {/* Statistiche */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="glass-stat-card p-6 rounded-2xl">
-            <div className="flex items-center">
-              <div className="glass-stat-icon p-3 rounded-xl bg-gradient-to-r from-blue-400 to-blue-600 mr-4">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-white">{operatori.length}</div>
-                <div className="text-sm text-white/70">Totale Utenti</div>
-              </div>
-              <div className="glass-stat-icon p-3 rounded-xl bg-gradient-to-r from-teal-400 to-teal-600 mr-4">
-      <Building className="w-6 h-6 text-white" />
-    </div>
-    <div>
-      <div className="text-2xl font-bold text-teal-400">
-        {postazioni.filter(p => p.attiva).length}
-      </div>
-      <div className="text-sm text-white/70">Postazioni Attive</div>
-    </div>
-            </div>
-          </div>
-          <div className="glass-stat-card p-6 rounded-2xl">
-            <div className="flex items-center">
-              <div className="glass-stat-icon p-3 rounded-xl bg-gradient-to-r from-green-400 to-green-600 mr-4">
-                <UserCheck className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-400">
-                  {operatori.filter(o => o.role === 'user').length}
-                </div>
-                <div className="text-sm text-white/70">Operatori</div>
-              </div>
-            </div>
-          </div>
-          <div className="glass-stat-card p-6 rounded-2xl">
-            <div className="flex items-center">
-              <div className="glass-stat-icon p-3 rounded-xl bg-gradient-to-r from-purple-400 to-purple-600 mr-4">
-                <UserX className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-purple-400">
-                  {operatori.filter(o => o.role === 'admin').length}
-                </div>
-                <div className="text-sm text-white/70">Amministratori</div>
-              </div>
-            </div>
-          </div>
-          <div className="glass-stat-card p-6 rounded-2xl">
-            <div className="flex items-center">
-              <div className="glass-stat-icon p-3 rounded-xl bg-gradient-to-r from-orange-400 to-orange-600 mr-4">
-                <Mail className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-orange-400">
-                  {new Set(operatori.map(o => o.email.split('@')[1])).size}
-                </div>
-                <div className="text-sm text-white/70">Domini Email</div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Tabella Operatori */}
         <div className="glass-operators-card rounded-3xl overflow-hidden">
           <div className="glass-table-header px-6 py-4">
-            <h3 className="text-lg font-semibold text-white">Lista Operatori</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">
+                Lista Operatori ({sortedOperatori.length})
+              </h3>
+              
+              {/* Barra di ricerca compatta */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Cerca..."
+                  className="glass-input-compact w-64 pl-9 pr-8 py-2 rounded-xl bg-transparent border border-white/20 outline-none text-white placeholder-white/50 text-sm focus:border-blue-400/50 transition-colors"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
           
           {loading ? (
@@ -382,17 +433,41 @@ useEffect(() => {
               <table className="min-w-full">
                 <thead>
                   <tr className="glass-table-header-row">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Operatore
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
+                      onClick={() => handleSort('username')}
+                    >
+                      <div className="flex items-center justify-between">
+                        Operatore
+                        {getSortIcon('username')}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Email
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
+                      onClick={() => handleSort('email')}
+                    >
+                      <div className="flex items-center justify-between">
+                        Email
+                        {getSortIcon('email')}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Ruolo
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
+                      onClick={() => handleSort('role')}
+                    >
+                      <div className="flex items-center justify-between">
+                        Ruolo
+                        {getSortIcon('role')}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Creato
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
+                      onClick={() => handleSort('createdAt')}
+                    >
+                      <div className="flex items-center justify-between">
+                        Creato
+                        {getSortIcon('createdAt')}
+                      </div>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Azioni
@@ -400,7 +475,7 @@ useEffect(() => {
                   </tr>
                 </thead>
                 <tbody className="glass-table-body">
-                  {operatori.map(operatore => {
+                  {sortedOperatori.map(operatore => {
                     const isEditing = editingId === operatore._id;
                     
                     return (
@@ -494,7 +569,7 @@ useEffect(() => {
                                 <Edit className="w-4 h-4 text-blue-400" />
                               </button>
                               <button
-                                onClick={() => resetPassword(operatore._id, operatore.username)}
+                                onClick={() => openPasswordModal(operatore._id, operatore.username)}
                                 className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"
                                 title="Reset password"
                               >
@@ -520,17 +595,122 @@ useEffect(() => {
                 </tbody>
               </table>
 
-              {operatori.length === 0 && !loading && (
+              {sortedOperatori.length === 0 && !loading && (
                 <div className="text-center py-8">
                   <Users className="w-12 h-12 text-white/40 mx-auto mb-4" />
                   <p className="text-white/70">Nessun operatore trovato</p>
-                  <p className="text-sm text-white/50">Clicca "Nuovo Operatore" per iniziare</p>
+                  <p className="text-sm text-white/50">
+                    {searchTerm
+                      ? 'Prova a modificare i termini di ricerca per vedere più risultati'
+                      : 'Clicca "Nuovo Operatore" per iniziare'
+                    }
+                  </p>
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="glass-button-secondary mt-4 px-6 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
+                    >
+                      Reset Filtri
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           )}
         </div>
+
+        {/* Riepilogo compatto */}
+        <div className="glass-compact-summary p-4 rounded-xl">
+          <div className="flex items-center justify-center space-x-8 text-sm">
+            <div className="flex items-center space-x-2">
+              <Users className="w-4 h-4 text-blue-400" />
+              <span className="text-white/70">Totale:</span>
+              <span className="text-white font-medium">{operatori.length}</span>
+            </div>
+            <div className="w-px h-4 bg-white/20"></div>
+            <div className="flex items-center space-x-2">
+              <UserCheck className="w-4 h-4 text-green-400" />
+              <span className="text-white/70">Operatori:</span>
+              <span className="text-green-400 font-medium">{operatori.filter(o => o.role === 'user').length}</span>
+            </div>
+            <div className="w-px h-4 bg-white/20"></div>
+            <div className="flex items-center space-x-2">
+              <Shield className="w-4 h-4 text-purple-400" />
+              <span className="text-white/70">Amministratori:</span>
+              <span className="text-purple-400 font-medium">{operatori.filter(o => o.role === 'admin').length}</span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Modal Reset Password */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={closePasswordModal}
+          ></div>
+          
+          {/* Modal */}
+          <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 m-4 max-w-md w-full animate-in fade-in-0 zoom-in-95 duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white flex items-center">
+                <Eye className="w-6 h-6 mr-3 text-yellow-400" />
+                Reset Password
+              </h3>
+              <button
+                onClick={closePasswordModal}
+                className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-white/80 mb-4">
+                Inserisci la nuova password per <strong className="text-white">{passwordResetData.username}</strong>:
+              </p>
+              
+              <div className="glass-input-container">
+                <input
+                  type="password"
+                  className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                  placeholder="Minimo 6 caratteri"
+                  value={passwordResetData.newPassword}
+                  onChange={(e) => setPasswordResetData({ ...passwordResetData, newPassword: e.target.value })}
+                  autoFocus
+                  onKeyPress={(e) => e.key === 'Enter' && resetPassword()}
+                />
+              </div>
+              
+              {passwordResetData.newPassword && passwordResetData.newPassword.length < 6 && (
+                <p className="text-red-400 text-sm mt-2">
+                  Password deve essere di almeno 6 caratteri
+                </p>
+              )}
+            </div>
+
+            <div className="flex space-x-4">
+              <button
+                onClick={resetPassword}
+                disabled={!passwordResetData.newPassword || passwordResetData.newPassword.length < 6}
+                className="glass-button-success flex items-center gap-2 px-6 py-3 rounded-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                <Save className="w-4 h-4" />
+                <span className="font-medium">Aggiorna Password</span>
+              </button>
+              <button
+                onClick={closePasswordModal}
+                className="glass-button-secondary flex items-center gap-2 px-6 py-3 rounded-xl hover:scale-105 transition-all duration-300"
+              >
+                <X className="w-4 h-4" />
+                <span className="font-medium">Annulla</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Custom Styles */}
       <style jsx>{`
@@ -661,6 +841,24 @@ useEffect(() => {
           box-shadow: 0 4px 16px rgba(255, 255, 255, 0.1);
         }
 
+        .glass-compact-summary {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-input-compact {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(15px);
+          transition: all 0.3s ease;
+        }
+
+        .glass-input-compact:focus {
+          background: rgba(255, 255, 255, 0.12);
+          box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
           .glass-operators-card {
@@ -679,6 +877,152 @@ useEffect(() => {
             flex-direction: column;
             gap: 0.5rem;
           }
+
+          .glass-input-compact {
+            width: 200px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .glass-table-header .flex {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+          }
+
+          .glass-input-compact {
+            width: 100%;
+          }
+        }
+
+        /* Form slide down animation */
+        .glass-form-slide-down {
+          animation: slideDown 0.4s ease-out forwards;
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .glass-form-slide-up {
+          animation: slideUp 0.3s ease-in forwards;
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+        }
+
+        /* Animation delays for staggered appearance */
+        .glass-table-row {
+          animation: slideInUp 0.5s ease-out forwards;
+          opacity: 0;
+        }
+
+        .glass-table-row:nth-child(1) { animation-delay: 0.1s; }
+        .glass-table-row:nth-child(2) { animation-delay: 0.2s; }
+        .glass-table-row:nth-child(3) { animation-delay: 0.3s; }
+        .glass-table-row:nth-child(4) { animation-delay: 0.4s; }
+        .glass-table-row:nth-child(5) { animation-delay: 0.5s; }
+        .glass-table-row:nth-child(n+6) { animation-delay: 0.6s; }
+
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* Enhanced hover effects */
+        .glass-compact-summary:hover {
+          background: rgba(255, 255, 255, 0.08);
+          transform: translateY(-1px);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .glass-action-button:hover {
+          transform: scale(1.15);
+          box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-table-row:hover {
+          background: rgba(255, 255, 255, 0.08);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Button press effects */
+        .glass-button-primary:active,
+        .glass-button-success:active,
+        .glass-button-secondary:active {
+          transform: scale(0.98);
+        }
+
+        .glass-action-button:active {
+          transform: scale(1.05);
+        }
+
+        /* Focus states for accessibility */
+        .glass-input:focus,
+        .glass-input:focus-visible,
+        .glass-input-compact:focus {
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+        }
+
+        .glass-button-primary:focus,
+        .glass-button-success:focus,
+        .glass-button-secondary:focus {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Icon glow effects */
+        .glass-icon:hover {
+          box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Enhanced table responsiveness */
+        .overflow-x-auto {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+        }
+
+        .overflow-x-auto::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        .overflow-x-auto::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
+        }
+
+        .overflow-x-auto::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 3px;
+        }
+
+        .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.5);
         }
       `}</style>
     </>

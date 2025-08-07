@@ -32,11 +32,7 @@ const GiacenzeManagement = () => {
     userId: '',
     productId: '',
     stato: '', // 'critico', 'ok', ''
-    searchTerm: '',
-    dataFrom: '',
-    dataTo: '',
-    quantitaMin: '',
-    quantitaMax: ''
+    searchTerm: ''
   });
 
   // Stati per giacenze filtrate
@@ -51,66 +47,45 @@ const GiacenzeManagement = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Applica filtri alle giacenze
-  useEffect(() => {
-    let filtered = [...allGiacenze];
+  // Funzione per applicare i filtri
+  const applyFilters = (giacenze, currentFilters) => {
+    let filtered = [...giacenze];
 
     // Filtro per utente
-    if (filters.userId) {
-      filtered = filtered.filter(g => g.userId?._id === filters.userId);
+    if (currentFilters.userId) {
+      filtered = filtered.filter(g => g.userId?._id === currentFilters.userId);
     }
 
     // Filtro per prodotto
-    if (filters.productId) {
-      filtered = filtered.filter(g => g.productId?._id === filters.productId);
+    if (currentFilters.productId) {
+      filtered = filtered.filter(g => g.productId?._id === currentFilters.productId);
     }
 
     // Filtro per stato
-    if (filters.stato === 'critico') {
+    if (currentFilters.stato === 'critico') {
       filtered = filtered.filter(g => g.quantitaDisponibile <= g.quantitaMinima);
-    } else if (filters.stato === 'ok') {
+    } else if (currentFilters.stato === 'ok') {
       filtered = filtered.filter(g => g.quantitaDisponibile > g.quantitaMinima);
     }
 
     // Filtro ricerca libera
-    if (filters.searchTerm) {
-      const term = filters.searchTerm.toLowerCase();
+    if (currentFilters.searchTerm) {
+      const term = currentFilters.searchTerm.toLowerCase();
       filtered = filtered.filter(g => 
-        g.userId?.username.toLowerCase().includes(term) ||
-        g.userId?.email.toLowerCase().includes(term) ||
-        g.productId?.nome.toLowerCase().includes(term) ||
-        g.productId?.categoria.toLowerCase().includes(term) ||
-        g.assegnatoDa?.username.toLowerCase().includes(term)
+        (g.userId?.username && g.userId.username.toLowerCase().includes(term)) ||
+        (g.userId?.email && g.userId.email.toLowerCase().includes(term)) ||
+        (g.productId?.nome && g.productId.nome.toLowerCase().includes(term)) ||
+        (g.productId?.categoria && g.productId.categoria.toLowerCase().includes(term)) ||
+        (g.assegnatoDa?.username && g.assegnatoDa.username.toLowerCase().includes(term))
       );
     }
 
-    // Filtro per data assegnazione
-    if (filters.dataFrom) {
-      const fromDate = new Date(filters.dataFrom);
-      filtered = filtered.filter(g => {
-        const assignDate = new Date(g.dataAssegnazione);
-        return assignDate >= fromDate;
-      });
-    }
+    return filtered;
+  };
 
-    if (filters.dataTo) {
-      const toDate = new Date(filters.dataTo);
-      toDate.setHours(23, 59, 59, 999); // Fine giornata
-      filtered = filtered.filter(g => {
-        const assignDate = new Date(g.dataAssegnazione);
-        return assignDate <= toDate;
-      });
-    }
-
-    // Filtro per quantità disponibile
-    if (filters.quantitaMin) {
-      filtered = filtered.filter(g => g.quantitaDisponibile >= parseInt(filters.quantitaMin));
-    }
-
-    if (filters.quantitaMax) {
-      filtered = filtered.filter(g => g.quantitaDisponibile <= parseInt(filters.quantitaMax));
-    }
-
+  // Applica filtri alle giacenze
+  useEffect(() => {
+    const filtered = applyFilters(allGiacenze, filters);
     setFilteredGiacenze(filtered);
   }, [allGiacenze, filters]);
 
@@ -135,8 +110,18 @@ const GiacenzeManagement = () => {
     dispatch({ type: 'SET_GIACENZE_FORM', payload: updates });
   };
 
-  const handleAssignGiacenza = () => {
-    assignGiacenza(selectedUser, giacenzeForm);
+  const handleAssignGiacenza = async () => {
+    try {
+      await assignGiacenza(selectedUser, giacenzeForm);
+      showToast('Giacenza assegnata con successo!', 'success');
+      // Riapplica i filtri dopo l'assegnazione
+      setTimeout(() => {
+        const filtered = applyFilters(allGiacenze, filters);
+        setFilteredGiacenze(filtered);
+      }, 100);
+    } catch (error) {
+      showToast('Errore nell\'assegnazione della giacenza', 'error');
+    }
   };
 
   // Aggiorna filtri
@@ -150,11 +135,7 @@ const GiacenzeManagement = () => {
       userId: '',
       productId: '',
       stato: '',
-      searchTerm: '',
-      dataFrom: '',
-      dataTo: '',
-      quantitaMin: '',
-      quantitaMax: ''
+      searchTerm: ''
     });
   };
 
@@ -192,6 +173,11 @@ const GiacenzeManagement = () => {
     if (success) {
       closeEditModal();
       showToast('Giacenza aggiornata con successo!', 'success');
+      // Riapplica i filtri dopo l'aggiornamento
+      setTimeout(() => {
+        const filtered = applyFilters(allGiacenze, filters);
+        setFilteredGiacenze(filtered);
+      }, 100);
     } else {
       showToast('Errore nell\'aggiornamento della giacenza', 'error');
     }
@@ -213,6 +199,11 @@ const GiacenzeManagement = () => {
     if (success) {
       closeDeleteModal();
       showToast('Giacenza eliminata con successo!', 'success');
+      // Riapplica i filtri dopo l'eliminazione
+      setTimeout(() => {
+        const filtered = applyFilters(allGiacenze, filters);
+        setFilteredGiacenze(filtered);
+      }, 100);
     } else {
       showToast('Errore nell\'eliminazione della giacenza', 'error');
     }
@@ -553,64 +544,6 @@ const GiacenzeManagement = () => {
               </div>
             </div>
 
-            {/* Filtri Avanzati - Seconda Riga */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Range Data */}
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Data Da
-                </label>
-                <input
-                  type="date"
-                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
-                  value={filters.dataFrom}
-                  onChange={(e) => updateFilters({ dataFrom: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Data A
-                </label>
-                <input
-                  type="date"
-                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
-                  value={filters.dataTo}
-                  onChange={(e) => updateFilters({ dataTo: e.target.value })}
-                />
-              </div>
-
-              {/* Range Quantità */}
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
-                  Quantità Min
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="es. 10"
-                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                  value={filters.quantitaMin}
-                  onChange={(e) => updateFilters({ quantitaMin: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
-                  Quantità Max
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="es. 100"
-                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                  value={filters.quantitaMax}
-                  onChange={(e) => updateFilters({ quantitaMax: e.target.value })}
-                />
-              </div>
-            </div>
 
             {/* Bottone Reset Filtri */}
             <div className="flex justify-end mt-4">

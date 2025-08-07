@@ -65,8 +65,8 @@ const AssignmentsManagement = () => {
     searchTerm: ''
   });
   
-  // Stato per checkbox "tutte le settimane"
-  const [showAllWeeks, setShowAllWeeks] = useState(false);
+  // Stato per checkbox "tutte le settimane" - ATTIVO DI DEFAULT
+  const [showAllWeeks, setShowAllWeeks] = useState(true);
   
   // Stati per dati
   const [assegnazioni, setAssegnazioni] = useState([]);
@@ -1095,6 +1095,8 @@ const AssignmentsManagement = () => {
       assegnazioni={assegnazioni}
       poli={poli}
       settimane={settimane}
+      ordiniData={ordiniData}
+      rdtData={rdtData}
       onBackToList={() => setShowCalendarView(false)}
     />;
   }
@@ -1458,24 +1460,26 @@ const AssignmentsManagement = () => {
                 Settimana
               </label>
               
-              {/* Dropdown settimane (visibile solo quando checkbox non è selezionata) */}
-              {!showAllWeeks && (
-                <select
-                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
-                  value={filters.settimanaId}
-                  onChange={(e) => updateFilters({ settimanaId: e.target.value })}
-                >
-                  {sortedSettimane.map((settimana) => {
-                    const currentWeek = getCurrentWeekFromList(settimane);
-                    const isCurrentWeek = currentWeek && settimana._id === currentWeek._id;
-                    return (
-                      <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                        {isCurrentWeek ? '📅 ' : ''}{formatWeek(settimana)}{isCurrentWeek ? ' (Corrente)' : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-              )}
+              {/* Dropdown settimane (sempre visibile, disabilitato quando checkbox è selezionata) */}
+              <select
+                className={`glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white ${showAllWeeks ? 'opacity-50 cursor-not-allowed' : ''}`}
+                value={filters.settimanaId}
+                onChange={(e) => updateFilters({ settimanaId: e.target.value })}
+                disabled={showAllWeeks}
+              >
+                <option value="" className="bg-gray-800">
+                  {showAllWeeks ? 'Tutte le settimane selezionate' : 'Seleziona settimana'}
+                </option>
+                {sortedSettimane.map((settimana) => {
+                  const currentWeek = getCurrentWeekFromList(settimane);
+                  const isCurrentWeek = currentWeek && settimana._id === currentWeek._id;
+                  return (
+                    <option key={settimana._id} value={settimana._id} className="bg-gray-800">
+                      {isCurrentWeek ? '📅 ' : ''}{formatWeek(settimana)}{isCurrentWeek ? ' (Corrente)' : ''}
+                    </option>
+                  );
+                })}
+              </select>
 
               {/* Checkbox "Tutte le settimane" */}
               <div className="mt-3">
@@ -2195,9 +2199,21 @@ const AssignmentsManagement = () => {
 };
 
 // ✅ AGGIORNATO: Componente CalendarView con supporto per ordine e RDT
-const CalendarView = ({ assegnazioni, poli, settimane, onBackToList }) => {
+const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBackToList }) => {
   const [filteredPoli, setFilteredPoli] = useState(poli);
   const [filteredSettimane, setFilteredSettimane] = useState(settimane);
+
+  // Helper per trovare i dati completi di un ordine
+  const getOrdineCompleto = (numeroOrdine) => {
+    if (!numeroOrdine) return null;
+    return ordiniData.find(ordine => ordine.numero === numeroOrdine);
+  };
+
+  // Helper per trovare i dati completi di un RDT
+  const getRdtCompleto = (numeroRdt) => {
+    if (!numeroRdt) return null;
+    return rdtData.find(rdt => rdt.numero === numeroRdt);
+  };
   
   // Ordina settimane cronologicamente
   const sortedSettimane = sortWeeksChronologically(filteredSettimane);

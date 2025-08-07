@@ -19,7 +19,7 @@ const UtilizziManagement = () => {
   });
   
   // Stato per checkbox "tutte le settimane"
-  const [showAllWeeks, setShowAllWeeks] = useState(false);
+  const [showAllWeeks, setShowAllWeeks] = useState(true);
   
   // Stati per dati
   const [allUtilizzi, setAllUtilizzi] = useState([]);
@@ -236,17 +236,45 @@ const UtilizziManagement = () => {
         body: JSON.stringify(updatedData)
       }, token);
 
-      // Ricarica dati
-      await loadAllUtilizzi();
-      
-      // Aggiorna modal
-      if (selectedGroup) {
-        const updatedGroup = groupedUtilizzi.find(g => g.key === selectedGroup.key);
-        if (updatedGroup) {
-          setModalUtilizzi(updatedGroup.utilizzi.sort((a, b) => new Date(b.dataUtilizzo) - new Date(a.dataUtilizzo)));
-          setSelectedGroup(updatedGroup);
+      // Aggiorna immediatamente gli utilizzi nel modal
+      const updatedModalUtilizzi = modalUtilizzi.map(utilizzo => {
+        if (utilizzo._id === utilizzoId) {
+          return {
+            ...utilizzo,
+            quantitaUtilizzata: parseInt(editForm.quantitaUtilizzata),
+            note: editForm.note
+          };
         }
+        return utilizzo;
+      });
+      
+      setModalUtilizzi(updatedModalUtilizzi);
+      
+      // Aggiorna anche il selectedGroup per coerenza
+      if (selectedGroup) {
+        const updatedUtilizzi = selectedGroup.utilizzi.map(utilizzo => {
+          if (utilizzo._id === utilizzoId) {
+            return {
+              ...utilizzo,
+              quantitaUtilizzata: parseInt(editForm.quantitaUtilizzata),
+              note: editForm.note
+            };
+          }
+          return utilizzo;
+        });
+        
+        // Ricalcola il totale
+        const newTotal = updatedUtilizzi.reduce((sum, u) => sum + (u.quantitaUtilizzata || 0), 0);
+        
+        setSelectedGroup({
+          ...selectedGroup,
+          utilizzi: updatedUtilizzi,
+          totalQuantita: newTotal
+        });
       }
+
+      // Ricarica dati in background per mantenere sincronizzazione
+      loadAllUtilizzi();
       
       cancelEdit();
       setError('Utilizzo aggiornato con successo');
@@ -267,19 +295,35 @@ const UtilizziManagement = () => {
         method: 'DELETE'
       }, token);
 
-      // Ricarica dati
-      await loadAllUtilizzi();
+      // Aggiorna immediatamente gli utilizzi nel modal
+      const updatedModalUtilizzi = modalUtilizzi.filter(utilizzo => utilizzo._id !== utilizzoId);
       
-      // Aggiorna o chiudi modal se non ci sono più utilizzi
-      if (selectedGroup) {
-        const updatedGroup = groupedUtilizzi.find(g => g.key === selectedGroup.key);
-        if (updatedGroup && updatedGroup.utilizzi.length > 0) {
-          setModalUtilizzi(updatedGroup.utilizzi.sort((a, b) => new Date(b.dataUtilizzo) - new Date(a.dataUtilizzo)));
-          setSelectedGroup(updatedGroup);
-        } else {
-          closeModal();
+      if (updatedModalUtilizzi.length === 0) {
+        // Se non ci sono più utilizzi, chiudi il modal
+        closeModal();
+      } else {
+        // Aggiorna il modal con gli utilizzi rimanenti
+        setModalUtilizzi(updatedModalUtilizzi);
+        
+        // Aggiorna anche il selectedGroup per coerenza
+        if (selectedGroup) {
+          const updatedUtilizzi = selectedGroup.utilizzi.filter(utilizzo => utilizzo._id !== utilizzoId);
+          
+          // Ricalcola il totale
+          const newTotal = updatedUtilizzi.reduce((sum, u) => sum + (u.quantitaUtilizzata || 0), 0);
+          const newCount = updatedUtilizzi.length;
+          
+          setSelectedGroup({
+            ...selectedGroup,
+            utilizzi: updatedUtilizzi,
+            totalQuantita: newTotal,
+            numeroUtilizzi: newCount
+          });
         }
       }
+
+      // Ricarica dati in background per mantenere sincronizzazione
+      loadAllUtilizzi();
       
       setError('Utilizzo eliminato con successo');
     } catch (err) {
@@ -356,14 +400,19 @@ const UtilizziManagement = () => {
                 Settimana
               </label>
               
-              {/* Dropdown settimane (visibile solo quando checkbox non è selezionata) */}
-              {!showAllWeeks && (
-                <select
-                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                  value={filters.settimanaId}
-                  onChange={(e) => updateFilters({ settimanaId: e.target.value })}
-                >
-                  {sortedSettimane.map((settimana) => {
+              {/* Dropdown settimane */}
+              <select
+                className={`glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white ${showAllWeeks ? 'opacity-50 cursor-not-allowed' : ''}`}
+                value={showAllWeeks ? 'all' : filters.settimanaId}
+                onChange={(e) => updateFilters({ settimanaId: e.target.value })}
+                disabled={showAllWeeks}
+              >
+                {showAllWeeks ? (
+                  <option value="all" className="bg-gray-800">
+                    🌍 Tutte le settimane selezionate
+                  </option>
+                ) : (
+                  sortedSettimane.map((settimana) => {
                     const currentWeek = getCurrentWeekFromList(settimane);
                     const isCurrentWeek = currentWeek && settimana._id === currentWeek._id;
                     return (
@@ -371,9 +420,9 @@ const UtilizziManagement = () => {
                         {isCurrentWeek ? '📅 ' : ''}{formatWeek(settimana)}{isCurrentWeek ? ' (Settimana corrente)' : ''}
                       </option>
                     );
-                  })}
-                </select>
-              )}
+                  })
+                )}
+              </select>
 
               {/* Checkbox "Tutte le settimane" */}
               <div className="mt-3">
@@ -605,24 +654,6 @@ const UtilizziManagement = () => {
           )}
         </div>
 
-        {/* Info Azioni */}
-        <div className="glass-info-card p-6 rounded-2xl">
-          <h4 className="font-semibold text-white mb-3 flex items-center">
-            <span className="text-2xl mr-2">💡</span>
-            Guida all'Utilizzo:
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-white/80">
-            <div className="glass-feature-item p-3 rounded-xl">
-              <strong className="text-white">Vista Raggruppata:</strong> Gli utilizzi sono sommati per prodotto e settimana
-            </div>
-            <div className="glass-feature-item p-3 rounded-xl">
-              <strong className="text-white">Dettagli:</strong> Clicca su una riga per vedere tutti gli utilizzi specifici
-            </div>
-            <div className="glass-feature-item p-3 rounded-xl">
-              <strong className="text-white">Modifica:</strong> Nel modal puoi modificare o eliminare i singoli utilizzi
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Modal Dettagli Utilizzi */}
@@ -730,20 +761,26 @@ const UtilizziManagement = () => {
                             <div className="text-xs text-white/50">{dateTime.time}</div>
                           </div>
                           
-                          {/* Postazione */}
+                          {/* Polo */}
                           <div>
                             <div className="text-xs text-white/60 mb-1 flex items-center">
                               <MapPin className="w-3 h-3 mr-1" />
+                              Polo
+                            </div>
+                            <div className="text-sm text-white">
+                              {utilizzo.poloId?.nome || 'N/A'}
+                            </div>
+                          </div>
+
+                          {/* Postazione */}
+                          <div>
+                            <div className="text-xs text-white/60 mb-1 flex items-center">
+                              <Package className="w-3 h-3 mr-1" />
                               Postazione
                             </div>
                             <div className="text-sm text-white">
                               {postazione?.nome || 'N/A'}
                             </div>
-                            {polo?.nome && (
-                              <div className="text-xs text-white/50">
-                                {polo.nome}
-                              </div>
-                            )}
                           </div>
 
                           {/* Settimana */}
@@ -773,14 +810,6 @@ const UtilizziManagement = () => {
                                 -{utilizzo.quantitaUtilizzata} {utilizzo.productId?.unita}
                               </div>
                             )}
-                          </div>
-                          
-                          {/* Prima/Dopo */}
-                          <div>
-                            <div className="text-xs text-white/60 mb-1">Prima → Dopo</div>
-                            <div className="text-sm text-white">
-                              {utilizzo.quantitaPrimaDellUso} → {utilizzo.quantitaRimasta}
-                            </div>
                           </div>
                           
                           {/* Note */}
@@ -994,18 +1023,6 @@ const UtilizziManagement = () => {
           border-color: rgba(255, 255, 255, 0.2);
         }
 
-        .glass-info-card {
-          background: rgba(59, 130, 246, 0.1);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(59, 130, 246, 0.2);
-          box-shadow: 0 8px 32px rgba(59, 130, 246, 0.1);
-        }
-
-        .glass-feature-item {
-          background: rgba(255, 255, 255, 0.05);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
 
         @keyframes blob {
           0% {

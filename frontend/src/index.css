@@ -194,6 +194,23 @@ html, body {
   color: #000000 !important;
 }
 
+.theme-light [class*="text-white"] {
+  color: #000000 !important;
+}
+
+/* Testo specifico per descrizioni e label nel tema light */
+.theme-light .text-white\/70 {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+.theme-light .text-white\/50 {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+.theme-light .text-white\/80 {
+  color: #374151 !important; /* gray-700 */
+}
+
 
 /* Assicura che tutto il testo sia nero nel tema light */
 .theme-light * {
@@ -210,9 +227,35 @@ html, body {
   color: #000000 !important;
 }
 
-/* Input e placeholder */
-.theme-light * {
+/* Input e placeholder nel tema light */
+.theme-light input::placeholder,
+.theme-light textarea::placeholder {
+  color: #6b7280 !important; /* gray-500 per buona leggibilità */
+}
+
+.theme-light input,
+.theme-light textarea {
   color: #000000 !important;
+}
+
+/* Override specifico per classi placeholder Tailwind nel tema light */
+.theme-light [class*="placeholder-white"] {
+  --tw-placeholder-opacity: 1;
+}
+
+.theme-light [class*="placeholder-white"]::placeholder {
+  color: rgb(107 114 128 / var(--tw-placeholder-opacity)) !important; /* gray-500 */
+}
+
+/* Input e placeholder nel tema dark - mantiene i placeholder bianchi */
+.theme-dark input::placeholder,
+.theme-dark textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.theme-dark input,
+.theme-dark textarea {
+  color: #f1f5f9 !important;
 }
 
 /* Effetti background orbs disabilitati nei temi alternativi */
