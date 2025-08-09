@@ -28,6 +28,7 @@ const initialState = {
   settimane: [],
   assegnazioni: [],
   allGiacenze: [],
+  postazioni: [],
   
   // Forms
   selectedUser: '',
@@ -53,7 +54,8 @@ const initialState = {
     settimanaId: '',
     poloId: '',
     mezzoId: '',
-    userId: ''
+    userId: '',
+    postazioneId: ''
   },
   editAssignmentId: null,
   editForm: {
@@ -119,6 +121,9 @@ const appReducer = (state, action) => {
     
     case 'SET_ALL_GIACENZE':
       return { ...state, allGiacenze: action.payload };
+    
+    case 'SET_POSTAZIONI':
+      return { ...state, postazioni: action.payload };
     
     case 'SET_SELECTED_USER':
       return { ...state, selectedUser: action.payload };

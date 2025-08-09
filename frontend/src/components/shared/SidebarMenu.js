@@ -1,13 +1,13 @@
 // components/shared/SidebarMenu.js
 import React, { useEffect } from 'react';
-import { X, Home } from 'lucide-react';
+import { Home } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { useSidebar } from './Navigation';
 
 const SidebarMenu = () => {
   const { setCurrentPage } = useAuth();
-  const { currentTheme, isDark, isLight } = useTheme();
+  const { currentTheme, isDark, isLight, isDefault } = useTheme();
   const { isSidebarOpen, setIsSidebarOpen } = useSidebar();
 
   const adminSections = [
@@ -77,18 +77,19 @@ const SidebarMenu = () => {
   ];
 
   const handleSectionClick = (sectionId) => {
-    if (sectionId === 'dashboard') {
-      setCurrentPage('admin');
-    } else {
-      setCurrentPage(`admin-${sectionId}`);
-    }
+    let targetPage = sectionId === 'dashboard' ? 'admin' : `admin-${sectionId}`;
+    setCurrentPage(targetPage);
     setIsSidebarOpen(false); // Chiudi menu dopo la navigazione
   };
 
   // Chiudi menu quando si clicca fuori
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isSidebarOpen && !event.target.closest('.ios-speech-bubble')) {
+      // Non chiudere se il click è sul menu o sul pulsante burger
+      if (isSidebarOpen && 
+          !event.target.closest('.ios-speech-bubble') && 
+          !event.target.closest('button[title*="menu"]') &&
+          !event.target.closest('button[title*="Menu"]')) {
         setIsSidebarOpen(false);
       }
     };
@@ -106,6 +107,7 @@ const SidebarMenu = () => {
     <>
       {/* iOS-style Menu */}
       <div 
+        key={currentTheme}
         className="fixed top-[60px] left-4 z-[60] animate-menu-slide-down"
         onClick={(e) => e.stopPropagation()}
       >
@@ -114,31 +116,8 @@ const SidebarMenu = () => {
           className="ios-speech-bubble w-80 max-h-[90vh] overflow-hidden" 
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header Card */}
-          <div className="ios-menu-header mb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className={`text-lg font-semibold ${isLight ? 'text-black' : 'text-white'}`}>
-                  Menu Admin
-                </h2>
-                <p className={`text-sm ${isLight ? 'text-gray-600' : 'text-white/70'}`}>
-                  Navigazione rapida
-                </p>
-              </div>
-              <button
-                onClick={() => setIsSidebarOpen(false)}
-                className="ios-close-button"
-                title="Chiudi"
-                type="button"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-
           {/* Menu List */}
-          <div className="ios-menu-list mb-4 max-h-[60vh] overflow-y-auto">
+          <div className="ios-menu-list max-h-[70vh] overflow-y-auto pt-2">
             {adminSections.map((section, index) => (
               <div key={section.id}>
                 <button
@@ -208,7 +187,9 @@ const SidebarMenu = () => {
             ? 'rgba(255, 255, 255, 0.98)' 
             : isDark 
               ? 'rgba(40, 40, 42, 0.98)' 
-              : 'rgba(30, 30, 40, 0.98)'
+              : isDefault
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(30, 30, 40, 0.98)'
           };
           backdrop-filter: blur(50px) saturate(200%);
           -webkit-backdrop-filter: blur(50px) saturate(200%);
@@ -216,7 +197,9 @@ const SidebarMenu = () => {
             ? '0 20px 60px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08)'
             : isDark
               ? '0 20px 60px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3)'
-              : '0 20px 60px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.2)'
+              : isDefault
+                ? '0 8px 32px rgba(0, 0, 0, 0.1), 0 20px 60px rgba(0, 0, 0, 0.2)'
+                : '0 20px 60px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.2)'
           };
           position: relative;
           z-index: 70;
@@ -238,7 +221,9 @@ const SidebarMenu = () => {
             ? 'rgba(255, 255, 255, 0.98)' 
             : isDark 
               ? 'rgba(40, 40, 42, 0.98)' 
-              : 'rgba(30, 30, 40, 0.98)'
+              : isDefault
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(30, 30, 40, 0.98)'
           };
           filter: drop-shadow(0 -2px 4px rgba(0, 0, 0, 0.1));
           z-index: 72;
@@ -257,55 +242,13 @@ const SidebarMenu = () => {
             ? 'rgba(0, 0, 0, 0.08)' 
             : isDark 
               ? 'rgba(255, 255, 255, 0.12)' 
-              : 'rgba(255, 255, 255, 0.15)'
+              : isDefault
+                ? 'rgba(255, 255, 255, 0.2)'
+                : 'rgba(255, 255, 255, 0.15)'
           };
           z-index: 71;
         }
 
-        /* iOS Menu Header */
-        .ios-menu-header {
-          background: transparent;
-          padding: 16px 20px 12px 20px;
-          border-bottom: 1px solid ${isLight 
-            ? 'rgba(0, 0, 0, 0.08)' 
-            : isDark 
-              ? 'rgba(255, 255, 255, 0.08)' 
-              : 'rgba(255, 255, 255, 0.1)'
-          };
-        }
-
-        /* iOS Close Button */
-        .ios-close-button {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: ${isLight 
-            ? 'rgba(120, 120, 128, 0.16)' 
-            : isDark 
-              ? 'rgba(120, 120, 128, 0.24)' 
-              : 'rgba(255, 255, 255, 0.15)'
-          };
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: none;
-          color: ${isLight ? '#000' : '#fff'};
-          transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .ios-close-button:hover {
-          background: ${isLight 
-            ? 'rgba(120, 120, 128, 0.24)' 
-            : isDark 
-              ? 'rgba(120, 120, 128, 0.32)' 
-              : 'rgba(255, 255, 255, 0.2)'
-          };
-          transform: scale(1.05);
-        }
-
-        .ios-close-button:active {
-          transform: scale(0.95);
-        }
 
         /* iOS Menu List */
         .ios-menu-list {
@@ -329,7 +272,9 @@ const SidebarMenu = () => {
             ? 'rgba(120, 120, 128, 0.08)' 
             : isDark 
               ? 'rgba(255, 255, 255, 0.04)' 
-              : 'rgba(255, 255, 255, 0.06)'
+              : isDefault
+                ? 'rgba(255, 255, 255, 0.06)'
+                : 'rgba(255, 255, 255, 0.06)'
           } !important;
         }
 
@@ -338,7 +283,9 @@ const SidebarMenu = () => {
             ? 'rgba(120, 120, 128, 0.16)' 
             : isDark 
               ? 'rgba(255, 255, 255, 0.08)' 
-              : 'rgba(255, 255, 255, 0.1)'
+              : isDefault
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(255, 255, 255, 0.1)'
           } !important;
           transform: scale(0.98);
         }
@@ -355,7 +302,9 @@ const SidebarMenu = () => {
             ? 'rgba(0, 0, 0, 0.8)' 
             : isDark 
               ? 'rgba(255, 255, 255, 0.8)' 
-              : 'rgba(255, 255, 255, 0.9)'
+              : isDefault
+                ? 'rgba(255, 255, 255, 0.9)'
+                : 'rgba(255, 255, 255, 0.9)'
           };
         }
 
@@ -374,7 +323,9 @@ const SidebarMenu = () => {
             ? 'rgba(0, 0, 0, 0.08)' 
             : isDark 
               ? 'rgba(255, 255, 255, 0.08)' 
-              : 'rgba(255, 255, 255, 0.1)'
+              : isDefault
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(255, 255, 255, 0.1)'
           };
         }
 
@@ -399,7 +350,9 @@ const SidebarMenu = () => {
             ? 'rgba(120, 120, 128, 0.08)' 
             : isDark 
               ? 'rgba(255, 255, 255, 0.04)' 
-              : 'rgba(255, 255, 255, 0.06)'
+              : isDefault
+                ? 'rgba(255, 255, 255, 0.06)'
+                : 'rgba(255, 255, 255, 0.06)'
           } !important;
         }
 
@@ -409,7 +362,9 @@ const SidebarMenu = () => {
             ? 'rgba(120, 120, 128, 0.16)' 
             : isDark 
               ? 'rgba(255, 255, 255, 0.08)' 
-              : 'rgba(255, 255, 255, 0.1)'
+              : isDefault
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(255, 255, 255, 0.1)'
           } !important;
         }
 
@@ -427,7 +382,9 @@ const SidebarMenu = () => {
             ? 'rgba(0, 0, 0, 0.2)' 
             : isDark 
               ? 'rgba(255, 255, 255, 0.3)' 
-              : 'rgba(255, 255, 255, 0.4)'
+              : isDefault
+                ? 'rgba(255, 255, 255, 0.4)'
+                : 'rgba(255, 255, 255, 0.4)'
           };
           border-radius: 3px;
         }
@@ -437,7 +394,9 @@ const SidebarMenu = () => {
             ? 'rgba(0, 0, 0, 0.3)' 
             : isDark 
               ? 'rgba(255, 255, 255, 0.4)' 
-              : 'rgba(255, 255, 255, 0.5)'
+              : isDefault
+                ? 'rgba(255, 255, 255, 0.5)'
+                : 'rgba(255, 255, 255, 0.5)'
           };
         }
 

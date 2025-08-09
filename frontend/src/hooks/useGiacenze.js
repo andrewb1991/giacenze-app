@@ -19,7 +19,8 @@ export const useGiacenze = () => {
     mezzi,
     settimane,
     assegnazioni,
-    allGiacenze
+    allGiacenze,
+    postazioni
   } = state;
 
   // Carica dati iniziali
@@ -61,14 +62,15 @@ export const useGiacenze = () => {
       // Se è admin, carica dati aggiuntivi
       if (user.role === 'admin') {
         try {
-          const [productsData, usersData, poliData, mezziData, settimaneData, assegnazioniData, allGiacenzeData] = await Promise.all([
+          const [productsData, usersData, poliData, mezziData, settimaneData, assegnazioniData, allGiacenzeData, postazioniData] = await Promise.all([
             apiCall('/products', {}, token),
             apiCall('/users', {}, token),
             apiCall('/poli', {}, token),
             apiCall('/mezzi', {}, token),
             apiCall('/settimane', {}, token),
             apiCall('/assegnazioni', {}, token),
-            apiCall('/admin/giacenze', {}, token)
+            apiCall('/admin/giacenze', {}, token),
+            apiCall('/postazioni', {}, token)
           ]);
 
           dispatch({ type: 'SET_ALL_PRODUCTS', payload: productsData || [] });
@@ -78,6 +80,7 @@ export const useGiacenze = () => {
           dispatch({ type: 'SET_SETTIMANE', payload: settimaneData || [] });
           dispatch({ type: 'SET_ASSEGNAZIONI', payload: assegnazioniData || [] });
           dispatch({ type: 'SET_ALL_GIACENZE', payload: allGiacenzeData || [] });
+          dispatch({ type: 'SET_POSTAZIONI', payload: postazioniData || [] });
         } catch (adminErr) {
           console.error('Errore caricamento dati admin:', adminErr);
         }
@@ -353,6 +356,7 @@ export const useGiacenze = () => {
     settimane,
     assegnazioni,
     allGiacenze,
+    postazioni,
     dataLoaded,
     
     // Actions

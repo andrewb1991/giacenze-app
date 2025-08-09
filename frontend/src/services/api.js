@@ -51,6 +51,7 @@ export const downloadExcelReport = async (filters, token) => {
     if (filters.poloId) queryParams.append('poloId', filters.poloId);
     if (filters.mezzoId) queryParams.append('mezzoId', filters.mezzoId);
     if (filters.userId) queryParams.append('userId', filters.userId);
+    if (filters.postazioneId) queryParams.append('postazioneId', filters.postazioneId);
 
     const url = `${API_BASE}/reports/excel?${queryParams}`;
     console.log(`📊 Download Excel: ${url}`);

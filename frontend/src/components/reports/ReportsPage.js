@@ -1,6 +1,6 @@
 // components/reports/ReportsPage.js
 import React, { useEffect, useState } from 'react';
-import { Download, ArrowLeft, FileText, Calendar, MapPin, Truck, User } from 'lucide-react';
+import { Download, ArrowLeft, FileText, Calendar, MapPin, Truck, User, Building2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
@@ -10,11 +10,11 @@ import { formatWeek, getCurrentWeekFromList, sortWeeksChronologically, sortWeeks
 
 const ReportsPage = () => {
   const { user, token, setCurrentPage, setError } = useAuth();
-  const { settimane, poli, mezzi, users } = useGiacenze();
+  const { settimane, poli, mezzi, users, postazioni } = useGiacenze();
   const { state, dispatch } = useAppContext();
   const { reportFilters } = state;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [showAllWeeks, setShowAllWeeks] = useState(false);
+  const [showAllWeeks, setShowAllWeeks] = useState(true);
 
   // Mouse tracking per effetti interattivi
   useEffect(() => {
@@ -119,35 +119,42 @@ const ReportsPage = () => {
             <h2 className="text-xl font-bold text-white">Genera Report Excel</h2>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <div>
               <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
                 <Calendar className="w-4 h-4 mr-2" />
                 Settimana
               </label>
               
-              {/* Dropdown settimane (visibile solo quando checkbox non è selezionata) */}
-              {!showAllWeeks && (
-                <select
-                  className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                  value={reportFilters.settimanaId}
-                  onChange={(e) => updateReportFilters({ settimanaId: e.target.value })}
-                >
-                  {sortedSettimane.length > 0 ? (
-                    sortedSettimane.map((settimana) => {
-                      const currentWeek = getCurrentWeekFromList(settimane);
-                      const isCurrentWeek = currentWeek && settimana._id === currentWeek._id;
-                      return (
-                        <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                          {isCurrentWeek ? '📅 ' : ''}{formatWeek(settimana)}{isCurrentWeek ? ' (Corrente)' : ''}
-                        </option>
-                      );
-                    })
-                  ) : (
-                    <option disabled className="bg-gray-800">Caricamento settimane...</option>
-                  )}
-                </select>
-              )}
+              {/* Dropdown settimane */}
+              <select
+                className={`glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50 ${
+                  showAllWeeks ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                disabled={showAllWeeks}
+                value={showAllWeeks ? '' : reportFilters.settimanaId}
+                onChange={(e) => updateReportFilters({ settimanaId: e.target.value })}
+              >
+                {showAllWeeks ? (
+                  <option value="" className="bg-gray-800">🌍 Tutte le settimane selezionate</option>
+                ) : (
+                  <>
+                    {sortedSettimane.length > 0 ? (
+                      sortedSettimane.map((settimana) => {
+                        const currentWeek = getCurrentWeekFromList(settimane);
+                        const isCurrentWeek = currentWeek && settimana._id === currentWeek._id;
+                        return (
+                          <option key={settimana._id} value={settimana._id} className="bg-gray-800">
+                            {isCurrentWeek ? '📅 ' : ''}{formatWeek(settimana)}{isCurrentWeek ? ' (Corrente)' : ''}
+                          </option>
+                        );
+                      })
+                    ) : (
+                      <option disabled className="bg-gray-800">Caricamento settimane...</option>
+                    )}
+                  </>
+                )}
+              </select>
 
               {/* Checkbox "Tutte le settimane" */}
               <div className="mt-3">
@@ -207,6 +214,25 @@ const ReportsPage = () => {
                 {mezzi.map(mezzo => (
                   <option key={mezzo._id} value={mezzo._id} className="bg-gray-800">
                     {mezzo.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
+                <Building2 className="w-4 h-4 mr-2" />
+                Postazione
+              </label>
+              <select
+                className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                value={reportFilters.postazioneId}
+                onChange={(e) => updateReportFilters({ postazioneId: e.target.value })}
+              >
+                <option value="" className="bg-gray-800">Tutte le postazioni</option>
+                {postazioni.map(postazione => (
+                  <option key={postazione._id} value={postazione._id} className="bg-gray-800">
+                    {postazione.nome}
                   </option>
                 ))}
               </select>

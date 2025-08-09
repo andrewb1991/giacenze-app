@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { AppProvider } from './contexts/AppContext';
-import { ThemeProvider } from './hooks/useTheme';
+import { ThemeProvider, useTheme } from './hooks/useTheme';
 import LoginPage from './components/auth/LoginPage';
 import Dashboard from './components/dashboard/Dashboard';
 import GiacenzePage from './components/giacenze/GiacenzePage';
@@ -196,6 +196,7 @@ import CreaOrdini from './components/admin/CreaOrdini';
 // 🎯 Componente principale dell'app (interno al provider)
 const AppContent = () => {
   const { user, loading, currentPage, isAuthenticated } = useAuth();
+  const { isDefault, isLight, isDark } = useTheme();
 
   // 🔄 Mostra loading durante l'inizializzazione
   if (loading) {
@@ -250,8 +251,41 @@ const AppContent = () => {
 
   return (
     <div className="App">
-      {renderCurrentPage()}
+      <div className="page-transition" key={currentPage}>
+        {renderCurrentPage()}
+      </div>
       <ErrorMessage />
+      
+      <style jsx>{`
+        .App {
+          min-height: 100vh;
+          background: ${
+            isLight 
+              ? 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+              : isDark 
+                ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
+                : isDefault
+                  ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                  : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
+          };
+        }
+        
+        .page-transition {
+          min-height: 100vh;
+          animation: slideInFromRight 0.25s ease-out;
+        }
+        
+        @keyframes slideInFromRight {
+          0% {
+            transform: translateX(30px);
+            opacity: 0;
+          }
+          100% {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 };

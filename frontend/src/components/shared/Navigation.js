@@ -40,6 +40,7 @@ const Navigation = ({ title = "Giacenze Personali", showBackToDashboard = false,
   }
   
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isDashboardAnimating, setIsDashboardAnimating] = useState(false);
 
   // Mouse tracking per effetti interattivi
   useEffect(() => {
@@ -73,20 +74,48 @@ const Navigation = ({ title = "Giacenze Personali", showBackToDashboard = false,
               {showSidebarToggle && sidebarState && (
                 <>
                   <button
-                    onClick={() => {
-                      sidebarState.setIsSidebarOpen(!sidebarState.isSidebarOpen);
+                    onMouseEnter={() => {
+                      // Al passaggio del mouse, apri sempre il menu
+                      sidebarState.setIsSidebarOpen(true);
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      // Se il menu è aperto (icona X), chiudilo
+                      if (sidebarState.isSidebarOpen) {
+                        sidebarState.setIsSidebarOpen(false);
+                      }
                     }}
                     className={`glass-button p-2 rounded-2xl hover:scale-105 transition-all duration-300 ${
                       isLight ? 'text-black' : 'text-white'
                     }`}
-                    title="Menu di navigazione"
+                    title={sidebarState.isSidebarOpen ? "Chiudi menu" : "Menu di navigazione"}
                   >
-                    <Menu className="w-6 h-6" />
+                    <div className="relative w-6 h-6">
+                      {/* Burger Lines */}
+                      <div className={`absolute w-6 h-0.5 bg-current transition-all duration-300 ease-in-out ${
+                        sidebarState.isSidebarOpen 
+                          ? 'top-3 rotate-45' 
+                          : 'top-1'
+                      }`}></div>
+                      <div className={`absolute w-6 h-0.5 bg-current transition-all duration-300 ease-in-out top-2.5 ${
+                        sidebarState.isSidebarOpen ? 'opacity-0' : 'opacity-100'
+                      }`}></div>
+                      <div className={`absolute w-6 h-0.5 bg-current transition-all duration-300 ease-in-out ${
+                        sidebarState.isSidebarOpen 
+                          ? 'top-3 -rotate-45' 
+                          : 'top-4'
+                      }`}></div>
+                    </div>
                   </button>
                   {user?.role === 'admin' && (
                     <button
-                      onClick={() => setCurrentPage('admin')}
-                      className="glass-button-admin px-3 py-1 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center space-x-1"
+                      onClick={() => {
+                        setCurrentPage('admin');
+                      }}
+                      className={`glass-button-admin px-3 py-1 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center space-x-1 ${
+                        isDashboardAnimating ? 'animate-dissolve-right' : ''
+                      }`}
                       title="Torna alla Dashboard Admin"
                     >
                       <ArrowLeft className="w-4 h-4" />
@@ -169,6 +198,27 @@ const Navigation = ({ title = "Giacenze Personali", showBackToDashboard = false,
 
           .bg-gradient-radial {
             background: radial-gradient(circle, var(--tw-gradient-stops));
+          }
+
+          .animate-dissolve-right {
+            animation: dissolveRight 0.3s ease-in-out forwards;
+          }
+
+          @keyframes dissolveRight {
+            0% {
+              opacity: 1;
+              transform: translateX(0) scaleX(1);
+              transform-origin: left center;
+            }
+            50% {
+              opacity: 0.5;
+              transform: translateX(5px) scaleX(0.8);
+            }
+            100% {
+              opacity: 0;
+              transform: translateX(20px) scaleX(0);
+              transform-origin: left center;
+            }
           }
         `}</style>
       </nav>

@@ -16,7 +16,8 @@ import {
   FileText,
   Plus,
   Trash2,
-  Search
+  Search,
+  Edit
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useGiacenze } from '../../../hooks/useGiacenze';
@@ -166,8 +167,6 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
     }
     
     const quantitaNum = parseFloat(newProduct.quantita);
-    const quantitaAssegnataNum = parseFloat(newProduct.quantitaAssegnata) || 0;
-    const sogliaMinimaNum = parseFloat(newProduct.sogliaMinima) || 0;
     
     // Validazione quantità minima
     if (quantitaNum <= 0) {
@@ -175,51 +174,56 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
       return;
     }
 
-    // Se il prodotto non è presente nelle giacenze operatore e abbiamo operatore/assegnazione
-    if (!userGiacenza && operatoreId && assegnazioneId) {
-      if (!newProduct.quantitaAssegnata || !newProduct.sogliaMinima) {
-        setError('Per prodotti non presenti nelle giacenze operatore sono obbligatori quantità assegnata e soglia minima');
-        return;
-      }
+    // ⚠️ FIX: Gestione corretta delle giacenze
+    // I campi quantitaAssegnata e sogliaMinima vanno usati SOLO per creare/aggiornare le giacenze
+    // NON devono essere mescolati con la quantità del prodotto nell'ordine
+    
+    if (operatoreId && newProduct.quantitaAssegnata && newProduct.sogliaMinima) {
+      const quantitaAssegnataNum = parseFloat(newProduct.quantitaAssegnata);
+      const sogliaMinimaNum = parseFloat(newProduct.sogliaMinima);
       
-      // Crea nuova giacenza operatore
-      try {
-        await apiCall('/admin/assign-giacenza', {
-          method: 'POST',
-          body: JSON.stringify({
-            userId: operatoreId,
-            productId: newProduct.productId,
-            quantitaAssegnata: quantitaAssegnataNum,
-            quantitaMinima: sogliaMinimaNum
-          })
-        }, token);
-        
-        // Ricarica le giacenze operatore
-        await loadUserGiacenze(operatoreId);
-      } catch (err) {
-        setError('Errore nella creazione giacenza operatore: ' + err.message);
-        return;
-      }
-    } else if (userGiacenza && (quantitaAssegnataNum !== userGiacenza.quantitaAssegnata || sogliaMinimaNum !== userGiacenza.sogliaMinima)) {
-      // Aggiorna giacenza esistente se i valori sono cambiati
-      try {
-        await apiCall(`/admin/giacenze/${userGiacenza._id}`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            quantitaAssegnata: quantitaAssegnataNum,
-            quantitaMinima: sogliaMinimaNum
-          })
-        }, token);
-        
-        // Ricarica le giacenze operatore  
-        await loadUserGiacenze(operatoreId);
-      } catch (err) {
-        setError('Errore nell\'aggiornamento giacenza operatore: ' + err.message);
-        return;
+      if (!userGiacenza) {
+        // Crea nuova giacenza operatore
+        try {
+          await apiCall('/admin/assign-giacenza', {
+            method: 'POST',
+            body: JSON.stringify({
+              userId: operatoreId,
+              productId: newProduct.productId,
+              quantitaAssegnata: quantitaAssegnataNum,
+              quantitaMinima: sogliaMinimaNum
+            })
+          }, token);
+          
+          // Ricarica le giacenze operatore
+          await loadUserGiacenze(operatoreId);
+        } catch (err) {
+          setError('Errore nella creazione giacenza operatore: ' + err.message);
+          return;
+        }
+      } else if (quantitaAssegnataNum !== userGiacenza.quantitaAssegnata || sogliaMinimaNum !== userGiacenza.sogliaMinima) {
+        // Aggiorna giacenza esistente se i valori sono cambiati
+        try {
+          await apiCall(`/admin/giacenze/${userGiacenza._id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              quantitaAssegnata: quantitaAssegnataNum,
+              quantitaMinima: sogliaMinimaNum
+            })
+          }, token);
+          
+          // Ricarica le giacenze operatore  
+          await loadUserGiacenze(operatoreId);
+        } catch (err) {
+          setError('Errore nell\'aggiornamento giacenza operatore: ' + err.message);
+          return;
+        }
       }
     }
 
+    // Il prodotto viene aggiunto all'ordine con la sua quantità specifica
     const product = {
+      id: Date.now(), // Aggiungi ID temporaneo per gestione locale
       productId: newProduct.productId,
       nome: selectedProduct.nome,
       quantita: quantitaNum,
@@ -239,15 +243,35 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
       sogliaMinima: '',
       note: ''
     });
-    setError('');
+    setProductSearch('');
+    setError('✅ Prodotto aggiunto con successo');
   };
 
   // Rimuovi prodotto
-  const removeProduct = (index) => {
+  const removeProduct = (productId) => {
     setFormData(prev => ({
       ...prev,
-      prodotti: prev.prodotti.filter((_, i) => i !== index)
+      prodotti: prev.prodotti.filter(p => (p.id !== productId && p.productId !== productId))
     }));
+  };
+
+  // Modifica prodotto
+  const editProduct = (productId) => {
+    const product = formData.prodotti.find(p => p.id === productId || p.productId === productId);
+    if (product) {
+      setNewProduct({
+        productId: product.productId,
+        quantita: product.quantita.toString(),
+        quantitaAssegnata: '',
+        sogliaMinima: '',
+        note: product.note || ''
+      });
+      setProductSearch(product.nome);
+      setShowProductForm(true);
+      
+      // Rimuovi il prodotto temporaneamente dalla lista per permettere la modifica
+      removeProduct(productId);
+    }
   };
 
   // Salva modifiche
@@ -633,9 +657,10 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4 z-10" />
                         <input
                           type="text"
-                          placeholder="Inizia a digitare per cercare un prodotto..."
+                          placeholder={newProduct.productId ? allProducts?.find(p => p._id === newProduct.productId)?.nome : "Clicca qui per selezionare o cercare un prodotto..."}
                           className="glass-input w-full pl-10 pr-4 py-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
                           value={productSearch}
+                          onFocus={() => setProductSearch('')}
                           onChange={(e) => {
                             setProductSearch(e.target.value);
                             setNewProduct(prev => ({ ...prev, productId: '' }));
@@ -644,12 +669,13 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                       </div>
                       
                       {/* Tendina filtrata che appare automaticamente */}
-                      {(productSearch.length > 0) && (
-                        <div className="absolute top-full left-0 right-0 z-[9999] bg-gray-900 border border-white/20 rounded-xl mt-1 max-h-60 overflow-y-auto shadow-xl">
+                      {(productSearch.length > 0 || (!newProduct.productId && allProducts?.length > 0)) && (
+                        <div className="absolute top-full left-0 right-0 z-[99999] bg-gray-900 border border-white/20 rounded-xl mt-1 max-h-60 overflow-y-auto shadow-xl" 
+                             style={{position: 'fixed', zIndex: 99999}}>
                           {allProducts?.filter(p => 
                             p.attivo && 
-                            p.nome.toLowerCase().includes(productSearch.toLowerCase())
-                          ).map(product => {
+                            (productSearch.length === 0 || p.nome.toLowerCase().includes(productSearch.toLowerCase()))
+                          ).slice(0, 50).map(product => { // Limita a 50 per performance
                             const userGiacenza = userGiacenze.find(g => g.productId._id === product._id);
                             const disponibile = userGiacenza ? userGiacenza.quantitaDisponibile : 0;
                             
@@ -685,10 +711,13 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                           
                           {allProducts?.filter(p => 
                             p.attivo && 
-                            p.nome.toLowerCase().includes(productSearch.toLowerCase())
+                            (productSearch.length === 0 || p.nome.toLowerCase().includes(productSearch.toLowerCase()))
                           ).length === 0 && (
                             <div className="p-3 text-white/60 text-center">
-                              Nessun prodotto trovato per "{productSearch}"
+                              {productSearch.length > 0 
+                                ? `Nessun prodotto trovato per "${productSearch}"`
+                                : 'Nessun prodotto disponibile'
+                              }
                             </div>
                           )}
                         </div>
@@ -826,24 +855,36 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
             {/* Lista prodotti esistenti */}
             {formData.prodotti.length > 0 ? (
               <div className="space-y-3">
-                {formData.prodotti.map((prodotto, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                    <div className="flex-1">
-                      <div className="text-white font-medium">{prodotto.nome}</div>
-                      <div className="text-white/60 text-sm">
-                        Quantità: {prodotto.quantita} {prodotto.unita}
-                        {prodotto.note && ` - Note: ${prodotto.note}`}
+                {formData.prodotti.map((prodotto, index) => {
+                  const productKey = prodotto.id || prodotto.productId || index;
+                  return (
+                    <div key={productKey} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                      <div className="flex-1">
+                        <div className="text-white font-medium">{prodotto.nome}</div>
+                        <div className="text-white/60 text-sm">
+                          Quantità: {prodotto.quantita} {prodotto.unita}
+                          {prodotto.note && ` - Note: ${prodotto.note}`}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-4">
+                        <button
+                          onClick={() => editProduct(productKey)}
+                          className="glass-action-button p-2 rounded-lg hover:scale-110 transition-all duration-300"
+                          title="Modifica prodotto"
+                        >
+                          <Edit className="w-4 h-4 text-blue-400" />
+                        </button>
+                        <button
+                          onClick={() => removeProduct(productKey)}
+                          className="glass-action-button p-2 rounded-lg hover:scale-110 transition-all duration-300"
+                          title="Rimuovi prodotto"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => removeProduct(index)}
-                      className="glass-action-button p-2 rounded-lg hover:scale-110 transition-all duration-300 ml-4"
-                      title="Rimuovi prodotto"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-400" />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-6 text-white/50">

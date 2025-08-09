@@ -1770,12 +1770,13 @@ app.get('/api/admin/utilizzi', authenticateToken, requireAdmin, async (req, res)
 
 app.get('/api/reports/excel', authenticateToken, async (req, res) => {
   try {
-    const { settimanaId, poloId, mezzoId, userId } = req.query;
+    const { settimanaId, poloId, mezzoId, userId, postazioneId } = req.query;
     
     const filter = {};
     if (settimanaId) filter.settimanaId = settimanaId;
     if (poloId) filter.poloId = poloId;
     if (mezzoId) filter.mezzoId = mezzoId;
+    if (postazioneId) filter.postazioneId = postazioneId;
     
     // Se non è admin, può vedere solo i suoi utilizzi
     if (req.user.role !== 'admin') {
@@ -1790,7 +1791,8 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
       .populate('giacenzaUtenteId')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
       .populate('poloId', 'nome')
-      .populate('mezzoId', 'nome');
+      .populate('mezzoId', 'nome')
+      .populate('postazioneId', 'nome');
     
     // Aggrega dati per report UTILIZZI (foglio 1)
     const reportData = {};
@@ -1827,6 +1829,7 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
           'Quantità da Ordinare': quantitaDaOrdinare,
           'Polo': utilizzo.poloId?.nome || 'N/A',
           'Mezzo': utilizzo.mezzoId?.nome || 'N/A',
+          'Postazione': utilizzo.postazioneId?.nome || 'N/A',
           'Periodo': periodoSettimana
         };
       }
@@ -1904,6 +1907,7 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
       const assegnazioni = await Assegnazione.find(assegnazioniFilter)
         .populate('poloId', 'nome')
         .populate('mezzoId', 'nome')
+        .populate('postazioneId', 'nome')
         .populate('settimanaId', 'numero anno');
       
       // Crea mappa per lookup veloce
@@ -2015,8 +2019,6 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
         'Stato': stato,
         'Percentuale Rimasta': percentuale + '%',
         'Settimana/Periodo': periodoSettimana,
-        'Polo': assegnazione?.poloId?.nome || 'N/A',
-        'Mezzo': assegnazione?.mezzoId?.nome || 'N/A',
         'Ultima Modifica': giacenza.updatedAt ? new Date(giacenza.updatedAt).toLocaleDateString('it-IT') : 'N/A'
       };
     });
@@ -2060,24 +2062,44 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
     
     xlsx.utils.book_append_sheet(wb, ws, 'Report Utilizzi');
     
-    // FOGLIO 2: Lista Ordini (esistente)
-    const riepilogoOrdini = dataArray
-      .filter(item => item['Da Ordinare'] === 'SÌ')
-      .map(item => ({
-        'Prodotto': item['Prodotto'],
-        'Categoria': item['Categoria'],
-        'Utente': item['Utente'],
-        'Quantità da Ordinare': item['Quantità da Ordinare'],
-        'Unità': item['Unità'],
-        'Disponibile': item['Quantità Disponibile'],
-        'Minima': item['Quantità Minima'],
-        'Note': `Sotto soglia - Urgente`
-      }));
+    // FOGLIO 2: Lista Ordini - Aggregazione separata per evitare righe duplicate
+    const ordiniData = {};
+    
+    // Aggrega per userId + productId (ignora settimana e postazione per evitare duplicati)
+    utilizzi.forEach(utilizzo => {
+      const ordineKey = `${utilizzo.userId._id}-${utilizzo.productId._id}`;
+      
+      if (!ordiniData[ordineKey]) {
+        const quantitaDisponibile = utilizzo.giacenzaUtenteId?.quantitaDisponibile || 0;
+        const quantitaMinima = utilizzo.giacenzaUtenteId?.quantitaMinima || 0;
+        const quantitaAssegnata = utilizzo.giacenzaUtenteId?.quantitaAssegnata || 0;
+        
+        // Solo se è sotto soglia
+        if (quantitaDisponibile <= quantitaMinima) {
+          const quantitaDaOrdinare = quantitaAssegnata > quantitaDisponibile ? 
+            quantitaAssegnata - quantitaDisponibile : 0;
+            
+          ordiniData[ordineKey] = {
+            'Prodotto': utilizzo.productId.nome,
+            'Categoria': utilizzo.productId.categoria || 'N/A',
+            'Utente': utilizzo.userId.username,
+            'Quantità da Ordinare': quantitaDaOrdinare,
+            'Quantità Assegnata': quantitaAssegnata,
+            'Unità': utilizzo.productId.unita,
+            'Disponibile': quantitaDisponibile,
+            'Minima': quantitaMinima,
+            'Note': `Sotto soglia - Urgente`
+          };
+        }
+      }
+    });
+    
+    const riepilogoOrdini = Object.values(ordiniData);
     
     if (riepilogoOrdini.length > 0) {
       const wsOrdini = xlsx.utils.json_to_sheet(riepilogoOrdini);
       wsOrdini['!cols'] = [
-        { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+        { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
         { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 20 }
       ];
       xlsx.utils.book_append_sheet(wb, wsOrdini, 'Lista Ordini');
@@ -2089,7 +2111,7 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
       wsGiacenze['!cols'] = [
         { wch: 18 }, { wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 8 },
         { wch: 15 }, { wch: 18 }, { wch: 12 }, { wch: 10 }, { wch: 12 },
-        { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 12 }
+        { wch: 25 }, { wch: 12 }
       ];
       
       // Formattazione condizionale per giacenze critiche
