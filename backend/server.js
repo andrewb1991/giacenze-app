@@ -3632,6 +3632,62 @@ app.post('/api/admin/giacenze/update-global', authenticateToken, requireAdmin, a
   }
 });
 
+// PUT - Decrementa giacenze per eliminazione ordine/RDT
+app.put('/api/admin/giacenze/decrement', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId, productId, quantity } = req.body;
+    
+    if (!userId || !productId || !quantity) {
+      return res.status(400).json({ 
+        message: 'Campi obbligatori: userId, productId, quantity' 
+      });
+    }
+    
+    const quantityNum = parseFloat(quantity);
+    if (quantityNum <= 0) {
+      return res.status(400).json({ message: 'La quantità deve essere maggiore di zero' });
+    }
+    
+    // Trova la giacenza dell'operatore per questo prodotto
+    const giacenza = await GiacenzaUtente.findOne({
+      userId: userId,
+      productId: productId,
+      attiva: true
+    });
+    
+    if (!giacenza) {
+      return res.status(404).json({ 
+        message: 'Giacenza non trovata per questo operatore e prodotto' 
+      });
+    }
+    
+    const giacenzaPrima = giacenza.quantitaDisponibile;
+    
+    // Sottrai la quantità dalla quantitaDisponibile
+    giacenza.quantitaDisponibile -= quantityNum;
+    
+    // Assicurati che non vada sotto zero
+    if (giacenza.quantitaDisponibile < 0) {
+      giacenza.quantitaDisponibile = 0;
+    }
+    
+    await giacenza.save();
+    
+    console.log(`🔄 Giacenze decrementate per eliminazione: ${giacenzaPrima} → ${giacenza.quantitaDisponibile} (-${quantityNum})`);
+    
+    res.json({
+      message: 'Giacenze decrementate con successo',
+      giacenzaPrima: giacenzaPrima,
+      giacenzaDopo: giacenza.quantitaDisponibile,
+      decrementata: quantityNum
+    });
+    
+  } catch (error) {
+    console.error('Errore decremento giacenze:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Route di test
 app.get('/api/test', (req, res) => {
   res.json({ 

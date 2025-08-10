@@ -17,6 +17,7 @@ import {
   FileText,
   Hash,
   Clipboard,
+  Edit2,
   ShoppingCart,
   DollarSign,
   Building
@@ -47,6 +48,17 @@ const CreaOrdini = () => {
   const [loading, setLoading] = useState(false);
   const [availableAssignments, setAvailableAssignments] = useState([]);
   const [showProductForm, setShowProductForm] = useState(false);
+  const [tableProducts, setTableProducts] = useState([{ 
+    id: Date.now(),
+    productId: '',
+    nome: '',
+    searchTerm: '',
+    quantitaDisponibile: 0,
+    quantitaAssegnata: 0,
+    quantitaDaAggiungere: '',
+    isSaved: false,
+    showDropdown: false
+  }]);
   const [newProduct, setNewProduct] = useState({
     productId: '',
     quantita: '',
@@ -56,6 +68,7 @@ const CreaOrdini = () => {
   });
   const [productSearch, setProductSearch] = useState('');
   const [userGiacenze, setUserGiacenze] = useState([]);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
 
   // Stati per visualizzazione ordini/RDT esistenti
   const [existingItems, setExistingItems] = useState([]);
@@ -85,6 +98,30 @@ const CreaOrdini = () => {
     }
   }, [token]);
 
+  // Funzione per determinare se un'assegnazione è libera per il tipo di documento corrente
+  const getAssignmentStatus = (assignment) => {
+    const isOccupiedByOrder = assignment.ordine && assignment.ordine.trim() !== '';
+    const isOccupiedByRdt = assignment.rdt && assignment.rdt.trim() !== '';
+    
+    if (formData.tipo === 'ordine') {
+      // Se stiamo creando un ordine, l'assegnazione è libera se non ha già un ordine
+      // Ma mostriamo anche quelle occupate da ordini esistenti (disabled)
+      return {
+        isAvailable: !isOccupiedByOrder,
+        occupiedBy: isOccupiedByOrder ? `Ordine: ${assignment.ordine}` : (isOccupiedByRdt ? `RDT: ${assignment.rdt}` : null),
+        occupationType: isOccupiedByOrder ? 'ordine' : (isOccupiedByRdt ? 'rdt' : null)
+      };
+    } else {
+      // Se stiamo creando un RDT, l'assegnazione è libera se non ha già un RDT  
+      // Ma mostriamo anche quelle occupate da RDT esistenti (disabled)
+      return {
+        isAvailable: !isOccupiedByRdt,
+        occupiedBy: isOccupiedByRdt ? `RDT: ${assignment.rdt}` : (isOccupiedByOrder ? `Ordine: ${assignment.ordine}` : null),
+        occupationType: isOccupiedByRdt ? 'rdt' : (isOccupiedByOrder ? 'ordine' : null)
+      };
+    }
+  };
+
   // Filtra assegnazioni e carica giacenze quando cambia operatore
   useEffect(() => {
     if (formData.operatoreId && assegnazioni) {
@@ -93,9 +130,12 @@ const CreaOrdini = () => {
       );
       setAvailableAssignments(userAssignments);
       
-      // Reset assegnazione selezionata se non più valida
-      if (formData.assegnazioneId && !userAssignments.find(a => a._id === formData.assegnazioneId)) {
-        setFormData(prev => ({ ...prev, assegnazioneId: '' }));
+      // Reset assegnazione selezionata se non più valida o se è diventata occupata
+      if (formData.assegnazioneId) {
+        const selectedAssignment = userAssignments.find(a => a._id === formData.assegnazioneId);
+        if (!selectedAssignment || !getAssignmentStatus(selectedAssignment).isAvailable) {
+          setFormData(prev => ({ ...prev, assegnazioneId: '' }));
+        }
       }
       
       // Carica giacenze utente
@@ -105,7 +145,7 @@ const CreaOrdini = () => {
       setUserGiacenze([]);
       setFormData(prev => ({ ...prev, assegnazioneId: '' }));
     }
-  }, [formData.operatoreId, assegnazioni]);
+  }, [formData.operatoreId, assegnazioni, formData.tipo]);
 
   // Mostra automaticamente il form prodotti quando operatore e assegnazione sono selezionati
   useEffect(() => {
@@ -118,9 +158,10 @@ const CreaOrdini = () => {
   
   const loadUserGiacenze = async (userId) => {
     try {
+      console.log('📞 CreaOrdini: Caricamento giacenze per operatore:', userId);
       const response = await apiCall(`/admin/giacenze?userId=${userId}`, {}, token);
       setUserGiacenze(response || []);
-      console.log(`🔄 Caricate ${response?.length || 0} giacenze per operatore ${userId}`);
+      console.log(`🔄 CreaOrdini: Caricate ${response?.length || 0} giacenze per operatore ${userId}`);
     } catch (err) {
       console.error('Errore caricamento giacenze utente:', err);
       setUserGiacenze([]);
@@ -177,50 +218,10 @@ const CreaOrdini = () => {
       return;
     }
 
-    // Gestione corretta delle giacenze (uguale al modal)
-    if (formData.operatoreId && newProduct.quantitaAssegnata && newProduct.sogliaMinima) {
-      const quantitaAssegnataNum = parseFloat(newProduct.quantitaAssegnata);
-      const sogliaMinimaNum = parseFloat(newProduct.sogliaMinima);
-      
-      if (!userGiacenza) {
-        // Crea nuova giacenza operatore
-        try {
-          await apiCall('/admin/assign-giacenza', {
-            method: 'POST',
-            body: JSON.stringify({
-              userId: formData.operatoreId,
-              productId: newProduct.productId,
-              quantitaAssegnata: quantitaAssegnataNum,
-              quantitaMinima: sogliaMinimaNum
-            })
-          }, token);
-          
-          // Ricarica le giacenze operatore
-          await loadUserGiacenze(formData.operatoreId);
-        } catch (err) {
-          setError('Errore nella creazione giacenza operatore: ' + err.message);
-          return;
-        }
-      } else if (quantitaAssegnataNum !== userGiacenza.quantitaAssegnata || sogliaMinimaNum !== userGiacenza.sogliaMinima) {
-        // Aggiorna giacenza esistente se i valori sono cambiati
-        try {
-          await apiCall(`/admin/giacenze/${userGiacenza._id}`, {
-            method: 'PUT',
-            body: JSON.stringify({
-              quantitaAssegnata: quantitaAssegnataNum,
-              quantitaMinima: sogliaMinimaNum
-            })
-          }, token);
-          
-          // Ricarica le giacenze operatore  
-          await loadUserGiacenze(formData.operatoreId);
-        } catch (err) {
-          setError('Errore nell\'aggiornamento giacenza operatore: ' + err.message);
-          return;
-        }
-      }
-    }
+    // RIMOSSO: La gestione delle giacenze ora avviene solo alla finalizzazione dell'ordine
+    // Non aggiornare le giacenze qui, solo quando l'ordine viene finalizzato
 
+    // Oggetto per la visualizzazione locale (con dati aggiuntivi per UI)
     const product = {
       id: Date.now(),
       productId: newProduct.productId,
@@ -255,22 +256,123 @@ const CreaOrdini = () => {
   };
 
   // Modifica prodotto
-  const editProduct = (productId) => {
-    const product = formData.prodotti.find(p => p.id === productId || p.productId === productId);
+  const editProduct = (product) => {
     if (product) {
+      // Trova le giacenze operatore per questo prodotto (se esistono)
+      const userGiacenza = userGiacenze.find(g => g.productId._id === product.productId);
+      
       setNewProduct({
         productId: product.productId,
         quantita: product.quantita.toString(),
-        quantitaAssegnata: '',
-        sogliaMinima: '',
+        quantitaAssegnata: userGiacenza?.quantitaAssegnata?.toString() || '',
+        sogliaMinima: userGiacenza?.sogliaMinima?.toString() || '',
         note: product.note || ''
       });
       setProductSearch(product.nome);
       setShowProductForm(true);
       
       // Rimuovi il prodotto temporaneamente dalla lista per permettere la modifica
-      removeProduct(productId);
+      removeProduct(product.id);
     }
+  };
+
+  // Funzioni per gestire la tabella prodotti
+  const updateTableProduct = (rowId, field, value) => {
+    setTableProducts(prev => prev.map(row => {
+      if (row.id === rowId) {
+        const updated = { ...row, [field]: value };
+        
+        // Se è stato selezionato un nuovo prodotto, popola i campi
+        if (field === 'productId' && value) {
+          const product = allProducts?.find(p => p._id === value);
+          const userGiacenza = userGiacenze.find(g => g.productId._id === value);
+          
+          if (product) {
+            updated.nome = product.nome;
+            // Se non esiste giacenza operatore, usa valori di default
+            updated.quantitaAssegnata = userGiacenza?.quantitaAssegnata || 0;
+            updated.quantitaDisponibile = userGiacenza?.quantitaDisponibile || 0;
+            updated.showDropdown = false;
+            console.log('🎯 Prodotto selezionato:', product.nome, 'Giacenza trovata:', !!userGiacenza);
+            // searchTerm verrà chiuso dal click handler
+          }
+        }
+        
+        return updated;
+      }
+      return row;
+    }));
+  };
+
+  const addTableRow = () => {
+    setTableProducts(prev => [...prev, {
+      id: Date.now(),
+      productId: '',
+      nome: '',
+      searchTerm: '',
+      quantitaDisponibile: 0,
+      quantitaAssegnata: 0,
+      quantitaDaAggiungere: '',
+      isSaved: false,
+      showDropdown: false
+    }]);
+  };
+
+  const removeTableRow = (rowId) => {
+    setTableProducts(prev => prev.filter(row => row.id !== rowId));
+  };
+
+  // Salva singolo prodotto dalla tabella
+  const saveTableProduct = (rowId) => {
+    const row = tableProducts.find(r => r.id === rowId);
+    if (!row || !row.productId || !row.quantitaDaAggiungere) {
+      setError('Seleziona un prodotto e inserisci la quantità da aggiungere');
+      return;
+    }
+
+    // Marca la riga come salvata e disabilita
+    setTableProducts(prev => prev.map(r => 
+      r.id === rowId ? { ...r, isSaved: true } : r
+    ));
+
+    setError('✅ Riga salvata! Usa "Salva Prodotti" per associare all\'ordine');
+    setTimeout(() => setError(''), 3000);
+  };
+
+  // Salva tutti i prodotti dalla tabella all'ordine
+  const saveAllTableProducts = () => {
+    const savedProducts = tableProducts.filter(row => row.isSaved && row.productId && row.quantitaDaAggiungere);
+    
+    console.log('💾 SaveAllTableProducts chiamato');
+    console.log('📝 Prodotti salvati nella tabella:', savedProducts);
+    
+    if (savedProducts.length === 0) {
+      setError('Nessun prodotto salvato da associare all\'ordine');
+      return;
+    }
+
+    const newProducts = savedProducts.map(row => ({
+      productId: row.productId,
+      quantita: parseFloat(row.quantitaDaAggiungere),
+      nome: row.nome,
+      note: ''
+    }));
+
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        prodotti: [...prev.prodotti, ...newProducts]
+      };
+      console.log('📦 FormData aggiornato con nuovi prodotti:', updated);
+      console.log('🔢 Totale prodotti nell\'ordine:', updated.prodotti.length);
+      return updated;
+    });
+
+    // Rimuovi solo i prodotti salvati dalla tabella
+    setTableProducts(prev => prev.filter(row => !row.isSaved));
+    
+    setError(`✅ ${savedProducts.length} prodott${savedProducts.length > 1 ? 'i associati' : 'o associato'} all'ordine!`);
+    setTimeout(() => setError(''), 3000);
   };
 
   const handleSubmit = async () => {
@@ -280,6 +382,9 @@ const CreaOrdini = () => {
         setError('Nome, cliente e data di consegna sono obbligatori');
         return;
       }
+
+      console.log('📋 FormData al momento del submit:', formData);
+      console.log('📦 Prodotti in formData:', formData.prodotti);
 
       if (!formData.operatoreId) {
         setError('Operatore è obbligatorio');
@@ -298,11 +403,10 @@ const CreaOrdini = () => {
         cliente: formData.cliente,
         dataConsegna: formData.dataConsegna,
         prodotti: formData.prodotti.map(p => ({
-          nome: p.nome,
+          productId: p.productId,
           quantita: p.quantita,
-          unita: p.unita,
-          note: p.note || '',
-          productId: p.productId // Aggiungiamo per gestione giacenze nel backend
+          nome: p.nome,
+          note: p.note || ''
         })),
         note: formData.note || '',
         operatoreId: formData.operatoreId,
@@ -310,6 +414,9 @@ const CreaOrdini = () => {
       };
 
       const endpoint = formData.tipo === 'ordine' ? '/ordini' : '/rdt';
+      
+      console.log('🚀 Dati inviati al server:', dataToSend);
+      console.log('📦 Prodotti nell\'ordine:', dataToSend.prodotti);
       
       await apiCall(endpoint, {
         method: 'POST',
@@ -324,7 +431,6 @@ const CreaOrdini = () => {
         dataConsegna: new Date().toISOString().split('T')[0],
         operatoreId: '',
         assegnazioneId: '',
-        prodotti: [],
         note: ''
       });
 
@@ -612,11 +718,24 @@ const CreaOrdini = () => {
                   onChange={(e) => updateFormData({ assegnazioneId: e.target.value })}
                 >
                   <option value="" className="bg-gray-800">Nessuna assegnazione specifica</option>
-                  {availableAssignments.map(assignment => (
-                    <option key={assignment._id} value={assignment._id} className="bg-gray-800">
-                      {assignment.poloId?.nome} - Settimana {assignment.settimanaId?.numero}/{assignment.settimanaId?.anno}
-                    </option>
-                  ))}
+                  {availableAssignments.map(assignment => {
+                    const status = getAssignmentStatus(assignment);
+                    const baseText = `${assignment.poloId?.nome} - Settimana ${assignment.settimanaId?.numero}/${assignment.settimanaId?.anno}`;
+                    const optionText = status.isAvailable 
+                      ? `✅ ${baseText} (Libera per ${formData.tipo})`
+                      : `🔒 ${baseText} (${status.occupiedBy})`;
+                    
+                    return (
+                      <option 
+                        key={assignment._id} 
+                        value={status.isAvailable ? assignment._id : ''} 
+                        className={status.isAvailable ? "bg-gray-800" : "bg-gray-700 text-gray-400"}
+                        disabled={!status.isAvailable}
+                      >
+                        {optionText}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
               {availableAssignments.length === 0 && formData.operatoreId && (
@@ -624,300 +743,30 @@ const CreaOrdini = () => {
                   ⚠️ L'operatore selezionato non ha assegnazioni attive
                 </p>
               )}
+              {availableAssignments.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-white/60 text-xs">
+                    📝 Le assegnazioni libere per {formData.tipo} sono contrassegnate con ✅
+                  </p>
+                  <p className="text-white/60 text-xs">
+                    🔒 Le assegnazioni già occupate sono mostrate per riferimento ma non selezionabili
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Gestione Prodotti */}
+          {/* Informazioni prodotti - gestiti separatamente */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white flex items-center">
-                <Package className="w-5 h-5 mr-2" />
-                Prodotti ({formData.prodotti.length})
-              </h3>
-              <button
-                onClick={() => setShowProductForm(!showProductForm)}
-                className="glass-button-secondary flex items-center gap-2 px-4 py-2 rounded-xl hover:scale-105 transition-all duration-300"
-              >
-                <Plus className="w-4 h-4" />
-                Aggiungi Prodotto
-              </button>
+            <div className="glass-card p-6 rounded-xl">
+              <div className="flex items-center justify-center text-white/70">
+                <Package className="w-8 h-8 mr-3" />
+                <div className="text-center">
+                  <h4 className="text-lg font-medium mb-2">Gestione Prodotti</h4>
+                  <p className="text-sm">I prodotti verranno gestiti dopo la creazione dell'{formData.tipo}</p>
+                </div>
+              </div>
             </div>
-
-            {/* Form aggiunta prodotto */}
-            {showProductForm && (
-              <div className="glass-card p-6 rounded-xl mb-4 space-y-4">
-                <h4 className="text-lg font-semibold text-white">Aggiungi Prodotto</h4>
-                
-                {/* Campo ricerca prodotto con tendina automatica */}
-                <div className="relative z-[9999]">
-                  <label className="block text-sm font-medium text-white/80 mb-2">Cerca e Seleziona Prodotto *</label>
-                  <div className="glass-input-container rounded-xl relative">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4 z-10" />
-                      <input
-                        type="text"
-                        placeholder={newProduct.productId ? allProducts?.find(p => p._id === newProduct.productId)?.nome : "Clicca qui per selezionare o cercare un prodotto..."}
-                        className="glass-input w-full pl-10 pr-4 py-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                        value={productSearch}
-                        onFocus={() => setProductSearch('')}
-                        onChange={(e) => {
-                          setProductSearch(e.target.value);
-                          setNewProduct(prev => ({ ...prev, productId: '' }));
-                        }}
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Tendina filtrata che appare automaticamente */}
-                  {(productSearch.length > 0 || (!newProduct.productId && allProducts?.length > 0)) && (
-                    <div className="absolute top-full left-0 right-0 z-[99999] bg-gray-900 border border-white/20 rounded-xl mt-1 max-h-60 overflow-y-auto shadow-xl" 
-                         style={{position: 'fixed', zIndex: 99999}}>
-                        {allProducts?.filter(p => 
-                          p.attivo && 
-                          (productSearch.length === 0 || p.nome.toLowerCase().includes(productSearch.toLowerCase()))
-                        ).slice(0, 50).map(product => {
-                          const userGiacenza = userGiacenze.find(g => g.productId._id === product._id);
-                          const disponibile = userGiacenza ? userGiacenza.quantitaDisponibile : 0;
-                          
-                          return (
-                            <div
-                              key={product._id}
-                              className="p-3 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-b-0 transition-colors"
-                              onClick={() => {
-                                setNewProduct(prev => ({
-                                  ...prev,
-                                  productId: product._id
-                                }));
-                                setProductSearch(product.nome);
-                              }}
-                            >
-                              <div className="text-white font-medium">{product.nome}</div>
-                              <div className="text-white/60 text-sm">
-                                {product.codice && `Codice: ${product.codice} • `}
-                                Unità: {product.unita}
-                                {userGiacenza && (
-                                  <span className="text-green-400 ml-2">
-                                    • Disponibile: {disponibile}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        
-                        {allProducts?.filter(p => 
-                          p.attivo && 
-                          (productSearch.length === 0 || p.nome.toLowerCase().includes(productSearch.toLowerCase()))
-                        ).length === 0 && (
-                          <div className="p-3 text-white/60 text-center">
-                            {productSearch.length === 0 ? 'Nessun prodotto disponibile' : `Nessun prodotto trovato per "${productSearch}"`}
-                          </div>
-                        )}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Prodotto selezionato */}
-                {newProduct.productId && (
-                  <div className="p-3 bg-green-500/20 border border-green-500/30 rounded-xl">
-                    <div className="text-green-400 font-medium">
-                      ✓ Prodotto selezionato: {allProducts?.find(p => p._id === newProduct.productId)?.nome}
-                    </div>
-                  </div>
-                )}
-                  
-                  {/* Mostra info giacenze per prodotto selezionato */}
-                  {newProduct.productId && (() => {
-                    const selectedProduct = allProducts?.find(p => p._id === newProduct.productId);
-                    const userGiacenza = userGiacenze.find(g => g.productId._id === newProduct.productId);
-                    
-                    if (selectedProduct) {
-                      return (
-                        <div className="mt-2 p-3 bg-white/5 rounded-lg">
-                          <div className="text-sm text-white/80">
-                            <div className="mb-2">
-                              <span className="font-medium">Prodotto selezionato:</span>
-                              <span className="ml-2 text-white">{selectedProduct.nome} ({selectedProduct.unita})</span>
-                            </div>
-                            {userGiacenza ? (
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <span className="font-medium">Giacenza Assegnata:</span>
-                                  <span className="ml-2 text-white">{userGiacenza.quantitaAssegnata} {selectedProduct.unita}</span>
-                                </div>
-                                <div>
-                                  <span className="font-medium">Giacenza Disponibile:</span>
-                                  <span className="ml-2 text-white">{userGiacenza.quantitaDisponibile} {selectedProduct.unita}</span>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="text-yellow-300">
-                                ⚠️ L'operatore non ha giacenze per questo prodotto
-                              </div>
-                            )}
-                          </div>
-                          <div className="mt-2 text-xs text-green-300">
-                            💡 {formData.tipo === 'ordine' ? 'Ordine' : 'RDT'}: La quantità verrà AGGIUNTA alla giacenza disponibile dell'operatore
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                
-                {/* Quantità Ordine/RDT e Note */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">Quantità {formData.tipo === 'ordine' ? 'Ordine' : 'RDT'} *</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder={`Quantità per ${formData.tipo}`}
-                      className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                      value={newProduct.quantita}
-                      onChange={(e) => setNewProduct(prev => ({ ...prev, quantita: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-white/80 mb-2">Note</label>
-                    <input
-                      type="text"
-                      placeholder="Note per questo prodotto"
-                      className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                      value={newProduct.note}
-                      onChange={(e) => setNewProduct(prev => ({ ...prev, note: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                {/* ⚠️ Sezione Gestione Giacenze - SEPARATA dalla quantità ordine */}
-                <div className="border-t border-white/10 pt-4">
-                  <div className="mb-3">
-                    <h4 className="text-white font-medium mb-2 flex items-center gap-2">
-                      <Package className="w-4 h-4" />
-                      Gestione Giacenze Operatore
-                    </h4>
-                    <div className="text-sm text-white/70 mb-3">
-                      💡 Questi campi aggiornano le giacenze dell'operatore, indipendentemente dalla quantità dell'{formData.tipo === 'ordine' ? 'ordine' : 'RDT'}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-white/80 mb-2">Quantità Assegnata</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Es: 100 (giacenza totale)"
-                        className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                        value={newProduct.quantitaAssegnata || ''}
-                        onChange={(e) => setNewProduct(prev => ({ ...prev, quantitaAssegnata: e.target.value }))}
-                      />
-                      <div className="text-xs text-white/50 mt-1">Giacenza totale assegnata all'operatore</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-white/80 mb-2">Soglia Minima</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Es: 10 (soglia di riordino)"
-                        className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                        value={newProduct.sogliaMinima || ''}
-                        onChange={(e) => setNewProduct(prev => ({ ...prev, sogliaMinima: e.target.value }))}
-                      />
-                      <div className="text-xs text-white/50 mt-1">Soglia minima per alert</div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Pulsanti */}
-                <div className="flex gap-2 justify-end">
-                  <button
-                    onClick={() => {
-                      setShowProductForm(false);
-                      setNewProduct({ productId: '', quantita: '', note: '', quantitaAssegnata: '', sogliaMinima: '' });
-                      setProductSearch('');
-                    }}
-                    className="glass-action-button px-4 py-3 rounded-xl hover:scale-105 transition-all duration-300 flex items-center gap-2"
-                  >
-                    <X className="w-4 h-4 text-red-400" />
-                    <span className="text-red-400">Annulla</span>
-                  </button>
-                  <button
-                    onClick={addProduct}
-                    disabled={!newProduct.productId || !newProduct.quantita}
-                    className="glass-button-primary px-4 py-3 rounded-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Aggiungi</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Lista prodotti */}
-            {formData.prodotti.length > 0 && (
-              <div className="glass-card p-4 rounded-xl">
-                <div className="space-y-2">
-                  {formData.prodotti.map(product => {
-                    const userGiacenza = userGiacenze.find(g => g.productId._id === product.productId);
-                    return (
-                      <div key={product.id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-4 mb-2">
-                            <span className="text-white font-medium">{product.nome}</span>
-                            <span className="text-white/70 font-semibold">{product.quantita} {product.unita}</span>
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              formData.tipo === 'ordine' 
-                                ? 'bg-blue-400/20 text-blue-300 border border-blue-400/30'
-                                : 'bg-green-400/20 text-green-300 border border-green-400/30'
-                            }`}>
-                              ➕ Incremento giacenza
-                            </span>
-                          </div>
-                          {product.note && (
-                            <div className="text-white/50 text-sm italic">📝 {product.note}</div>
-                          )}
-                          {userGiacenza && (
-                            <div className="text-xs text-white/60 mt-1">
-                              Giacenza operatore: {userGiacenza.quantitaAssegnata} ass., {userGiacenza.quantitaDisponibile} disp.
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => editProduct(product)}
-                            className="glass-action-button p-2 rounded-lg hover:scale-110 transition-all duration-300"
-                            title="Modifica prodotto"
-                          >
-                            <Edit2 className="w-4 h-4 text-blue-400" />
-                          </button>
-                          <button
-                            onClick={() => removeProduct(product.id)}
-                            className="glass-action-button p-2 rounded-lg hover:scale-110 transition-all duration-300"
-                            title="Rimuovi prodotto"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-400" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  
-                  <div className="border-t border-white/10 pt-3 mt-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-white font-medium">Totale Prodotti:</span>
-                      <span className="text-white font-bold text-lg">
-                        {formData.prodotti.length} prodotti
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Note */}
@@ -1040,6 +889,19 @@ const CreaOrdini = () => {
         .glass-button-secondary:hover:not(:disabled) {
           background: rgba(255, 255, 255, 0.15);
           box-shadow: 0 12px 32px rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-button-success {
+          background: rgba(34, 197, 94, 0.3);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(34, 197, 94, 0.4);
+          box-shadow: 0 8px 24px rgba(34, 197, 94, 0.2);
+          color: white;
+        }
+
+        .glass-button-success:hover:not(:disabled) {
+          background: rgba(34, 197, 94, 0.4);
+          box-shadow: 0 12px 32px rgba(34, 197, 94, 0.3);
         }
 
         .glass-action-button {

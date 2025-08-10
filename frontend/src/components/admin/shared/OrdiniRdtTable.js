@@ -14,13 +14,15 @@ import {
   AlertTriangle,
   Calendar,
   User,
-  Building
+  Building,
+  ShoppingCart
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useGiacenze } from '../../../hooks/useGiacenze';
 import { apiCall } from '../../../services/api';
 import { triggerOrdiniRdtUpdate } from '../../../utils/events';
 import OrdineRdtModal from './OrdineRdtModal';
+import AggiungiProdottoOrdine from '../AggiungiProdottoOrdine';
 
 const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsChange }) => {
   const { token, setError } = useAuth();
@@ -38,6 +40,10 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
   // Stati per modale
   const [selectedItem, setSelectedItem] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  
+  // Stati per aggiungi prodotti
+  const [showAggiungiProdotti, setShowAggiungiProdotti] = useState(false);
+  const [selectedOrderForProducts, setSelectedOrderForProducts] = useState(null);
   
   // Stati per filtri
   const [filters, setFilters] = useState({
@@ -392,19 +398,80 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
 
   // Elimina elemento
   const handleDelete = async (item) => {
-    if (!window.confirm(`Sei sicuro di voler eliminare questo ${item.itemType}?`)) return;
+    const isCompleted = item.stato === 'COMPLETATO';
+    const confirmMessage = isCompleted 
+      ? `Sei sicuro di voler eliminare questo ${item.itemType}? Questo rimuoverà anche i collegamenti dalle assegnazioni e decrementerà le giacenze (poiché è finalizzato).`
+      : `Sei sicuro di voler eliminare questo ${item.itemType}? Questo rimuoverà i collegamenti dalle assegnazioni.`;
+      
+    if (!window.confirm(confirmMessage)) return;
     
     try {
       setError('');
+      setLoading(true);
+      
+      const assegnazione = getAssegnazioneForItem(item.itemType, item.numero);
+      const operatoreId = assegnazione?.userId?._id;
+      
+      console.log('🗑️ Eliminazione ordine:', item._id, 'Stato:', item.stato, 'Operatore:', operatoreId);
+      
+      // Step 1: Rimuovi collegamenti dall'assegnazione se esiste
+      if (assegnazione) {
+        try {
+          const updateData = {};
+          if (item.itemType === 'ordine') {
+            updateData.ordine = null;
+          } else if (item.itemType === 'rdt') {
+            updateData.rdt = null;
+          }
+          
+          await apiCall(`/assegnazioni/${assegnazione._id}`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData)
+          }, token);
+          console.log('✅ Collegamento rimosso dall\'assegnazione');
+        } catch (err) {
+          console.warn('⚠️ Errore rimozione collegamento assegnazione:', err.message);
+          // Non bloccare l'eliminazione se fallisce la rimozione collegamento
+        }
+      }
+      
+      // Step 2: Decrementa giacenze SOLO se l'ordine/RDT è COMPLETATO
+      if (isCompleted && item.prodotti && item.prodotti.length > 0 && operatoreId) {
+        try {
+          for (const prodotto of item.prodotti) {
+            await apiCall(`/admin/giacenze/decrement`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                userId: operatoreId,
+                productId: prodotto.productId,
+                quantity: prodotto.quantita
+              })
+            }, token);
+          }
+          console.log('✅ Giacenze decrementate per', item.prodotti.length, 'prodotti (ordine finalizzato)');
+        } catch (err) {
+          console.warn('⚠️ Errore decremento giacenze:', err.message);
+          // Non bloccare l'eliminazione se fallisce il decremento
+        }
+      } else if (!isCompleted) {
+        console.log('ℹ️ Giacenze NON decrementate: ordine/RDT non finalizzato');
+      }
+      
+      // Step 3: Elimina l'ordine/RDT
       const endpoint = item.itemType === 'ordine' ? '/ordini' : '/rdt';
       await apiCall(`${endpoint}/${item._id}`, {
         method: 'DELETE'
       }, token);
       
       await loadData();
-      setError(`✅ ${item.itemType} eliminato con successo`);
+      const successMessage = isCompleted 
+        ? `✅ ${item.itemType} eliminato con successo (collegamenti e giacenze aggiornati)`
+        : `✅ ${item.itemType} eliminato con successo (collegamenti rimossi)`;
+      setError(successMessage);
     } catch (err) {
       setError('Errore nell\'eliminazione: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -451,9 +518,28 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
   };
 
   // Apri modale dettagli
-  const openModal = (item) => {
-    setSelectedItem(item);
-    setShowModal(true);
+  const openModal = async (item) => {
+    try {
+      // Ricarica i dati completi dell'ordine/RDT dal backend
+      const endpoint = item.itemType === 'ordine' ? '/ordini' : '/rdt';
+      const fullItemData = await apiCall(`${endpoint}/${item._id}`, {}, token);
+      
+      // Combina i dati originali con quelli aggiornati dal backend
+      const completeItem = {
+        ...item,
+        ...fullItemData,
+        itemType: item.itemType // Mantieni il tipo dall'item originale
+      };
+      
+      console.log('📋 Dati completi ordine per modal:', completeItem);
+      setSelectedItem(completeItem);
+      setShowModal(true);
+    } catch (err) {
+      console.error('Errore caricamento dati completi:', err);
+      // Fallback: usa i dati originali
+      setSelectedItem(item);
+      setShowModal(true);
+    }
   };
 
   // Chiudi modale
@@ -466,6 +552,23 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
   const handleModalSave = () => {
     loadData();
     closeModal();
+  };
+
+  // Gestione modale aggiungi prodotti
+  const openAggiungiProdotti = (item) => {
+    console.log('🔓 Apertura modal AggiungiProdotti per:', item);
+    setSelectedOrderForProducts(item);
+    setShowAggiungiProdotti(true);
+  };
+
+  const closeAggiungiProdotti = () => {
+    setSelectedOrderForProducts(null);
+    setShowAggiungiProdotti(false);
+  };
+
+  const handleProductsAdded = () => {
+    loadData();
+    closeAggiungiProdotti();
   };
 
   const filteredItems = getFilteredItems();
@@ -815,6 +918,17 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
                                   <Eye className="w-4 h-4 text-yellow-400" />
                                 </button>
                                 
+                                <button
+                                  onClick={() => {
+                                    console.log('🛒 Pulsante Aggiungi Prodotti cliccato per:', item);
+                                    openAggiungiProdotti(item);
+                                  }}
+                                  className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"
+                                  title="Aggiungi Prodotti"
+                                >
+                                  <ShoppingCart className="w-4 h-4 text-purple-400" />
+                                </button>
+                                
                                 {item.stato !== 'COMPLETATO' ? (
                                   <button
                                     onClick={() => finalizeItem(item)}
@@ -872,6 +986,15 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
           item={selectedItem}
           onClose={closeModal}
           onSave={handleModalSave}
+        />
+      )}
+
+      {/* Modale aggiungi prodotti */}
+      {showAggiungiProdotti && selectedOrderForProducts && (
+        <AggiungiProdottoOrdine
+          ordine={selectedOrderForProducts}
+          onClose={closeAggiungiProdotti}
+          onUpdate={handleProductsAdded}
         />
       )}
     </>
