@@ -10,9 +10,7 @@ import {
   Hash,
   Clipboard,
   FileText,
-  ShoppingCart,
-  Edit,
-  Trash2
+  ShoppingCart
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useGiacenze } from '../../../hooks/useGiacenze';
@@ -43,8 +41,6 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
   const [availableAssignments, setAvailableAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAggiungiProdotti, setShowAggiungiProdotti] = useState(false);
-  const [editingProducts, setEditingProducts] = useState({});
-  const [tempProductData, setTempProductData] = useState({});
   
   // Funzione per ricaricare i dati dell'ordine
   const ricaricaDatiOrdine = async () => {
@@ -152,103 +148,7 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
   // RIMOSSO: La gestione prodotti è stata spostata nel componente AggiungiProdottoOrdine
   // Questa funzione non è più utilizzata dal nuovo design
 
-  // Funzioni per gestione prodotti dal riepilogo
-  const attivaModificaProdotto = (index, prodotto) => {
-    setEditingProducts(prev => ({ ...prev, [index]: true }));
-    setTempProductData(prev => ({ 
-      ...prev, 
-      [index]: { 
-        quantita: prodotto.quantita?.toString() || '', 
-        note: prodotto.note || '' 
-      } 
-    }));
-  };
-
-  const annullaModificaProdotto = (index) => {
-    setEditingProducts(prev => {
-      const newState = { ...prev };
-      delete newState[index];
-      return newState;
-    });
-    setTempProductData(prev => {
-      const newState = { ...prev };
-      delete newState[index];
-      return newState;
-    });
-  };
-
-  const aggiornaTempData = (index, campo, valore) => {
-    setTempProductData(prev => ({
-      ...prev,
-      [index]: { ...prev[index], [campo]: valore }
-    }));
-  };
-
-  const salvaModificaProdotto = async (index) => {
-    const tempData = tempProductData[index];
-    if (!tempData) return;
-    try {
-      setLoading(true);
-      const prodottiAggiornati = formData.prodotti.map((p, i) => 
-        i === index 
-          ? { ...p, quantita: parseFloat(tempData.quantita), note: tempData.note }
-          : p
-      );
-
-      const endpoint = item.itemType === 'ordine' ? '/ordini' : '/rdt';
-      await apiCall(`${endpoint}/${item._id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ prodotti: prodottiAggiornati })
-      }, token);
-
-      // Ricarica i dati completi dell'ordine per sincronizzazione
-      await ricaricaDatiOrdine();
-      
-      setEditingProducts(prev => {
-        const newState = { ...prev };
-        delete newState[index];
-        return newState;
-      });
-      setTempProductData(prev => {
-        const newState = { ...prev };
-        delete newState[index];
-        return newState;
-      });
-
-      setError('✅ Prodotto modificato con successo');
-      setTimeout(() => setError(''), 3000);
-    } catch (err) {
-      setError('Errore modifica prodotto: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const eliminaProdotto = async (index) => {
-    const prodotto = formData.prodotti[index];
-    if (!window.confirm(`Rimuovere "${prodotto.nome}" dall'${item.itemType}?`)) return;
-
-    try {
-      setLoading(true);
-      const prodottiAggiornati = formData.prodotti.filter((_, i) => i !== index);
-
-      const endpoint = item.itemType === 'ordine' ? '/ordini' : '/rdt';
-      await apiCall(`${endpoint}/${item._id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ prodotti: prodottiAggiornati })
-      }, token);
-
-      // Ricarica i dati completi dell'ordine per sincronizzazione  
-      await ricaricaDatiOrdine();
-      
-      setError('✅ Prodotto rimosso con successo');
-      setTimeout(() => setError(''), 3000);
-    } catch (err) {
-      setError('Errore rimozione prodotto: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // RIMOSSO: Funzioni per gestione prodotti non più necessarie (modal ora read-only)
 
   // Salva modifiche
   const handleSave = async () => {
@@ -626,97 +526,27 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                       <th className="text-left py-3 px-4 text-white/80 font-medium">Nome Prodotto</th>
                       <th className="text-center py-3 px-4 text-white/80 font-medium">Quantità</th>
                       <th className="text-left py-3 px-4 text-white/80 font-medium">Note</th>
-                      {item.stato !== 'COMPLETATO' && (
-                        <th className="text-center py-3 px-4 text-white/80 font-medium">Azioni</th>
-                      )}
                     </tr>
                   </thead>
                   <tbody>
-                    {formData.prodotti.map((prodotto, index) => {
-                      const isEditing = editingProducts[index];
-                      const tempData = tempProductData[index] || {};
-
-                      return (
-                        <tr key={prodotto.id || prodotto.productId || index} className="border-b border-white/10">
-                          <td className="py-3 px-4">
-                            <div className="text-white font-medium">{prodotto.nome}</div>
-                            <div className="text-white/50 text-xs">{prodotto.productId}</div>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            {isEditing ? (
-                              <input
-                                type="number"
-                                step="0.01"
-                                className="glass-input w-20 p-2 rounded-lg bg-transparent border border-blue-400/50 text-white text-sm text-center"
-                                value={tempData.quantita || prodotto.quantita}
-                                onChange={(e) => aggiornaTempData(index, 'quantita', e.target.value)}
-                              />
-                            ) : (
-                              <div className="text-white bg-white/5 px-3 py-2 rounded-lg cursor-not-allowed">
-                                {prodotto.quantita} {prodotto.unita}
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4">
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                className="glass-input w-full p-2 rounded-lg bg-transparent border border-white/20 text-white text-sm"
-                                value={tempData.note || prodotto.note || ''}
-                                onChange={(e) => aggiornaTempData(index, 'note', e.target.value)}
-                                placeholder="Note..."
-                              />
-                            ) : (
-                              <div className="text-white/70 text-sm bg-white/5 px-3 py-2 rounded-lg cursor-not-allowed">
-                                {prodotto.note || '-'}
-                              </div>
-                            )}
-                          </td>
-                          {item.stato !== 'COMPLETATO' && (
-                            <td className="py-3 px-4 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                {isEditing ? (
-                                  <>
-                                    <button
-                                      onClick={() => salvaModificaProdotto(index)}
-                                      disabled={loading}
-                                      className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all disabled:opacity-50"
-                                      title="Salva modifiche"
-                                    >
-                                      <Save className="w-4 h-4 text-green-400" />
-                                    </button>
-                                    <button
-                                      onClick={() => annullaModificaProdotto(index)}
-                                      className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"
-                                      title="Annulla modifiche"
-                                    >
-                                      <X className="w-4 h-4 text-yellow-400" />
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={() => attivaModificaProdotto(index, prodotto)}
-                                      className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"
-                                      title="Modifica prodotto"
-                                    >
-                                      <Edit className="w-4 h-4 text-blue-400" />
-                                    </button>
-                                    <button
-                                      onClick={() => eliminaProdotto(index)}
-                                      className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"
-                                      title="Elimina prodotto"
-                                    >
-                                      <Trash2 className="w-4 h-4 text-red-400" />
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          )}
-                        </tr>
-                      );
-                    })}
+                    {formData.prodotti.map((prodotto, index) => (
+                      <tr key={prodotto.id || prodotto.productId || index} className="border-b border-white/10">
+                        <td className="py-3 px-4">
+                          <div className="text-white font-medium">{prodotto.nome}</div>
+                          <div className="text-white/50 text-xs">{prodotto.productId}</div>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="text-white bg-white/5 px-3 py-2 rounded-lg">
+                            {prodotto.quantita} {prodotto.unita}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-white/70 text-sm bg-white/5 px-3 py-2 rounded-lg">
+                            {prodotto.note || '-'}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

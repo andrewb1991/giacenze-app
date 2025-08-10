@@ -7,7 +7,8 @@ import {
   X,
   Package,
   ArrowLeft,
-  Edit
+  Edit,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
@@ -27,6 +28,10 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
   const [userGiacenze, setUserGiacenze] = useState([]);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // Stati per gestione modifica righe
+  const [righeInModifica, setRigheInModifica] = useState(new Set());
+  const [datiTemporanei, setDatiTemporanei] = useState({});
 
   // Funzione per ottenere assegnazione da ordine/rdt
   const getAssegnazioneForItem = (type, numero) => {
@@ -177,6 +182,13 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
             const newQuantitaAssegnata = giacenza?.quantitaAssegnata || 0;
             const newQuantitaMinima = giacenza?.quantitaMinima || 0;
             
+            // Debug dettagliato per quantità minima
+            console.log(`🔍 [${timestamp}] Prodotto ${riga.nome}:`, {
+              vecchio: { disp: riga.quantitaDisponibile, ass: riga.quantitaAssegnata, min: riga.quantitaMinima },
+              nuovo: { disp: newQuantitaDisponibile, ass: newQuantitaAssegnata, min: newQuantitaMinima },
+              giacenza: giacenza ? 'trovata' : 'non trovata'
+            });
+            
             // Controlla se i valori sono cambiati
             if (riga.quantitaDisponibile !== newQuantitaDisponibile || 
                 riga.quantitaAssegnata !== newQuantitaAssegnata || 
@@ -258,80 +270,163 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
   // Rimuovi una riga
   const rimuoviRiga = (rigaId) => {
     setRigheTabella(prev => prev.filter(riga => riga.id !== rigaId));
+    // Rimuovi anche dai dati temporanei se esiste
+    setDatiTemporanei(prev => {
+      const newData = { ...prev };
+      delete newData[rigaId];
+      return newData;
+    });
+    // Rimuovi dalla lista delle righe in modifica
+    setRigheInModifica(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(rigaId);
+      return newSet;
+    });
   };
 
-  // Attiva modalità editing per un prodotto esistente
-  const attivaModifica = (rigaId) => {
-    setRigheTabella(prev => prev.map(riga => {
-      if (riga.id === rigaId && riga.isExisting) {
-        return { ...riga, isEditing: true };
-      }
-      return riga;
-    }));
-  };
-
-  // Annulla modifica e ripristina dati originali
-  const annullaModifica = (rigaId) => {
-    setRigheTabella(prev => prev.map(riga => {
-      if (riga.id === rigaId && riga.isExisting) {
-        return {
-          ...riga,
-          quantitaDaAggiungere: riga.originalData.quantita?.toString() || '',
-          note: riga.originalData.note || '',
-          isEditing: false
-        };
-      }
-      return riga;
-    }));
-  };
-
-  // Salva modifica prodotto esistente
-  const salvaModificaProdottoEsistente = async (rigaId) => {
+  // Attiva modifica per una riga
+  const attivaModificaRiga = (rigaId) => {
     const riga = righeTabella.find(r => r.id === rigaId);
-    if (!riga || !riga.isExisting) return;
+    if (!riga) return;
+
+    // Salva i dati correnti come temporanei
+    setDatiTemporanei(prev => ({
+      ...prev,
+      [rigaId]: {
+        quantitaDaAggiungere: riga.quantitaDaAggiungere,
+        quantitaMinima: riga.quantitaMinima,
+        note: riga.note
+      }
+    }));
+
+    // Aggiungi alla lista delle righe in modifica
+    setRigheInModifica(prev => new Set([...prev, rigaId]));
+  };
+
+  // Annulla modifica per una riga
+  const annullaModificaRiga = (rigaId) => {
+    // Rimuovi dai dati temporanei
+    setDatiTemporanei(prev => {
+      const newData = { ...prev };
+      delete newData[rigaId];
+      return newData;
+    });
+
+    // Rimuovi dalla lista delle righe in modifica
+    setRigheInModifica(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(rigaId);
+      return newSet;
+    });
+  };
+
+  // Aggiorna dati temporanei durante modifica
+  const aggiornaDatiTemporanei = (rigaId, campo, valore) => {
+    setDatiTemporanei(prev => ({
+      ...prev,
+      [rigaId]: {
+        ...prev[rigaId],
+        [campo]: valore
+      }
+    }));
+  };
+
+  // Salva modifica per una riga
+  const salvaModificaRiga = async (rigaId) => {
+    const datiTemp = datiTemporanei[rigaId];
+    const riga = righeTabella.find(r => r.id === rigaId);
+    if (!datiTemp || !riga) return;
 
     try {
-      const prodottiAggiornati = prodottiOrdine.map(p => {
-        if (p.productId === riga.productId || p.nome === riga.nome) {
-          return {
-            ...p,
-            quantita: parseFloat(riga.quantitaDaAggiungere),
-            note: riga.note
-          };
+      setLoading(true);
+      console.log('💾 Salvataggio modifica per:', riga.nome, 'isExisting:', riga.isExisting);
+      console.log('💾 Dati temporanei:', datiTemp);
+
+      // Se è un prodotto esistente nell'ordine, aggiorna sul backend
+      if (riga.isExisting) {
+        // Trova il prodotto nell'ordine e aggiornalo
+        const prodottiAggiornati = prodottiOrdine.map(p => {
+          const match = p.productId === riga.productId || p.nome === riga.nome;
+          if (match) {
+            console.log('🎯 Aggiornamento prodotto esistente:', p.nome, 'da quantità:', p.quantita, 'a quantità:', datiTemp.quantitaDaAggiungere);
+            return {
+              ...p,
+              quantita: parseInt(datiTemp.quantitaDaAggiungere) || 0,
+              quantitaMinima: parseInt(datiTemp.quantitaMinima) || 0,
+              note: datiTemp.note || ''
+            };
+          }
+          return p;
+        });
+
+        console.log('📝 Prodotti aggiornati da salvare:', prodottiAggiornati.length);
+        console.log('🔍 DEBUG Modifica: Prodotti con quantitaMinima:', prodottiAggiornati.map(p => ({
+          nome: p.nome,
+          quantita: p.quantita,
+          quantitaMinima: p.quantitaMinima || 'NON DEFINITA'
+        })));
+
+        // Salva sul backend
+        const endpoint = ordine.itemType === 'ordine' ? '/ordini' : '/rdt';
+        await apiCall(`${endpoint}/${ordine._id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ prodotti: prodottiAggiornati })
+        }, token);
+
+        console.log('✅ Prodotti salvati sul backend');
+
+        // Ricarica i dati dell'ordine per sincronizzazione
+        await caricaProdottiOrdine();
+        
+        // Ricarica anche le giacenze operatore per aggiornare la tabella
+        const assegnazione = getAssegnazioneForItem(ordine.itemType, ordine.numero);
+        if (assegnazione?.userId?._id) {
+          await caricaGiacenzeOperatore(assegnazione.userId._id);
         }
-        return p;
+
+        setError('✅ Modifica salvata con successo');
+        setTimeout(() => setError(''), 3000);
+      } else {
+        // Per prodotti nuovi, aggiorna solo localmente (verranno salvati al momento dell'aggiunta all'ordine)
+        console.log('📝 Aggiornamento locale per prodotto nuovo');
+        setRigheTabella(prev => prev.map(r => {
+          if (r.id === rigaId) {
+            return {
+              ...r,
+              quantitaDaAggiungere: datiTemp.quantitaDaAggiungere,
+              quantitaMinima: datiTemp.quantitaMinima,
+              note: datiTemp.note
+            };
+          }
+          return r;
+        }));
+      }
+
+      // Pulisci i dati temporanei e rimuovi dalla modifica
+      setDatiTemporanei(prev => {
+        const newData = { ...prev };
+        delete newData[rigaId];
+        return newData;
       });
 
-      const endpoint = ordine.itemType === 'ordine' ? '/ordini' : '/rdt';
-      await apiCall(`${endpoint}/${ordine._id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ prodotti: prodottiAggiornati })
-      }, token);
+      setRigheInModifica(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(rigaId);
+        return newSet;
+      });
 
-      // Aggiorna i dati originali e disattiva editing
-      setRigheTabella(prev => prev.map(r => {
-        if (r.id === rigaId) {
-          return {
-            ...r,
-            isEditing: false,
-            originalData: {
-              ...r.originalData,
-              quantita: parseFloat(r.quantitaDaAggiungere),
-              note: r.note
-            }
-          };
-        }
-        return r;
-      }));
-
-      await caricaProdottiOrdine();
-      setError(`✅ Prodotto "${riga.nome}" modificato`);
-      setTimeout(() => setError(''), 3000);
+      console.log('🧹 Dati temporanei puliti e modalità modifica disattivata');
 
     } catch (err) {
-      setError('Errore modifica prodotto: ' + err.message);
+      console.error('❌ Errore salvataggio modifica:', err);
+      setError('Errore salvataggio modifica: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
+
+
+
 
   // Rimuovi prodotto dall'ordine
   const rimuoviProdottoDallOrdine = async (rigaId) => {
@@ -341,9 +436,23 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
     if (!window.confirm(`Rimuovere "${riga.nome}" dall'ordine?`)) return;
 
     try {
-      const prodottiAggiornati = prodottiOrdine.filter(p => 
-        p.productId !== riga.productId || p.nome !== riga.nome
-      );
+      setLoading(true);
+      console.log('🗑️ Rimozione prodotto:', riga.nome, 'ProductID:', riga.productId);
+      
+      // Trova e filtra il prodotto dall'array
+      const prodottiAggiornati = prodottiOrdine.filter(p => {
+        const matchById = p.productId === riga.productId;
+        const matchByName = p.nome === riga.nome;
+        const shouldRemove = matchById || matchByName;
+        
+        if (shouldRemove) {
+          console.log('🎯 Prodotto trovato e marcato per rimozione:', p.nome, p.productId);
+        }
+        
+        return !shouldRemove; // Tieni tutti tranne quello da rimuovere
+      });
+
+      console.log('📝 Prodotti prima:', prodottiOrdine.length, 'dopo:', prodottiAggiornati.length);
 
       const endpoint = ordine.itemType === 'ordine' ? '/ordini' : '/rdt';
       await apiCall(`${endpoint}/${ordine._id}`, {
@@ -351,11 +460,22 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
         body: JSON.stringify({ prodotti: prodottiAggiornati })
       }, token);
 
+      // Ricarica dati ordine e giacenze
       await caricaProdottiOrdine();
+      
+      // Ricarica anche le giacenze operatore se disponibili
+      const assegnazione = getAssegnazioneForItem(ordine.itemType, ordine.numero);
+      if (assegnazione?.userId?._id) {
+        await caricaGiacenzeOperatore(assegnazione.userId._id);
+      }
+
       setError(`✅ "${riga.nome}" rimosso dall'ordine`);
       setTimeout(() => setError(''), 3000);
     } catch (err) {
+      console.error('Errore rimozione prodotto:', err);
       setError('Errore rimozione prodotto: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -394,46 +514,61 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
 
   // Aggiungi prodotti all'ordine
   const aggiungiProdottiAllOrdine = async () => {
-    // Filtra solo le righe NUOVE complete (non quelle esistenti)
+    // Filtra righe con quantità da aggiungere > 0
     const righeComplete = righeTabella.filter(riga => 
-      !riga.isExisting && // Solo prodotti nuovi
       riga.productId && 
       riga.quantitaDaAggiungere && 
-      parseFloat(riga.quantitaDaAggiungere) > 0
+      parseInt(riga.quantitaDaAggiungere) > 0
     );
 
     if (righeComplete.length === 0) {
-      setError('Compila almeno una riga con prodotto nuovo e quantità');
+      setError('Compila almeno una riga con quantità da aggiungere');
       return;
     }
 
     try {
       setLoading(true);
 
-      // 1. Aggiorna giacenze operatore se necessario
-      for (const riga of righeComplete) {
-        if (riga.quantitaAssegnata && riga.quantitaMinima) {
-          await aggiornaGiacenzaOperatore(riga.productId, riga.quantitaAssegnata, riga.quantitaMinima);
-        }
-      }
-
-      // 2. Aggiungi prodotti all'ordine
-      const nuoviProdotti = righeComplete.map(riga => ({
-        productId: riga.productId,
-        nome: riga.nome,
-        quantita: parseFloat(riga.quantitaDaAggiungere),
-        note: riga.note || ''
-      }));
-
-      const tuttiProdotti = [...prodottiOrdine, ...nuoviProdotti];
+      // Se ci sono prodotti esistenti, aggiornali; altrimenti aggiungili
+      const prodottiEsistenti = righeComplete.filter(r => r.isExisting);
+      const prodottiNuovi = righeComplete.filter(r => !r.isExisting);
       
+      let tuttiProdotti = [...prodottiOrdine];
+      
+      // Aggiorna quantità per prodotti esistenti
+      prodottiEsistenti.forEach(riga => {
+        const index = tuttiProdotti.findIndex(p => p.productId === riga.productId || p.nome === riga.nome);
+        if (index >= 0) {
+          tuttiProdotti[index].quantita = parseInt(riga.quantitaDaAggiungere) || 0;
+          tuttiProdotti[index].quantitaMinima = parseInt(riga.quantitaMinima) || 0;
+          tuttiProdotti[index].note = riga.note || '';
+        }
+      });
+      
+      // Aggiungi prodotti nuovi
+      prodottiNuovi.forEach(riga => {
+        tuttiProdotti.push({
+          productId: riga.productId,
+          nome: riga.nome,
+          quantita: parseInt(riga.quantitaDaAggiungere) || 0,
+          quantitaMinima: parseInt(riga.quantitaMinima) || 0,
+          note: riga.note || ''
+        });
+      });
+      
+      console.log('🔍 DEBUG Frontend: Prodotti da salvare nell\'ordine:', tuttiProdotti.map(p => ({
+        nome: p.nome,
+        quantita: p.quantita,
+        quantitaMinima: p.quantitaMinima || 'NON DEFINITA'
+      })));
+
       const endpoint = ordine.itemType === 'ordine' ? '/ordini' : '/rdt';
       await apiCall(`${endpoint}/${ordine._id}`, {
         method: 'PUT',
         body: JSON.stringify({ prodotti: tuttiProdotti })
       }, token);
 
-      // 3. Ricarica dati (ricaricherà automaticamente la tabella)
+      // Ricarica dati (ricaricherà automaticamente la tabella)
       await caricaProdottiOrdine();
       
       const assegnazione = getAssegnazioneForItem(ordine.itemType, ordine.numero);
@@ -578,20 +713,15 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                           />
                         </td>
                         
-                        {/* Q.tà Assegnata */}
+                        {/* Q.tà Assegnata (sempre disabled - gestita automaticamente) */}
                         <td className="py-3 px-2">
                           <input
                             type="number"
-                            step="0.01"
                             placeholder="0"
-                            className={`glass-input w-full p-2 rounded-lg text-white text-sm text-center ${
-                              (riga.isExisting && !riga.isEditing) || isReadOnly
-                                ? 'bg-white/5 border-0 cursor-not-allowed' 
-                                : 'bg-transparent border border-green-400/50'
-                            }`}
+                            className="glass-input w-full p-2 rounded-lg bg-white/5 border-0 text-white text-sm text-center cursor-not-allowed"
                             value={riga.quantitaAssegnata}
-                            onChange={(e) => aggiornaRiga(riga.id, 'quantitaAssegnata', e.target.value)}
-                            disabled={(riga.isExisting && !riga.isEditing) || isReadOnly}
+                            disabled={true}
+                            title="Quantità assegnata automaticamente alla finalizzazione"
                           />
                         </td>
                         
@@ -599,33 +729,53 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                         <td className="py-3 px-2">
                           <input
                             type="number"
-                            step="0.01"
+                            min="0"
                             placeholder="0"
                             className={`glass-input w-full p-2 rounded-lg text-white text-sm text-center ${
-                              (riga.isExisting && !riga.isEditing) || isReadOnly
+                              (riga.isExisting && !righeInModifica.has(riga.id)) || isReadOnly
                                 ? 'bg-white/5 border-0 cursor-not-allowed' 
                                 : 'bg-transparent border border-orange-400/50'
                             }`}
-                            value={riga.quantitaMinima}
-                            onChange={(e) => aggiornaRiga(riga.id, 'quantitaMinima', e.target.value)}
-                            disabled={(riga.isExisting && !riga.isEditing) || isReadOnly}
+                            value={righeInModifica.has(riga.id) && datiTemporanei[riga.id] 
+                              ? datiTemporanei[riga.id].quantitaMinima 
+                              : riga.quantitaMinima}
+                            onChange={(e) => {
+                              const value = Math.max(0, Math.floor(Number(e.target.value) || 0));
+                              if (righeInModifica.has(riga.id)) {
+                                aggiornaDatiTemporanei(riga.id, 'quantitaMinima', value.toString());
+                              } else {
+                                aggiornaRiga(riga.id, 'quantitaMinima', value.toString());
+                              }
+                            }}
+                            disabled={(riga.isExisting && !righeInModifica.has(riga.id)) || isReadOnly}
+                            title={riga.isExisting ? "Quantità minima modificabile solo in modalità modifica" : "Imposta quantità minima per nuovo prodotto"}
                           />
                         </td>
                         
-                        {/* Q.tà da Aggiungere */}
+                        {/* Q.tà da Aggiungere - SEMPRE MODIFICABILE */}
                         <td className="py-3 px-2">
                           <input
                             type="number"
-                            step="0.01"
+                            min="0"
                             placeholder="0"
                             className={`glass-input w-full p-2 rounded-lg text-white text-sm text-center ${
-                              (riga.isExisting && !riga.isEditing) || isReadOnly
+                              isReadOnly
                                 ? 'bg-white/5 border-0 cursor-not-allowed' 
                                 : 'bg-transparent border border-blue-400/50'
                             }`}
-                            value={riga.quantitaDaAggiungere}
-                            onChange={(e) => aggiornaRiga(riga.id, 'quantitaDaAggiungere', e.target.value)}
-                            disabled={(riga.isExisting && !riga.isEditing) || isReadOnly}
+                            value={righeInModifica.has(riga.id) && datiTemporanei[riga.id] 
+                              ? datiTemporanei[riga.id].quantitaDaAggiungere 
+                              : riga.quantitaDaAggiungere}
+                            onChange={(e) => {
+                              const value = Math.max(0, Math.floor(Number(e.target.value) || 0));
+                              if (righeInModifica.has(riga.id)) {
+                                aggiornaDatiTemporanei(riga.id, 'quantitaDaAggiungere', value.toString());
+                              } else {
+                                aggiornaRiga(riga.id, 'quantitaDaAggiungere', value.toString());
+                              }
+                            }}
+                            disabled={isReadOnly}
+                            title="Quantità da aggiungere alle giacenze"
                           />
                         </td>
                         
@@ -635,13 +785,21 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                             type="text"
                             placeholder="Note..."
                             className={`glass-input w-full p-2 rounded-lg text-white text-sm ${
-                              (riga.isExisting && !riga.isEditing) || isReadOnly
+                              (riga.isExisting && !righeInModifica.has(riga.id)) || isReadOnly
                                 ? 'bg-white/5 border-0 cursor-not-allowed' 
                                 : 'bg-transparent border border-white/20'
                             }`}
-                            value={riga.note}
-                            onChange={(e) => aggiornaRiga(riga.id, 'note', e.target.value)}
-                            disabled={(riga.isExisting && !riga.isEditing) || isReadOnly}
+                            value={righeInModifica.has(riga.id) && datiTemporanei[riga.id] 
+                              ? datiTemporanei[riga.id].note 
+                              : riga.note}
+                            onChange={(e) => {
+                              if (righeInModifica.has(riga.id)) {
+                                aggiornaDatiTemporanei(riga.id, 'note', e.target.value);
+                              } else {
+                                aggiornaRiga(riga.id, 'note', e.target.value);
+                              }
+                            }}
+                            disabled={(riga.isExisting && !righeInModifica.has(riga.id)) || isReadOnly}
                           />
                         </td>
                         
@@ -653,33 +811,33 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                               Solo lettura
                             </div>
                           ) : riga.isExisting ? (
-                            // Pulsanti per prodotti esistenti
-                            <div className="flex items-center justify-center gap-1">
-                              {riga.isEditing ? (
-                                // Modalità editing - pulsanti salva/annulla
+                            // Prodotto esistente - pulsanti modifica/elimina o salva/annulla
+                            <div className="flex justify-center gap-1">
+                              {righeInModifica.has(riga.id) ? (
+                                // Modalità modifica attiva - mostra salva e annulla
                                 <>
                                   <button
-                                    onClick={() => salvaModificaProdottoEsistente(riga.id)}
+                                    onClick={() => salvaModificaRiga(riga.id)}
                                     className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"
                                     title="Salva modifiche"
                                   >
-                                    <Save className="w-4 h-4 text-green-400" />
+                                    <Check className="w-4 h-4 text-green-400" />
                                   </button>
                                   <button
-                                    onClick={() => annullaModifica(riga.id)}
+                                    onClick={() => annullaModificaRiga(riga.id)}
                                     className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"
                                     title="Annulla modifiche"
                                   >
-                                    <X className="w-4 h-4 text-yellow-400" />
+                                    <X className="w-4 h-4 text-red-400" />
                                   </button>
                                 </>
                               ) : (
-                                // Modalità visualizzazione - pulsanti modifica/elimina
+                                // Modalità normale - mostra modifica ed elimina
                                 <>
                                   <button
-                                    onClick={() => attivaModifica(riga.id)}
+                                    onClick={() => attivaModificaRiga(riga.id)}
                                     className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"
-                                    title="Modifica prodotto"
+                                    title="Modifica quantità"
                                   >
                                     <Edit className="w-4 h-4 text-blue-400" />
                                   </button>
@@ -694,7 +852,7 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                               )}
                             </div>
                           ) : (
-                            // Pulsante per righe nuove
+                            // Pulsante per righe nuove - solo elimina
                             <button
                               onClick={() => rimuoviRiga(riga.id)}
                               className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"

@@ -210,7 +210,7 @@ const CreaOrdini = () => {
       return;
     }
     
-    const quantitaNum = parseFloat(newProduct.quantita);
+    const quantitaNum = parseInt(newProduct.quantita) || 0;
     
     // Validazione quantità minima
     if (quantitaNum <= 0) {
@@ -353,7 +353,7 @@ const CreaOrdini = () => {
 
     const newProducts = savedProducts.map(row => ({
       productId: row.productId,
-      quantita: parseFloat(row.quantitaDaAggiungere),
+      quantita: parseInt(row.quantitaDaAggiungere) || 0,
       nome: row.nome,
       note: ''
     }));
