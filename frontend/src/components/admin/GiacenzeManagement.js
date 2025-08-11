@@ -89,11 +89,6 @@ const GiacenzeManagement = () => {
     setFilteredGiacenze(filtered);
   }, [allGiacenze, filters]);
 
-  // Inizializza filteredGiacenze
-  useEffect(() => {
-    setFilteredGiacenze(allGiacenze);
-  }, [allGiacenze]);
-
   const setSelectedUser = (userId) => {
     dispatch({ type: 'SET_SELECTED_USER', payload: userId });
   };
@@ -173,11 +168,7 @@ const GiacenzeManagement = () => {
     if (success) {
       closeEditModal();
       showToast('Giacenza aggiornata con successo!', 'success');
-      // Riapplica i filtri dopo l'aggiornamento
-      setTimeout(() => {
-        const filtered = applyFilters(allGiacenze, filters);
-        setFilteredGiacenze(filtered);
-      }, 100);
+      // I dati verranno aggiornati automaticamente dal useEffect che monitora allGiacenze
     } else {
       showToast('Errore nell\'aggiornamento della giacenza', 'error');
     }

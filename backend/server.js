@@ -306,8 +306,10 @@ const ordineSchema = new mongoose.Schema({
     trim: true
   },
   prodotti: [{
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     nome: { type: String, required: true, trim: true },
     quantita: { type: Number, required: true, min: 0 },
+    quantitaMinima: { type: Number, min: 0, default: 0 },
     unita: { type: String, default: 'pz', trim: true },
     prezzo: { type: Number, min: 0 },
     note: { type: String, trim: true }
@@ -489,10 +491,13 @@ const rdtSchema = new mongoose.Schema({
     default: 'CREATO' 
   },
   prodotti: [{
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     nome: { type: String, required: true, trim: true },
     quantita: { type: Number, required: true, min: 0 },
+    quantitaMinima: { type: Number, min: 0, default: 0 },
     unita: { type: String, default: 'pz', trim: true },
-    prezzo: { type: Number, min: 0 }
+    prezzo: { type: Number, min: 0 },
+    note: { type: String, trim: true }
   }],
   valore: { 
     type: Number, 
@@ -3191,6 +3196,16 @@ app.get('/api/rdt/:id', authenticateToken, async (req, res) => {
     if (!rdt) {
       return res.status(404).json({ message: 'RDT non trovato' });
     }
+    
+    // 🔍 DEBUG: RDT restituito dal GET
+    console.log('🔍 DEBUG GET RDT: RDT restituito:', {
+      numero: rdt.numero,
+      prodotti: rdt.prodotti?.map(p => ({
+        nome: p.nome,
+        quantita: p.quantita,
+        quantitaMinima: p.quantitaMinima || 'NON DEFINITA'
+      })) || []
+    });
 
     res.json(rdt);
   } catch (error) {
@@ -3316,6 +3331,16 @@ app.put('/api/rdt/:id', authenticateToken, requireAdmin, async (req, res) => {
     if (!rdt) {
       return res.status(404).json({ message: 'RDT non trovato' });
     }
+    
+    // 🔍 DEBUG: RDT salvato nel DB
+    console.log('🔍 DEBUG PUT RDT - SALVATO NEL DB:', {
+      numero: rdt.numero,
+      prodotti: rdt.prodotti?.map(p => ({
+        nome: p.nome,
+        quantita: p.quantita,
+        quantitaMinima: p.quantitaMinima || 'NON DEFINITA'
+      })) || []
+    });
 
     res.json(rdt);
   } catch (error) {
@@ -3407,32 +3432,45 @@ app.post('/api/rdt/:id/finalize', authenticateToken, requireAdmin, async (req, r
             // Nessun filtro su settimanaId - giacenza globale operatore
           });
           
-          if (giacenzaOperatore) {
-            // Aggiorna giacenza operatore esistente
+          if (giacenzaOperatore && giacenzaOperatore.quantitaDisponibile > 0) {
+            // Prodotto già in giacenza CON quantità > 0 - aggiorna SOLO quantitaDisponibile
             giacenzaOperatore.quantitaDisponibile += prodotto.quantita;
-            giacenzaOperatore.quantitaAssegnata += prodotto.quantita;
+            // NON toccare quantitaAssegnata (rimane quella esistente)
             // Mantieni quantitaMinima esistente o usa quella del prodotto se specificata
             if (prodotto.quantitaMinima !== undefined && prodotto.quantitaMinima > giacenzaOperatore.quantitaMinima) {
               giacenzaOperatore.quantitaMinima = prodotto.quantitaMinima;
             }
             await giacenzaOperatore.save();
-            console.log(`✅ Finalizzazione RDT - prodotto ${prodotto.nome}: +${prodotto.quantita} alle giacenze globali operatore ${assegnazione.userId.username} (totale: ${giacenzaOperatore.quantitaDisponibile}, min: ${giacenzaOperatore.quantitaMinima})`);
+            console.log(`✅ Finalizzazione RDT - prodotto ${prodotto.nome} già in giacenza: +${prodotto.quantita} (totale disp: ${giacenzaOperatore.quantitaDisponibile}, assegnata invariata: ${giacenzaOperatore.quantitaAssegnata}, min: ${giacenzaOperatore.quantitaMinima})`);
           } else {
-            // Crea nuova giacenza globale per l'operatore
-            giacenzaOperatore = new GiacenzaUtente({
-              userId: assegnazione.userId._id,
-              productId: product._id,
-              quantitaDisponibile: prodotto.quantita,
-              quantitaAssegnata: prodotto.quantita,
-              quantitaMinima: prodotto.quantitaMinima || 0,
-              attiva: true,
-              isGlobale: true, // Giacenza globale dell'operatore
-              note: `Giacenza globale creata dalla finalizzazione RDT ${rdt.numero}`,
-              assegnatoDa: req.user.userId
-              // Nessun settimanaId - giacenza globale operatore
-            });
-            await giacenzaOperatore.save();
-            console.log(`✅ Creata nuova giacenza globale per operatore ${assegnazione.userId.username} prodotto ${prodotto.nome}: +${prodotto.quantita} (min: ${giacenzaOperatore.quantitaMinima})`);
+            // Prodotto NON in giacenza O con giacenza = 0 - crea/aggiorna giacenza
+            // quantitaAssegnata = quantitaDaAggiungere
+            if (giacenzaOperatore) {
+              // Giacenza esiste ma con quantità = 0 - aggiorna
+              giacenzaOperatore.quantitaDisponibile = prodotto.quantita;
+              giacenzaOperatore.quantitaAssegnata = prodotto.quantita; // Prende valore da "quantitaDaAggiungere"
+              if (prodotto.quantitaMinima !== undefined) {
+                giacenzaOperatore.quantitaMinima = prodotto.quantitaMinima;
+              }
+              await giacenzaOperatore.save();
+              console.log(`✅ Aggiornata giacenza a 0 per operatore ${assegnazione.userId.username} prodotto ${prodotto.nome}: disp=${giacenzaOperatore.quantitaDisponibile}, assegnata=${giacenzaOperatore.quantitaAssegnata}, min=${giacenzaOperatore.quantitaMinima}`);
+            } else {
+              // Crea completamente nuova giacenza
+              giacenzaOperatore = new GiacenzaUtente({
+                userId: assegnazione.userId._id,
+                productId: product._id,
+                quantitaDisponibile: prodotto.quantita,
+                quantitaAssegnata: prodotto.quantita, // Prende valore da "quantitaDaAggiungere"
+                quantitaMinima: prodotto.quantitaMinima || 0,
+                attiva: true,
+                isGlobale: true, // Giacenza globale dell'operatore
+                note: `Giacenza globale creata dalla finalizzazione RDT ${rdt.numero}`,
+                assegnatoDa: req.user.userId
+                // Nessun settimanaId - giacenza globale operatore
+              });
+              await giacenzaOperatore.save();
+              console.log(`✅ Creata nuova giacenza globale per operatore ${assegnazione.userId.username} prodotto ${prodotto.nome}: disp=${giacenzaOperatore.quantitaDisponibile}, assegnata=${giacenzaOperatore.quantitaAssegnata}, min=${giacenzaOperatore.quantitaMinima}`);
+            }
           }
           
           // 🔍 DEBUG: Verifica giacenza salvata
@@ -3491,7 +3529,7 @@ app.post('/api/rdt/:id/reopen', authenticateToken, requireAdmin, async (req, res
       return res.status(400).json({ message: 'Assegnazione non trovata per questo RDT' });
     }
     
-    // Decrementa le giacenze GLOBALI per ogni prodotto nell'RDT
+    // Decrementa le giacenze OPERATORE per ogni prodotto nell'RDT
     if (rdt.prodotti && rdt.prodotti.length > 0) {
       for (const prodotto of rdt.prodotti) {
         try {
@@ -3502,10 +3540,11 @@ app.post('/api/rdt/:id/reopen', authenticateToken, requireAdmin, async (req, res
             continue;
           }
 
-          // Trova la giacenza GLOBALE per questo prodotto
+          // Trova la giacenza dell'OPERATORE per questo prodotto
           const giacenza = await GiacenzaUtente.findOne({
             productId: product._id,
-            isGlobale: true,
+            userId: assegnazione.userId._id,
+            isGlobale: true,  // Giacenze operative globali dell'operatore
             attiva: true
           });
           
@@ -3525,12 +3564,12 @@ app.post('/api/rdt/:id/reopen', authenticateToken, requireAdmin, async (req, res
             }
             
             await giacenza.save();
-            console.log(`🔄 Decrementate giacenze globali per prodotto ${prodotto.nome}: ${giacenzaPrima} → ${giacenza.quantitaDisponibile} (-${prodotto.quantita})`);
+            console.log(`🔄 Decrementate giacenze operatore per prodotto ${prodotto.nome}: ${giacenzaPrima} → ${giacenza.quantitaDisponibile} (-${prodotto.quantita})`);
           } else {
-            console.warn(`⚠️ Giacenza globale non trovata per prodotto ${prodotto.nome} - impossibile decrementare`);
+            console.warn(`⚠️ Giacenza operatore non trovata per prodotto ${prodotto.nome} - impossibile decrementare`);
           }
         } catch (prodottoError) {
-          console.error(`❌ Errore decremento giacenze globali per prodotto ${prodotto.nome}:`, prodottoError);
+          console.error(`❌ Errore decremento giacenze operatore per prodotto ${prodotto.nome}:`, prodottoError);
         }
       }
     }
@@ -3539,10 +3578,10 @@ app.post('/api/rdt/:id/reopen', authenticateToken, requireAdmin, async (req, res
     rdt.stato = 'CREATO';
     await rdt.save();
     
-    console.log(`✅ RDT ${rdt.numero} riaperto con successo, giacenze globali decrementate`);
+    console.log(`✅ RDT ${rdt.numero} riaperto con successo, giacenze operatore decrementate`);
     
     res.json({
-      message: 'RDT riaperto con successo e giacenze globali decrementate',
+      message: 'RDT riaperto con successo e giacenze operatore decrementate',
       rdt: rdt
     });
   } catch (error) {
@@ -5252,6 +5291,16 @@ app.get('/api/ordini/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Ordine non trovato' });
     }
     
+    // 🔍 DEBUG: Ordine restituito dal GET
+    console.log('🔍 DEBUG GET Ordini: Ordine restituito:', {
+      numero: ordine.numero,
+      prodotti: ordine.prodotti?.map(p => ({
+        nome: p.nome,
+        quantita: p.quantita,
+        quantitaMinima: p.quantitaMinima || 'NON DEFINITA'
+      })) || []
+    });
+    
     // Trova eventuale assegnazione
     const assegnazione = await Assegnazione.findOne({
       'ordini.ordineId': ordine._id,
@@ -5396,6 +5445,16 @@ app.put('/api/ordini/:id', authenticateToken, requireAdmin, async (req, res) => 
       return res.status(404).json({ message: 'Ordine non trovato' });
     }
     
+    // 🔍 DEBUG: Ordine salvato nel DB
+    console.log('🔍 DEBUG PUT Ordini - SALVATO NEL DB:', {
+      numero: ordine.numero,
+      prodotti: ordine.prodotti?.map(p => ({
+        nome: p.nome,
+        quantita: p.quantita,
+        quantitaMinima: p.quantitaMinima || 'NON DEFINITA'
+      })) || []
+    });
+    
     res.json({
       message: 'Ordine aggiornato con successo',
       ordine
@@ -5489,32 +5548,45 @@ app.post('/api/ordini/:id/finalize', authenticateToken, requireAdmin, async (req
             // Nessun filtro su settimanaId - giacenza globale operatore
           });
           
-          if (giacenzaOperatore) {
-            // Aggiorna giacenza operatore esistente
+          if (giacenzaOperatore && giacenzaOperatore.quantitaDisponibile > 0) {
+            // Prodotto già in giacenza CON quantità > 0 - aggiorna SOLO quantitaDisponibile
             giacenzaOperatore.quantitaDisponibile += prodotto.quantita;
-            giacenzaOperatore.quantitaAssegnata += prodotto.quantita;
+            // NON toccare quantitaAssegnata (rimane quella esistente)
             // Mantieni quantitaMinima esistente o usa quella del prodotto se specificata
             if (prodotto.quantitaMinima !== undefined && prodotto.quantitaMinima > giacenzaOperatore.quantitaMinima) {
               giacenzaOperatore.quantitaMinima = prodotto.quantitaMinima;
             }
             await giacenzaOperatore.save();
-            console.log(`✅ Finalizzazione ordine - prodotto ${prodotto.nome}: +${prodotto.quantita} alle giacenze globali operatore ${assegnazione.userId.username} (totale: ${giacenzaOperatore.quantitaDisponibile}, min: ${giacenzaOperatore.quantitaMinima})`);
+            console.log(`✅ Finalizzazione ordine - prodotto ${prodotto.nome} già in giacenza: +${prodotto.quantita} (totale disp: ${giacenzaOperatore.quantitaDisponibile}, assegnata invariata: ${giacenzaOperatore.quantitaAssegnata}, min: ${giacenzaOperatore.quantitaMinima})`);
           } else {
-            // Crea nuova giacenza globale per l'operatore
-            giacenzaOperatore = new GiacenzaUtente({
-              userId: assegnazione.userId._id,
-              productId: product._id,
-              quantitaDisponibile: prodotto.quantita,
-              quantitaAssegnata: prodotto.quantita,
-              quantitaMinima: prodotto.quantitaMinima || 0,
-              attiva: true,
-              isGlobale: true, // Giacenza globale dell'operatore
-              note: `Giacenza globale creata dalla finalizzazione ordine ${ordine.numero}`,
-              assegnatoDa: req.user.userId
-              // Nessun settimanaId - giacenza globale operatore
-            });
-            await giacenzaOperatore.save();
-            console.log(`✅ Creata nuova giacenza globale per operatore ${assegnazione.userId.username} prodotto ${prodotto.nome}: +${prodotto.quantita} (min: ${giacenzaOperatore.quantitaMinima})`);
+            // Prodotto NON in giacenza O con giacenza = 0 - crea/aggiorna giacenza
+            // quantitaAssegnata = quantitaDaAggiungere
+            if (giacenzaOperatore) {
+              // Giacenza esiste ma con quantità = 0 - aggiorna
+              giacenzaOperatore.quantitaDisponibile = prodotto.quantita;
+              giacenzaOperatore.quantitaAssegnata = prodotto.quantita; // Prende valore da "quantitaDaAggiungere"
+              if (prodotto.quantitaMinima !== undefined) {
+                giacenzaOperatore.quantitaMinima = prodotto.quantitaMinima;
+              }
+              await giacenzaOperatore.save();
+              console.log(`✅ Aggiornata giacenza a 0 per operatore ${assegnazione.userId.username} prodotto ${prodotto.nome}: disp=${giacenzaOperatore.quantitaDisponibile}, assegnata=${giacenzaOperatore.quantitaAssegnata}, min=${giacenzaOperatore.quantitaMinima}`);
+            } else {
+              // Crea completamente nuova giacenza
+              giacenzaOperatore = new GiacenzaUtente({
+                userId: assegnazione.userId._id,
+                productId: product._id,
+                quantitaDisponibile: prodotto.quantita,
+                quantitaAssegnata: prodotto.quantita, // Prende valore da "quantitaDaAggiungere"
+                quantitaMinima: prodotto.quantitaMinima || 0,
+                attiva: true,
+                isGlobale: true, // Giacenza globale dell'operatore
+                note: `Giacenza globale creata dalla finalizzazione ordine ${ordine.numero}`,
+                assegnatoDa: req.user.userId
+                // Nessun settimanaId - giacenza globale operatore
+              });
+              await giacenzaOperatore.save();
+              console.log(`✅ Creata nuova giacenza globale per operatore ${assegnazione.userId.username} prodotto ${prodotto.nome}: disp=${giacenzaOperatore.quantitaDisponibile}, assegnata=${giacenzaOperatore.quantitaAssegnata}, min=${giacenzaOperatore.quantitaMinima}`);
+            }
           }
           
           // 🔍 DEBUG: Verifica giacenza salvata
@@ -5573,7 +5645,7 @@ app.post('/api/ordini/:id/reopen', authenticateToken, requireAdmin, async (req, 
       return res.status(400).json({ message: 'Assegnazione non trovata per questo ordine' });
     }
     
-    // Decrementa le giacenze GLOBALI per ogni prodotto nell'ordine
+    // Decrementa le giacenze OPERATORE per ogni prodotto nell'ordine
     if (ordine.prodotti && ordine.prodotti.length > 0) {
       for (const prodotto of ordine.prodotti) {
         try {
@@ -5584,10 +5656,11 @@ app.post('/api/ordini/:id/reopen', authenticateToken, requireAdmin, async (req, 
             continue;
           }
 
-          // Trova la giacenza GLOBALE per questo prodotto
+          // Trova la giacenza dell'OPERATORE per questo prodotto
           const giacenza = await GiacenzaUtente.findOne({
             productId: product._id,
-            isGlobale: true,
+            userId: assegnazione.userId._id,
+            isGlobale: true,  // Giacenze operative globali dell'operatore
             attiva: true
           });
           
@@ -5607,12 +5680,12 @@ app.post('/api/ordini/:id/reopen', authenticateToken, requireAdmin, async (req, 
             }
             
             await giacenza.save();
-            console.log(`🔄 Decrementate giacenze globali per prodotto ${prodotto.nome}: ${giacenzaPrima} → ${giacenza.quantitaDisponibile} (-${prodotto.quantita})`);
+            console.log(`🔄 Decrementate giacenze operatore per prodotto ${prodotto.nome}: ${giacenzaPrima} → ${giacenza.quantitaDisponibile} (-${prodotto.quantita})`);
           } else {
-            console.warn(`⚠️ Giacenza globale non trovata per prodotto ${prodotto.nome} - impossibile decrementare`);
+            console.warn(`⚠️ Giacenza operatore non trovata per prodotto ${prodotto.nome} - impossibile decrementare`);
           }
         } catch (prodottoError) {
-          console.error(`❌ Errore decremento giacenze globali per prodotto ${prodotto.nome}:`, prodottoError);
+          console.error(`❌ Errore decremento giacenze operatore per prodotto ${prodotto.nome}:`, prodottoError);
         }
       }
     }
@@ -5621,10 +5694,10 @@ app.post('/api/ordini/:id/reopen', authenticateToken, requireAdmin, async (req, 
     ordine.stato = 'CREATO';
     await ordine.save();
     
-    console.log(`✅ Ordine ${ordine.numero} riaperto con successo, giacenze globali decrementate`);
+    console.log(`✅ Ordine ${ordine.numero} riaperto con successo, giacenze operatore decrementate`);
     
     res.json({
-      message: 'Ordine riaperto con successo e giacenze globali decrementate',
+      message: 'Ordine riaperto con successo e giacenze operatore decrementate',
       ordine: ordine
     });
   } catch (error) {

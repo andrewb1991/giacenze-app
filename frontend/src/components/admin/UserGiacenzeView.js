@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Truck, Plus, User, Package, ArrowLeft, CheckCircle, AlertCircle, Eye, Filter, Search, BarChart3, X, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Truck, Plus, User, Package, ArrowLeft, CheckCircle, AlertCircle, Eye, Filter, Search, BarChart3, X, Trash2, Edit, Save } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
@@ -167,6 +167,18 @@ const UserGiacenzeView = () => {
   // ✅ STATO SEPARATO per giacenze utente (non da useGiacenze)
   const [userGiacenze, setUserGiacenze] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Stati per modale di modifica
+  const [editingGiacenza, setEditingGiacenza] = useState(null);
+  const [editForm, setEditForm] = useState({
+    quantitaAssegnata: '',
+    quantitaDisponibile: '',
+    quantitaMinima: '',
+    note: ''
+  });
+
+  // Stati per toast notifications
+  const [toast, setToast] = useState(null);
 
   // Stati per filtri specifici delle giacenze utente
   const [filters, setFilters] = useState({
@@ -453,6 +465,47 @@ const UserGiacenzeView = () => {
       setError('Errore nell\'eliminazione: ' + err.message);
       console.error('❌ Errore eliminazione giacenza:', err);
     }
+  };
+
+  // Funzioni per il modale di modifica
+  const openEditModal = (giacenza) => {
+    setEditingGiacenza(giacenza);
+    setEditForm({
+      quantitaAssegnata: giacenza.quantitaAssegnata.toString(),
+      quantitaDisponibile: giacenza.quantitaDisponibile.toString(),
+      quantitaMinima: giacenza.quantitaMinima?.toString() || '0',
+      note: giacenza.note || ''
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditingGiacenza(null);
+    setEditForm({
+      quantitaAssegnata: '',
+      quantitaDisponibile: '',
+      quantitaMinima: '',
+      note: ''
+    });
+  };
+
+  const handleUpdateGiacenza = async () => {
+    if (!editingGiacenza) return;
+
+    const success = await updateGiacenza(editingGiacenza._id, editForm);
+    if (success) {
+      closeEditModal();
+      showToast('Giacenza aggiornata con successo!', 'success');
+      // Ricarica le giacenze per mostrare i dati aggiornati
+      await loadUserGiacenze();
+    } else {
+      showToast('Errore nell\'aggiornamento della giacenza', 'error');
+    }
+  };
+
+  // Funzione per mostrare toast notifications
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
   return (
@@ -1148,13 +1201,22 @@ const UserGiacenzeView = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => handleDeleteGiacenza(giacenza)}
-                            className="glass-button p-2 rounded-lg text-red-300 hover:text-red-200 hover:scale-105 transition-all duration-300"
-                            title={giacenza.settimanaId ? 'Elimina giacenza per questa settimana' : 'Elimina giacenza globale'}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openEditModal(giacenza)}
+                              className="glass-button p-2 rounded-lg text-blue-300 hover:text-blue-200 hover:scale-105 transition-all duration-300"
+                              title={giacenza.settimanaId ? 'Modifica giacenza per questa settimana' : 'Modifica giacenza globale'}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteGiacenza(giacenza)}
+                              className="glass-button p-2 rounded-lg text-red-300 hover:text-red-200 hover:scale-105 transition-all duration-300"
+                              title={giacenza.settimanaId ? 'Elimina giacenza per questa settimana' : 'Elimina giacenza globale'}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1190,6 +1252,120 @@ const UserGiacenzeView = () => {
           </div>
         </div>
       </div>
+
+      {/* Modale di modifica giacenza */}
+      {editingGiacenza && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass-card-large rounded-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">
+                Modifica Giacenza
+              </h3>
+              <button
+                onClick={closeEditModal}
+                className="glass-button p-2 rounded-lg text-white/70 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Prodotto
+                </label>
+                <div className="glass-input p-3 rounded-lg bg-white/5 text-white/50">
+                  {editingGiacenza.productId?.nome}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Quantità Assegnata
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="glass-input w-full p-3 rounded-lg bg-transparent border border-white/20 text-white placeholder-white/50"
+                  value={editForm.quantitaAssegnata}
+                  onChange={(e) => setEditForm({ ...editForm, quantitaAssegnata: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Quantità Disponibile
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="glass-input w-full p-3 rounded-lg bg-transparent border border-white/20 text-white placeholder-white/50"
+                  value={editForm.quantitaDisponibile}
+                  onChange={(e) => setEditForm({ ...editForm, quantitaDisponibile: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Quantità Minima
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="glass-input w-full p-3 rounded-lg bg-transparent border border-white/20 text-white placeholder-white/50"
+                  value={editForm.quantitaMinima}
+                  onChange={(e) => setEditForm({ ...editForm, quantitaMinima: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Note
+                </label>
+                <textarea
+                  rows={3}
+                  className="glass-input w-full p-3 rounded-lg bg-transparent border border-white/20 text-white placeholder-white/50 resize-none"
+                  value={editForm.note}
+                  onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
+                  placeholder="Note opzionali..."
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={closeEditModal}
+                className="flex-1 glass-button-secondary py-3 px-4 rounded-lg text-white hover:scale-105 transition-all duration-300"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleUpdateGiacenza}
+                className="flex-1 glass-button py-3 px-4 rounded-lg text-white hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                Salva
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast notifications */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 glass-card rounded-lg p-4 text-white ${
+          toast.type === 'success' ? 'border-green-400/50' : 'border-red-400/50'
+        }`}>
+          <div className="flex items-center gap-2">
+            {toast.type === 'success' ? (
+              <CheckCircle className="w-5 h-5 text-green-400" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-red-400" />
+            )}
+            <span>{toast.message}</span>
+          </div>
+        </div>
+      )}
 
       {/* Custom Styles */}
       <style jsx>{`

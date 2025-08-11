@@ -6,9 +6,7 @@ import {
   Save,
   X,
   Package,
-  ArrowLeft,
-  Edit,
-  Check
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
@@ -29,9 +27,15 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [loading, setLoading] = useState(false);
   
-  // Stati per gestione modifica righe
+  // Stati per gestione modifica righe (mantenuti per compatibilità con in-line editing)
   const [righeInModifica, setRigheInModifica] = useState(new Set());
   const [datiTemporanei, setDatiTemporanei] = useState({});
+  
+  // Timer per debounce del salvataggio automatico
+  const [saveTimer, setSaveTimer] = useState(null);
+  
+  // Flag per prevenire reload durante modifiche in corso
+  const [modificheInCorso, setModificheInCorso] = useState(false);
 
   // Funzione per ottenere assegnazione da ordine/rdt
   const getAssegnazioneForItem = (type, numero) => {
@@ -45,9 +49,16 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
 
   // Carica prodotti già nell'ordine e giacenze operatore
   useEffect(() => {
-    if (ordine?._id && assegnazioni) {
+    if (ordine?._id && assegnazioni && !modificheInCorso) {
       const timestamp = new Date().toLocaleTimeString();
       console.log(`🔄 [${timestamp}] useEffect triggered - caricando dati per ordine:`, ordine._id);
+      console.log(`🔍 [${timestamp}] Dependencies changed:`, {
+        'ordine._id': ordine?._id,
+        'ordine.itemType': ordine?.itemType, 
+        'ordine.numero': ordine?.numero,
+        'assegnazioni.length': assegnazioni?.length,
+        'modificheInCorso': modificheInCorso
+      });
       
       const loadData = async () => {
         // 1. Prima carica i prodotti (che popola la tabella)
@@ -64,8 +75,42 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
       loadData().catch(err => {
         console.error('Errore caricamento dati:', err);
       });
+    } else if (modificheInCorso) {
+      console.log(`🚫 useEffect bloccato - modifiche in corso`);
     }
-  }, [ordine?._id, ordine?.itemType, ordine?.numero, assegnazioni?.length]);
+  }, [ordine?._id, ordine?.itemType, ordine?.numero, ordine?.stato]);
+
+  // Effetto separato per gestire il caricamento quando arrivano le assegnazioni
+  useEffect(() => {
+    if (ordine?._id && assegnazioni && assegnazioni.length > 0 && !modificheInCorso) {
+      const timestamp = new Date().toLocaleTimeString();
+      console.log(`🔄 [${timestamp}] Assegnazioni caricate - verifico se devo caricare giacenze`);
+      
+      // Verifica se abbiamo già caricato i dati per questo ordine
+      if (righeTabella.length === 0 && userGiacenze.length === 0) {
+        console.log(`🔄 [${timestamp}] Nessun dato presente - carico tutto`);
+        const loadData = async () => {
+          await caricaProdottiOrdine();
+          const assegnazione = getAssegnazioneForItem(ordine.itemType, ordine.numero);
+          if (assegnazione?.userId?._id) {
+            await caricaGiacenzeOperatore(assegnazione.userId._id);
+          }
+        };
+        loadData().catch(err => console.error('Errore caricamento dati:', err));
+      } else {
+        console.log(`✅ [${timestamp}] Dati già presenti - skip reload`);
+      }
+    }
+  }, [assegnazioni]);
+
+  // Cleanup timer al dismount
+  useEffect(() => {
+    return () => {
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+      }
+    };
+  }, [saveTimer]);
 
   const caricaProdottiOrdine = async () => {
     try {
@@ -115,7 +160,7 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
       searchTerm: prodotto.nome || '',
       quantitaDisponibile: 0, // Verrà popolata quando si caricano le giacenze
       quantitaAssegnata: 0,
-      quantitaMinima: 0,
+      quantitaMinima: prodotto.quantitaMinima || 0, // ← Usa quantitaMinima dal prodotto se esiste
       quantitaDaAggiungere: prodotto.quantita?.toString() || '',
       note: prodotto.note || '',
       isExisting: true, // Flag per identificare prodotti esistenti
@@ -180,7 +225,9 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
             
             const newQuantitaDisponibile = giacenza?.quantitaDisponibile || 0;
             const newQuantitaAssegnata = giacenza?.quantitaAssegnata || 0;
-            const newQuantitaMinima = giacenza?.quantitaMinima || 0;
+            // Se il prodotto è già in giacenza, usa la quantità minima della giacenza
+            // Se NON è in giacenza, mantieni la quantità minima del prodotto nell'ordine
+            const newQuantitaMinima = giacenza ? (giacenza.quantitaMinima || 0) : riga.quantitaMinima;
             
             // Debug dettagliato per quantità minima
             console.log(`🔍 [${timestamp}] Prodotto ${riga.nome}:`, {
@@ -224,7 +271,15 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
   };
 
   // Aggiorna un campo della riga
-  const aggiornaRiga = (rigaId, campo, valore) => {
+  const aggiornaRiga = async (rigaId, campo, valore) => {
+    // Se è una modifica di quantitàMinima o quantitàDaAggiungere, imposta il flag modifiche in corso
+    const riga = righeTabella.find(r => r.id === rigaId);
+    if (riga?.isExisting && (campo === 'quantitaDaAggiungere' || campo === 'quantitaMinima')) {
+      setModificheInCorso(true);
+      console.log('🚫 Flag modificheInCorso impostato a true - bloccherà useEffect');
+    }
+
+    // Prima aggiorna lo stato locale
     setRigheTabella(prev => prev.map(riga => {
       if (riga.id === rigaId) {
         const updated = { ...riga, [campo]: valore };
@@ -250,6 +305,66 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
       }
       return riga;
     }));
+    
+    // Se è un prodotto esistente e si modifica quantitaDaAggiungere o quantitaMinima, salva automaticamente con debounce
+    if (riga?.isExisting && (campo === 'quantitaDaAggiungere' || campo === 'quantitaMinima')) {
+      // Cancella il timer precedente
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+      }
+      
+      // Imposta nuovo timer per salvataggio dopo 1 secondo
+      const newTimer = setTimeout(async () => {
+        try {
+          console.log(`🔄 Salvataggio automatico (debounced) per prodotto esistente: ${riga.nome}, campo: ${campo}, valore: ${valore}`);
+          
+          // Trova e aggiorna il prodotto nell'ordine
+          const prodottiAggiornati = prodottiOrdine.map(p => {
+            const match = p.productId === riga.productId || p.nome === riga.nome;
+            if (match) {
+              const updated = { ...p };
+              if (campo === 'quantitaDaAggiungere') {
+                updated.quantita = parseInt(valore) || 0;
+              } else if (campo === 'quantitaMinima') {
+                updated.quantitaMinima = parseInt(valore) || 0;
+              }
+              console.log(`✅ Prodotto aggiornato:`, updated);
+              return updated;
+            }
+            return p;
+          });
+          
+          // Salva sul backend
+          const endpoint = ordine.itemType === 'ordine' ? '/ordini' : '/rdt';
+          await apiCall(`${endpoint}/${ordine._id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ prodotti: prodottiAggiornati })
+          }, token);
+          
+          console.log(`✅ Salvataggio automatico completato per ${campo}`);
+          
+          // Aggiorna lo stato locale dei prodotti ordine (senza ricaricamento)
+          setProdottiOrdine(prodottiAggiornati);
+          
+          // Riabilita i reload dopo il salvataggio
+          setTimeout(() => {
+            setModificheInCorso(false);
+            console.log('✅ Flag modificheInCorso reimpostato a false - useEffect sbloccato');
+          }, 100);
+          
+        } catch (err) {
+          console.error('❌ Errore salvataggio automatico:', err);
+          setError('Errore salvataggio: ' + err.message);
+          // Riabilita i reload anche in caso di errore
+          setTimeout(() => {
+            setModificheInCorso(false);
+            console.log('⚠️ Flag modificheInCorso reimpostato a false dopo errore');
+          }, 100);
+        }
+      }, 1000); // Salva dopo 1 secondo di inattività
+      
+      setSaveTimer(newTimer);
+    }
   };
 
   // Aggiungi una nuova riga
@@ -282,6 +397,44 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
       newSet.delete(rigaId);
       return newSet;
     });
+  };
+
+  // Rimuovi riga visivamente (solo lato client, senza salvare)
+  const rimuoviRigaVisivamente = (rigaId) => {
+    const riga = righeTabella.find(r => r.id === rigaId);
+    if (!riga) return;
+    
+    if (!window.confirm(`Rimuovere "${riga.nome}" dall'ordine?`)) return;
+    
+    console.log('🗑️ Rimozione visiva prodotto:', riga.nome);
+    
+    // Rimuovi la riga dalla tabella visivamente
+    setRigheTabella(prev => prev.filter(r => r.id !== rigaId));
+    
+    // Aggiorna anche i prodotti ordine locali per mantenere la coerenza
+    if (riga.isExisting) {
+      setProdottiOrdine(prev => prev.filter(p => {
+        const matchById = p.productId === riga.productId;
+        const matchByName = p.nome === riga.nome;
+        return !(matchById || matchByName);
+      }));
+    }
+    
+    // Pulisci gli stati correlati
+    setDatiTemporanei(prev => {
+      const newData = { ...prev };
+      delete newData[rigaId];
+      return newData;
+    });
+    
+    setRigheInModifica(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(rigaId);
+      return newSet;
+    });
+    
+    setError(`"${riga.nome}" rimosso dall'ordine - verrà salvato con il prossimo invio`);
+    setTimeout(() => setError(''), 3000);
   };
 
   // Attiva modifica per una riga
@@ -375,6 +528,12 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
 
         console.log('✅ Prodotti salvati sul backend');
 
+        // Mostra messaggio di successo immediatamente
+        setError('✅ Modifica salvata con successo');
+        
+        // Aspetta un momento per permettere la visualizzazione del messaggio
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
         // Ricarica i dati dell'ordine per sincronizzazione
         await caricaProdottiOrdine();
         
@@ -384,8 +543,8 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
           await caricaGiacenzeOperatore(assegnazione.userId._id);
         }
 
-        setError('✅ Modifica salvata con successo');
-        setTimeout(() => setError(''), 3000);
+        // Pulisce il messaggio dopo il refresh
+        setTimeout(() => setError(''), 2000);
       } else {
         // Per prodotti nuovi, aggiorna solo localmente (verranno salvati al momento dell'aggiunta all'ordine)
         console.log('📝 Aggiornamento locale per prodotto nuovo');
@@ -460,6 +619,12 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
         body: JSON.stringify({ prodotti: prodottiAggiornati })
       }, token);
 
+      // Mostra messaggio di successo immediatamente
+      setError(`✅ "${riga.nome}" rimosso dall'ordine`);
+      
+      // Aspetta un momento per permettere la visualizzazione del messaggio
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       // Ricarica dati ordine e giacenze
       await caricaProdottiOrdine();
       
@@ -469,8 +634,8 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
         await caricaGiacenzeOperatore(assegnazione.userId._id);
       }
 
-      setError(`✅ "${riga.nome}" rimosso dall'ordine`);
-      setTimeout(() => setError(''), 3000);
+      // Pulisce il messaggio dopo il refresh
+      setTimeout(() => setError(''), 2000);
     } catch (err) {
       console.error('Errore rimozione prodotto:', err);
       setError('Errore rimozione prodotto: ' + err.message);
@@ -568,7 +733,13 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
         body: JSON.stringify({ prodotti: tuttiProdotti })
       }, token);
 
-      // Ricarica dati (ricaricherà automaticamente la tabella)
+      // Mostra messaggio di successo immediatamente
+      setError(`✅ ${righeComplete.length} prodott${righeComplete.length > 1 ? 'i aggiunti' : 'o aggiunto'}!`);
+      
+      // Aspetta un momento per permettere la visualizzazione del messaggio
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Poi ricarica dati (ricaricherà automaticamente la tabella)
       await caricaProdottiOrdine();
       
       const assegnazione = getAssegnazioneForItem(ordine.itemType, ordine.numero);
@@ -576,8 +747,8 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
         await caricaGiacenzeOperatore(assegnazione.userId._id);
       }
 
-      setError(`✅ ${righeComplete.length} prodott${righeComplete.length > 1 ? 'i aggiunti' : 'o aggiunto'}!`);
-      setTimeout(() => setError(''), 3000);
+      // Pulisce il messaggio dopo il refresh
+      setTimeout(() => setError(''), 2000);
 
       if (onUpdate) onUpdate();
 
@@ -747,8 +918,14 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                                 aggiornaRiga(riga.id, 'quantitaMinima', value.toString());
                               }
                             }}
-                            disabled={(riga.isExisting && !righeInModifica.has(riga.id)) || isReadOnly}
-                            title={riga.isExisting ? "Quantità minima modificabile solo in modalità modifica" : "Imposta quantità minima per nuovo prodotto"}
+                            disabled={(riga.isExisting && riga.quantitaDisponibile > 0 && !righeInModifica.has(riga.id)) || isReadOnly}
+                            title={
+                              riga.isExisting && riga.quantitaDisponibile > 0 
+                                ? "Quantità minima modificabile solo in modalità modifica (prodotto già in giacenza)" 
+                                : riga.isExisting 
+                                  ? "Imposta quantità minima per prodotto non ancora in giacenza operatore"
+                                  : "Imposta quantità minima per nuovo prodotto"
+                            }
                           />
                         </td>
                         
@@ -811,45 +988,15 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                               Solo lettura
                             </div>
                           ) : riga.isExisting ? (
-                            // Prodotto esistente - pulsanti modifica/elimina o salva/annulla
+                            // Prodotto esistente - solo pulsante elimina
                             <div className="flex justify-center gap-1">
-                              {righeInModifica.has(riga.id) ? (
-                                // Modalità modifica attiva - mostra salva e annulla
-                                <>
-                                  <button
-                                    onClick={() => salvaModificaRiga(riga.id)}
-                                    className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"
-                                    title="Salva modifiche"
-                                  >
-                                    <Check className="w-4 h-4 text-green-400" />
-                                  </button>
-                                  <button
-                                    onClick={() => annullaModificaRiga(riga.id)}
-                                    className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"
-                                    title="Annulla modifiche"
-                                  >
-                                    <X className="w-4 h-4 text-red-400" />
-                                  </button>
-                                </>
-                              ) : (
-                                // Modalità normale - mostra modifica ed elimina
-                                <>
-                                  <button
-                                    onClick={() => attivaModificaRiga(riga.id)}
-                                    className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"
-                                    title="Modifica quantità"
-                                  >
-                                    <Edit className="w-4 h-4 text-blue-400" />
-                                  </button>
-                                  <button
-                                    onClick={() => rimuoviProdottoDallOrdine(riga.id)}
-                                    className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"
-                                    title="Rimuovi dall'ordine"
-                                  >
-                                    <Trash2 className="w-4 h-4 text-red-400" />
-                                  </button>
-                                </>
-                              )}
+                              <button
+                                onClick={() => rimuoviRigaVisivamente(riga.id)}
+                                className="glass-action-button p-1 rounded-lg hover:scale-110 transition-all"
+                                title="Rimuovi dall'ordine"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-400" />
+                              </button>
                             </div>
                           ) : (
                             // Pulsante per righe nuove - solo elimina
