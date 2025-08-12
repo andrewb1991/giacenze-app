@@ -645,18 +645,12 @@ app.get('/api/my-giacenze', authenticateToken, async (req, res) => {
       attiva: true 
     };
     
-    // Filtro per settimana con logica globale
+    // Filtro sempre per utente corrente
+    filter.userId = req.user.userId;
+    
+    // Filtro per settimana specifica se fornita
     if (settimanaId) {
-      filter.$or = [
-        { userId: req.user.userId, settimanaId: settimanaId },
-        { isGlobale: true }
-      ];
-    } else {
-      // Se non c'è filtro settimana, mostra giacenze personali + globali
-      filter.$or = [
-        { userId: req.user.userId },
-        { isGlobale: true }
-      ];
+      filter.settimanaId = settimanaId;
     }
     
     // NUOVO: Filtro per prodotto specifico
@@ -6577,6 +6571,99 @@ app.get('/api/debug/giacenze-globali', authenticateToken, requireAdmin, async (r
     });
   } catch (error) {
     console.error('Errore debug giacenze globali:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =====================================================
+// ADMIN TOOLS - Reset Giacenze Operatore
+// =====================================================
+
+app.post('/api/admin/reset-giacenze-operatore', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { resetGiacenzeOperatore } = require('./resetGiacenzeOperatore');
+    
+    console.log('🔄 Avvio reset giacenze operatore tramite API...');
+    
+    await resetGiacenzeOperatore();
+    
+    const stats = await GiacenzaUtente.aggregate([
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+          totalAssegnata: { $sum: '$quantitaAssegnata' },
+          totalDisponibile: { $sum: '$quantitaDisponibile' },
+          avgAssegnata: { $avg: '$quantitaAssegnata' },
+          avgDisponibile: { $avg: '$quantitaDisponibile' }
+        }
+      }
+    ]);
+    
+    const giacenzeGlobali = await GiacenzaUtente.countDocuments({ isGlobale: true });
+    const giacenzeConSettimana = await GiacenzaUtente.countDocuments({ settimanaId: { $ne: null } });
+    
+    res.json({
+      success: true,
+      message: 'Reset giacenze operatore completato con successo',
+      stats: stats[0] || {},
+      details: {
+        giacenzeGlobali,
+        giacenzeConSettimana,
+        giacenzeConNote: await GiacenzaUtente.countDocuments({ note: { $ne: '' } })
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Errore reset giacenze operatore:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Errore durante il reset delle giacenze operatore',
+      error: error.message
+    });
+  }
+});
+
+// GET - Statistiche giacenze operatore
+app.get('/api/admin/giacenze-stats', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const totalGiacenze = await GiacenzaUtente.countDocuments();
+    const giacenzeAttive = await GiacenzaUtente.countDocuments({ attiva: true });
+    const giacenzeGlobali = await GiacenzaUtente.countDocuments({ isGlobale: true });
+    const giacenzeConSettimana = await GiacenzaUtente.countDocuments({ settimanaId: { $ne: null } });
+    
+    const quantitaStats = await GiacenzaUtente.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalAssegnata: { $sum: '$quantitaAssegnata' },
+          totalDisponibile: { $sum: '$quantitaDisponibile' },
+          avgAssegnata: { $avg: '$quantitaAssegnata' },
+          avgDisponibile: { $avg: '$quantitaDisponibile' },
+          minAssegnata: { $min: '$quantitaAssegnata' },
+          maxAssegnata: { $max: '$quantitaAssegnata' }
+        }
+      }
+    ]);
+    
+    const utentiConGiacenze = await GiacenzaUtente.aggregate([
+      { $group: { _id: '$userId', count: { $sum: 1 } } },
+      { $group: { _id: null, utenti: { $sum: 1 }, avgGiacenzePerUtente: { $avg: '$count' } } }
+    ]);
+    
+    res.json({
+      totali: {
+        totalGiacenze,
+        giacenzeAttive,
+        giacenzeGlobali,
+        giacenzeConSettimana
+      },
+      quantita: quantitaStats[0] || {},
+      utenti: utentiConGiacenze[0] || { utenti: 0, avgGiacenzePerUtente: 0 }
+    });
+    
+  } catch (error) {
+    console.error('Errore nel recupero delle statistiche:', error);
     res.status(500).json({ error: error.message });
   }
 });
