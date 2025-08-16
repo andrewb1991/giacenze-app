@@ -34,6 +34,12 @@ export const apiCall = async (endpoint, options = {}, token = null) => {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // Gestisci specificatamente gli errori di autorizzazione
+      if (response.status === 401) {
+        throw new Error('Token non valido');
+      }
+      
       throw new Error(errorData.message || `Errore HTTP: ${response.status}`);
     }
 

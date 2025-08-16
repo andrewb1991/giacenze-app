@@ -5,7 +5,21 @@ import { apiCall } from '../services/api';
 
 export const useGiacenze = () => {
   const { state, dispatch } = useAppContext();
-  const { token, user, setError } = useAuth();
+  const { token, user, setError, logout } = useAuth();
+  
+  // Funzione helper per gestire errori di token non valido
+  const handleTokenError = (error) => {
+    if (error.message && (
+      error.message.includes('Token non valido') || 
+      error.message.includes('Unauthorized') ||
+      error.message.includes('401')
+    )) {
+      console.log('Token non valido rilevato, eseguendo logout automatico');
+      logout();
+      return true;
+    }
+    return false;
+  };
   
   const {
     myGiacenze,
@@ -89,6 +103,9 @@ export const useGiacenze = () => {
       console.log('Dati caricati con successo');
     } catch (err) {
       console.error('Errore caricamento dati:', err);
+      
+      if (handleTokenError(err)) return;
+      
       setError('Errore nel caricamento dei dati: ' + err.message);
     }
   };
@@ -128,6 +145,8 @@ export const useGiacenze = () => {
 
       console.log('Prodotto utilizzato con successo');
     } catch (err) {
+      if (handleTokenError(err)) return;
+      
       setError('Errore nell\'utilizzo del prodotto: ' + err.message);
     }
   };
@@ -175,6 +194,8 @@ export const useGiacenze = () => {
 
       console.log(result.message || 'Prodotto reintegrato con successo');
     } catch (err) {
+      if (handleTokenError(err)) return;
+      
       setError('Errore nel ripristino prodotto: ' + err.message);
     }
   };
@@ -200,6 +221,9 @@ export const useGiacenze = () => {
       dispatch({ type: 'SET_MY_UTILIZZI', payload: Array.isArray(data) ? data : [data] });
     } catch (err) {
       console.error('Errore nel caricamento utilizzi:', err);
+      
+      if (handleTokenError(err)) return;
+      
       setError('Errore nel caricamento utilizzi: ' + err.message);
     }
   };
@@ -233,6 +257,8 @@ export const useGiacenze = () => {
 
       console.log('Giacenza assegnata con successo');
     } catch (err) {
+      if (handleTokenError(err)) return;
+      
       setError('Errore nell\'assegnazione giacenza: ' + err.message);
     }
   };
@@ -274,6 +300,8 @@ export const useGiacenze = () => {
       console.log('Giacenza aggiornata con successo');
       return true;
     } catch (err) {
+      if (handleTokenError(err)) return false;
+      
       setError('Errore nell\'aggiornamento giacenza: ' + err.message);
       return false;
     }
@@ -298,47 +326,48 @@ export const useGiacenze = () => {
       console.log('Giacenza eliminata con successo');
       return true;
     } catch (err) {
+      if (handleTokenError(err)) return false;
+      
       setError('Errore nell\'eliminazione giacenza: ' + err.message);
       return false;
     }
   };
 
   const loadUserGiacenze = async (userId, filters = {}) => {
-  try {
-    setLoading(true);
-    setError('');
-    
-    // Costruisci i parametri della query
-    const queryParams = new URLSearchParams();
-    
-    // Aggiungi userId se specificato (per admin che visualizza giacenze di un utente)
-    if (userId) {
-      queryParams.append('userId', userId);
-    }
-    
-    // Aggiungi tutti i filtri
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== '' && value !== null && value !== undefined) {
-        queryParams.append(key, value);
+    try {
+      setError('');
+      
+      // Costruisci i parametri della query
+      const queryParams = new URLSearchParams();
+      
+      // Aggiungi userId se specificato (per admin che visualizza giacenze di un utente)
+      if (userId) {
+        queryParams.append('userId', userId);
       }
-    });
-    
-    // Determina quale endpoint usare
-    const endpoint = userId 
-      ? `/admin/giacenze?${queryParams}` // Admin che visualizza giacenze di un utente
-      : `/my-giacenze?${queryParams}`;   // Utente che visualizza le sue giacenze
-    
-    console.log('🔍 Caricando giacenze da:', endpoint);
-    
-    const data = await apiCall(endpoint, {}, token);
-    setAllGiacenze(Array.isArray(data) ? data : []);
-  } catch (err) {
-    setError('Errore nel caricamento giacenze: ' + err.message);
-    setAllGiacenze([]);
-  } finally {
-    setLoading(false);
-  }
-};
+      
+      // Aggiungi tutti i filtri
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== '' && value !== null && value !== undefined) {
+          queryParams.append(key, value);
+        }
+      });
+      
+      // Determina quale endpoint usare
+      const endpoint = userId 
+        ? `/admin/giacenze?${queryParams}` // Admin che visualizza giacenze di un utente
+        : `/my-giacenze?${queryParams}`;   // Utente che visualizza le sue giacenze
+      
+      console.log('🔍 Caricando giacenze da:', endpoint);
+      
+      const data = await apiCall(endpoint, {}, token);
+      dispatch({ type: 'SET_ALL_GIACENZE', payload: Array.isArray(data) ? data : [] });
+    } catch (err) {
+      if (handleTokenError(err)) return;
+      
+      setError('Errore nel caricamento giacenze: ' + err.message);
+      dispatch({ type: 'SET_ALL_GIACENZE', payload: [] });
+    }
+  };
   const setSelectedAssignment = (assignment) => {
     dispatch({ type: 'SET_SELECTED_ASSIGNMENT', payload: assignment });
   };
@@ -367,6 +396,7 @@ export const useGiacenze = () => {
     assignGiacenza,
     updateGiacenza,
     deleteGiacenza,
+    loadUserGiacenze,
     setSelectedAssignment
   };
 };

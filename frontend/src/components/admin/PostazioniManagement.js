@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Edit, Trash2, Save, X, Building, MapPin, Download, Upload, FileSpreadsheet, Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Building, MapPin, Download, Upload, FileSpreadsheet, Search, ChevronUp, ChevronDown, ChevronsUpDown, Settings } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { apiCall } from '../../services/api';
 
@@ -14,7 +14,7 @@ const getApiBaseUrl = () => {
 };
 
 const PostazioniManagement = () => {
-  const { token, setError } = useAuth();
+  const { token, setError, setCurrentPage } = useAuth();
   
   // Stati per dati
   const [postazioni, setPostazioni] = useState([]);
@@ -448,6 +448,15 @@ const PostazioniManagement = () => {
                   </span>
                 </button>
               </div>
+
+              <button
+                onClick={() => setCurrentPage('admin-poli')}
+                className="glass-button-secondary flex items-center gap-2 px-4 py-3 rounded-2xl hover:scale-105 transition-all duration-300"
+                title="Gestisci Poli"
+              >
+                <Settings className="w-4 h-4" />
+                <span className="font-medium">Gestisci Poli</span>
+              </button>
 
               <button
                 onClick={() => setShowAddForm(true)}

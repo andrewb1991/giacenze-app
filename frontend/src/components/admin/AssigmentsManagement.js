@@ -1593,13 +1593,34 @@ const AssignmentsManagement = () => {
             </h3>
           </div>
           
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="text-white/70">Caricamento assegnazioni...</div>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-white/10">
+          <div className="overflow-x-auto">
+            {loading ? (
+              // Skeleton loading animation
+              <div className="space-y-2">
+                {/* Header skeleton */}
+                <div className="glass-table-header-row flex">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex-1 px-6 py-3">
+                      <div className="animate-pulse bg-white/20 h-4 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Row skeletons */}
+                {[...Array(5)].map((_, rowIndex) => (
+                  <div key={rowIndex} className="glass-table-row flex border-t border-white/5">
+                    {[...Array(4)].map((_, colIndex) => (
+                      <div key={colIndex} className="flex-1 px-6 py-4">
+                        <div className="animate-pulse bg-white/10 h-4 rounded" 
+                             style={{ animationDelay: `${(rowIndex * 4 + colIndex) * 100}ms` }}>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : (
+                <table className="min-w-full divide-y divide-white/10">
                 <thead className="glass-table-header">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
@@ -1970,6 +1991,7 @@ const AssignmentsManagement = () => {
                   ))}
                 </tbody>
               </table>
+              )}
 
               {filteredAssegnazioni.length === 0 && !loading && (
                 <div className="text-center py-12">
@@ -1983,7 +2005,6 @@ const AssignmentsManagement = () => {
                 </div>
               )}
             </div>
-          )}
         </div>
       </div>
 
@@ -2202,6 +2223,18 @@ const AssignmentsManagement = () => {
 const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBackToList }) => {
   const [filteredPoli, setFilteredPoli] = useState(poli);
   const [filteredSettimane, setFilteredSettimane] = useState(settimane);
+  
+  // Stato per loading iniziale del calendario
+  const [loading, setLoading] = useState(true);
+  
+  // Simula caricamento iniziale per il calendario
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 800);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Helper per trovare i dati completi di un ordine
   const getOrdineCompleto = (numeroOrdine) => {
@@ -2281,7 +2314,33 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
       {/* Calendario */}
       <div className="glass-card-large rounded-2xl overflow-hidden">
         <div className="overflow-x-auto" ref={tableRef}>
-          <table className="w-full">
+          {loading ? (
+            // Skeleton loading animation
+            <div className="space-y-2">
+              {/* Header skeleton */}
+              <div className="glass-table-header-row flex">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="flex-1 px-4 py-3">
+                    <div className="animate-pulse bg-white/20 h-4 rounded"></div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Row skeletons */}
+              {[...Array(8)].map((_, rowIndex) => (
+                <div key={rowIndex} className="glass-table-row flex border-t border-white/5">
+                  {[...Array(6)].map((_, colIndex) => (
+                    <div key={colIndex} className="flex-1 px-4 py-2">
+                      <div className="animate-pulse bg-white/10 h-8 rounded" 
+                           style={{ animationDelay: `${(rowIndex * 6 + colIndex) * 100}ms` }}>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <table className="w-full">
             <thead className="glass-table-header">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider sticky left-0 bg-gray-800/50 backdrop-blur-md">
@@ -2406,6 +2465,7 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
               ))}
             </tbody>
           </table>
+          )}
         </div>
       </div>
 

@@ -16,6 +16,7 @@ import AdminUtilizziSection from './components/admin/sections/AdminUtilizziSecti
 import AdminOperatoriSection from './components/admin/sections/AdminOperatoriSection';
 import AdminProdottiSection from './components/admin/sections/AdminProdottiSection';
 import AdminPostazioniSection from './components/admin/sections/AdminPostazioniSection';
+import AdminPoliSection from './components/admin/sections/AdminPoliSection';
 import AdminReportsSection from './components/admin/sections/AdminReportsSection';
 import AdminOrdiniSection from './components/admin/sections/AdminOrdiniSection';
 import AdminCreaOrdiniSection from './components/admin/sections/AdminCreaOrdiniSection';
@@ -238,6 +239,8 @@ const AppContent = () => {
         return user?.role === 'admin' ? <AdminProdottiSection /> : <Dashboard />;
       case 'admin-postazioni':
         return user?.role === 'admin' ? <AdminPostazioniSection /> : <Dashboard />;
+      case 'admin-poli':
+        return user?.role === 'admin' ? <AdminPoliSection /> : <Dashboard />;
       case 'admin-reports':
         return user?.role === 'admin' ? <AdminReportsSection /> : <Dashboard />;
       case 'admin-ordini':

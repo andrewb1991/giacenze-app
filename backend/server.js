@@ -58,6 +58,11 @@ const productSchema = new mongoose.Schema({
 const poloSchema = new mongoose.Schema({
   nome: { type: String, required: true },
   descrizione: String,
+  indirizzo: String,
+  coordinate: {
+    lat: { type: Number },
+    lng: { type: Number }
+  },
   attivo: { type: Boolean, default: true }
 }, { timestamps: true });
 
@@ -2189,6 +2194,173 @@ app.get('/api/poli', authenticateToken, async (req, res) => {
     const poli = await Polo.find({ attivo: true });
     res.json(poli);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Crea nuovo polo (Admin)
+app.post('/api/poli', authenticateToken, async (req, res) => {
+  try {
+    const { nome, descrizione, indirizzo, coordinate } = req.body;
+    
+    if (!nome) {
+      return res.status(400).json({ message: 'Il nome del polo è obbligatorio' });
+    }
+
+    // Verifica se esiste già un polo con lo stesso nome
+    const existingPolo = await Polo.findOne({ nome: nome.trim(), attivo: true });
+    if (existingPolo) {
+      return res.status(400).json({ message: 'Esiste già un polo con questo nome' });
+    }
+
+    const newPolo = new Polo({
+      nome: nome.trim(),
+      descrizione: descrizione?.trim() || '',
+      indirizzo: indirizzo?.trim() || '',
+      coordinate: coordinate || { lat: '', lng: '' },
+      attivo: true
+    });
+
+    const savedPolo = await newPolo.save();
+    res.status(201).json(savedPolo);
+  } catch (error) {
+    console.error('❌ Errore creazione polo:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// PUT - Aggiorna polo (Admin)
+app.put('/api/poli/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, descrizione, indirizzo, coordinate } = req.body;
+    
+    if (!nome) {
+      return res.status(400).json({ message: 'Il nome del polo è obbligatorio' });
+    }
+
+    // Verifica se esiste già un altro polo con lo stesso nome
+    const existingPolo = await Polo.findOne({ 
+      nome: nome.trim(), 
+      attivo: true,
+      _id: { $ne: id }
+    });
+    if (existingPolo) {
+      return res.status(400).json({ message: 'Esiste già un polo con questo nome' });
+    }
+
+    const updatedPolo = await Polo.findByIdAndUpdate(
+      id,
+      {
+        nome: nome.trim(),
+        descrizione: descrizione?.trim() || '',
+        indirizzo: indirizzo?.trim() || '',
+        coordinate: coordinate || { lat: '', lng: '' }
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedPolo) {
+      return res.status(404).json({ message: 'Polo non trovato' });
+    }
+
+    res.json(updatedPolo);
+  } catch (error) {
+    console.error('❌ Errore aggiornamento polo:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE - Elimina polo (Admin) - Con controlli per assegnazioni e utilizzi
+app.delete('/api/poli/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Verifica se il polo esiste
+    const polo = await Polo.findById(id);
+    if (!polo) {
+      return res.status(404).json({ message: 'Polo non trovato' });
+    }
+
+    // Controlla se ci sono assegnazioni attive collegate al polo
+    const assegnazioniAttive = await Assegnazione.find({ 
+      poloId: id, 
+      attiva: true 
+    }).populate('userId', 'username');
+
+    // Controlla se ci sono utilizzi collegati al polo
+    const utilizzi = await Utilizzo.find({ poloId: id }).limit(1);
+
+    // Controlla se ci sono postazioni collegate al polo
+    const postazioni = await Postazione.find({ poloId: id, attiva: true });
+
+    if (assegnazioniAttive.length > 0 || utilizzi.length > 0 || postazioni.length > 0) {
+      const conflitti = [];
+      
+      if (assegnazioniAttive.length > 0) {
+        conflitti.push(`${assegnazioniAttive.length} assegnazioni attive (operatori: ${assegnazioniAttive.map(a => a.userId.username).join(', ')})`);
+      }
+      
+      if (utilizzi.length > 0) {
+        const countUtilizzi = await Utilizzo.countDocuments({ poloId: id });
+        conflitti.push(`${countUtilizzi} utilizzi registrati`);
+      }
+      
+      if (postazioni.length > 0) {
+        conflitti.push(`${postazioni.length} postazioni collegate`);
+      }
+
+      return res.status(400).json({ 
+        message: 'Impossibile eliminare il polo',
+        dettagli: `Il polo "${polo.nome}" ha ancora:`,
+        conflitti,
+        richiediConferma: true,
+        poloId: id,
+        nomeCompleto: polo.nome
+      });
+    }
+
+    // Se non ci sono conflitti, procedi con l'eliminazione (soft delete)
+    await Polo.findByIdAndUpdate(id, { attivo: false });
+    
+    res.json({ 
+      message: 'Polo eliminato con successo',
+      nome: polo.nome
+    });
+  } catch (error) {
+    console.error('❌ Errore eliminazione polo:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE - Forza eliminazione polo (Admin) - Con parametro force
+app.delete('/api/poli/:id/force', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const polo = await Polo.findById(id);
+    if (!polo) {
+      return res.status(404).json({ message: 'Polo non trovato' });
+    }
+
+    // Elimina/disattiva tutti i dati collegati
+    await Promise.all([
+      // Disattiva assegnazioni
+      Assegnazione.updateMany({ poloId: id }, { attiva: false }),
+      // Disattiva postazioni
+      Postazione.updateMany({ poloId: id }, { attiva: false }),
+      // Note: gli utilizzi rimangono per storico ma il polo risulterà non più attivo
+    ]);
+
+    // Elimina il polo
+    await Polo.findByIdAndUpdate(id, { attivo: false });
+    
+    res.json({ 
+      message: 'Polo e tutti i dati collegati eliminati con successo',
+      nome: polo.nome
+    });
+  } catch (error) {
+    console.error('❌ Errore eliminazione forzata polo:', error);
     res.status(500).json({ message: error.message });
   }
 });

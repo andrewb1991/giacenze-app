@@ -14,6 +14,7 @@ const UtilizziManagement = () => {
   // Stati per filtri
   const [filters, setFilters] = useState({
     userId: '',
+    poloId: '',
     settimanaId: '',
     searchTerm: ''
   });
@@ -38,6 +39,10 @@ const UtilizziManagement = () => {
     quantitaUtilizzata: '',
     note: ''
   });
+
+  // Stati per popup di conferma eliminazione
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [utilizzoToDelete, setUtilizzoToDelete] = useState(null);
 
   // Mouse tracking per effetti interattivi
   useEffect(() => {
@@ -87,6 +92,7 @@ const UtilizziManagement = () => {
       
       const queryParams = new URLSearchParams();
       if (filters.userId) queryParams.append('userId', filters.userId);
+      if (filters.poloId) queryParams.append('poloId', filters.poloId);
       if (filters.settimanaId) queryParams.append('settimanaId', filters.settimanaId);
       
       const data = await apiCall(`/admin/utilizzi?${queryParams}`, {}, token);
@@ -173,7 +179,7 @@ const UtilizziManagement = () => {
   // Carica dati quando cambiano i filtri
   useEffect(() => {
     loadAllUtilizzi();
-  }, [filters.userId, filters.settimanaId]);
+  }, [filters.userId, filters.poloId, filters.settimanaId]);
 
   // Riapplica raggruppamento quando cambia il termine di ricerca
   useEffect(() => {
@@ -283,20 +289,31 @@ const UtilizziManagement = () => {
     }
   };
 
-  const deleteUtilizzo = async (utilizzoId) => {
-    if (!window.confirm('Sei sicuro di voler eliminare questo utilizzo? Questa azione ripristinerà la quantità del prodotto.')) {
-      return;
-    }
+  // Apri popup di conferma eliminazione
+  const openDeleteConfirm = (utilizzo) => {
+    setUtilizzoToDelete(utilizzo);
+    setDeleteConfirmOpen(true);
+  };
+
+  // Chiudi popup di conferma eliminazione
+  const closeDeleteConfirm = () => {
+    setDeleteConfirmOpen(false);
+    setUtilizzoToDelete(null);
+  };
+
+  // Conferma eliminazione utilizzo
+  const confirmDeleteUtilizzo = async () => {
+    if (!utilizzoToDelete) return;
 
     try {
       setError('');
       
-      await apiCall(`/admin/utilizzi/${utilizzoId}`, {
+      await apiCall(`/admin/utilizzi/${utilizzoToDelete._id}`, {
         method: 'DELETE'
       }, token);
 
       // Aggiorna immediatamente gli utilizzi nel modal
-      const updatedModalUtilizzi = modalUtilizzi.filter(utilizzo => utilizzo._id !== utilizzoId);
+      const updatedModalUtilizzi = modalUtilizzi.filter(utilizzo => utilizzo._id !== utilizzoToDelete._id);
       
       if (updatedModalUtilizzi.length === 0) {
         // Se non ci sono più utilizzi, chiudi il modal
@@ -307,7 +324,7 @@ const UtilizziManagement = () => {
         
         // Aggiorna anche il selectedGroup per coerenza
         if (selectedGroup) {
-          const updatedUtilizzi = selectedGroup.utilizzi.filter(utilizzo => utilizzo._id !== utilizzoId);
+          const updatedUtilizzi = selectedGroup.utilizzi.filter(utilizzo => utilizzo._id !== utilizzoToDelete._id);
           
           // Ricalcola il totale
           const newTotal = updatedUtilizzi.reduce((sum, u) => sum + (u.quantitaUtilizzata || 0), 0);
@@ -325,9 +342,13 @@ const UtilizziManagement = () => {
       // Ricarica dati in background per mantenere sincronizzazione
       loadAllUtilizzi();
       
+      // Chiudi popup di conferma
+      closeDeleteConfirm();
+      
       setError('Utilizzo eliminato con successo');
     } catch (err) {
       setError('Errore nell\'eliminazione: ' + err.message);
+      closeDeleteConfirm();
     }
   };
 
@@ -373,7 +394,7 @@ const UtilizziManagement = () => {
             Filtri di Ricerca
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             {/* Filtro Operatore */}
             <div>
               <label className="block text-sm font-medium text-white/80 mb-2">
@@ -388,6 +409,26 @@ const UtilizziManagement = () => {
                 {users.filter(u => u.role === 'user').map(user => (
                   <option key={user._id} value={user._id} className="bg-gray-800">
                     {user.username} - {user.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtro Polo */}
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
+                <MapPin className="w-4 h-4 mr-2" />
+                Polo
+              </label>
+              <select
+                className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                value={filters.poloId}
+                onChange={(e) => updateFilters({ poloId: e.target.value })}
+              >
+                <option value="" className="bg-gray-800">Tutti i poli</option>
+                {poli.map(polo => (
+                  <option key={polo._id} value={polo._id} className="bg-gray-800">
+                    {polo.nome}
                   </option>
                 ))}
               </select>
@@ -477,6 +518,11 @@ const UtilizziManagement = () => {
                 Operatore: {users.find(u => u._id === filters.userId)?.username}
               </span>
             )}
+            {filters.poloId && (
+              <span className="glass-badge px-3 py-1 rounded-full text-orange-200 border border-orange-300/20">
+                Polo: {poli.find(p => p._id === filters.poloId)?.nome}
+              </span>
+            )}
             {filters.settimanaId && (
               <span className="glass-badge px-3 py-1 rounded-full text-green-200 border border-green-300/20">
                 Settimana: {formatWeek(settimane.find(s => s._id === filters.settimanaId))}
@@ -504,14 +550,35 @@ const UtilizziManagement = () => {
             </h3>
           </div>
           
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="text-white/70">Caricamento utilizzi...</div>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-white/10">
-                <thead className="glass-table-header">
+          <div className="overflow-x-auto">
+            {loading ? (
+              // Skeleton loading animation
+              <div className="space-y-2">
+                {/* Header skeleton */}
+                <div className="glass-table-header-row flex">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex-1 px-6 py-3">
+                      <div className="animate-pulse bg-white/20 h-4 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Row skeletons */}
+                {[...Array(6)].map((_, rowIndex) => (
+                  <div key={rowIndex} className="glass-table-row flex border-t border-white/5">
+                    {[...Array(5)].map((_, colIndex) => (
+                      <div key={colIndex} className="flex-1 px-6 py-4">
+                        <div className="animate-pulse bg-white/10 h-4 rounded" 
+                             style={{ animationDelay: `${(rowIndex * 5 + colIndex) * 100}ms` }}>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : (
+                <table className="min-w-full divide-y divide-white/10">
+                  <thead className="glass-table-header">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Operatore
@@ -520,16 +587,13 @@ const UtilizziManagement = () => {
                       Prodotto
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
+                      Polo
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Settimana
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Totale Utilizzato
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       N° Utilizzi
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Periodo
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Azioni
@@ -538,10 +602,6 @@ const UtilizziManagement = () => {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {groupedUtilizzi.map(group => {
-                    const periodoUtilizzo = group.dataPrimoUtilizzo === group.dataUltimoUtilizzo 
-                      ? formatDateTime(group.dataUltimoUtilizzo).date
-                      : `${formatDateTime(group.dataPrimoUtilizzo).date} - ${formatDateTime(group.dataUltimoUtilizzo).date}`;
-                    
                     return (
                       <tr 
                         key={group.key} 
@@ -577,6 +637,15 @@ const UtilizziManagement = () => {
                             </div>
                           </div>
                         </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <MapPin className="w-4 h-4 mr-2 text-orange-300" />
+                            <div className="text-sm font-medium text-white">
+                              {group.utilizzi[0]?.poloId?.nome || 'N/A'}
+                            </div>
+                          </div>
+                        </td>
                         
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -589,29 +658,10 @@ const UtilizziManagement = () => {
                         
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="glass-quantity-badge px-3 py-1 rounded-full">
-                              <span className="text-sm font-bold text-red-300">
-                                -{group.totalQuantita} {group.productId?.unita}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
                             <div className="glass-count-badge px-2 py-1 rounded-full">
                               <span className="text-sm font-medium text-white">
                                 {group.numeroUtilizzi}
                               </span>
-                            </div>
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <Clock className="w-4 h-4 mr-2 text-purple-300" />
-                            <div className="text-sm text-white">
-                              {periodoUtilizzo}
                             </div>
                           </div>
                         </td>
@@ -633,25 +683,26 @@ const UtilizziManagement = () => {
                       </tr>
                     );
                   })}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+                )}
 
-              {groupedUtilizzi.length === 0 && !loading && (
-                <div className="text-center py-12">
-                  <div className="glass-icon w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center">
-                    <BarChart3 className="w-8 h-8 text-white/50" />
+                {groupedUtilizzi.length === 0 && !loading && (
+                  <div className="text-center py-12">
+                    <div className="glass-icon w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center">
+                      <BarChart3 className="w-8 h-8 text-white/50" />
+                    </div>
+                    <p className="text-white/70 text-lg mb-2">Nessun utilizzo trovato</p>
+                    <p className="text-sm text-white/50">
+                      {filters.userId || filters.settimanaId || filters.searchTerm
+                        ? 'Prova a modificare i filtri per vedere più risultati'
+                        : 'Gli utilizzi appariranno qui quando gli operatori useranno i prodotti'
+                      }
+                    </p>
                   </div>
-                  <p className="text-white/70 text-lg mb-2">Nessun utilizzo trovato</p>
-                  <p className="text-sm text-white/50">
-                    {filters.userId || filters.settimanaId || filters.searchTerm
-                      ? 'Prova a modificare i filtri per vedere più risultati'
-                      : 'Gli utilizzi appariranno qui quando gli operatori useranno i prodotti'
-                    }
-                  </p>
-                </div>
+                )}
               )}
             </div>
-          )}
         </div>
 
       </div>
@@ -689,36 +740,6 @@ const UtilizziManagement = () => {
                 >
                   <X className="w-6 h-6" />
                 </button>
-              </div>
-            </div>
-
-            {/* Riepilogo */}
-            <div className="glass-modal-summary px-6 py-4 border-b border-white/10">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="glass-summary-item p-3 rounded-xl text-center">
-                  <div className="text-2xl font-bold text-red-300">
-                    -{selectedGroup.totalQuantita}
-                  </div>
-                  <div className="text-xs text-white/60">Totale Utilizzato</div>
-                </div>
-                <div className="glass-summary-item p-3 rounded-xl text-center">
-                  <div className="text-2xl font-bold text-blue-300">
-                    {selectedGroup.numeroUtilizzi}
-                  </div>
-                  <div className="text-xs text-white/60">Numero Utilizzi</div>
-                </div>
-                <div className="glass-summary-item p-3 rounded-xl text-center">
-                  <div className="text-lg font-bold text-green-300">
-                    {(selectedGroup.totalQuantita / selectedGroup.numeroUtilizzi).toFixed(1)}
-                  </div>
-                  <div className="text-xs text-white/60">Media per Utilizzo</div>
-                </div>
-                <div className="glass-summary-item p-3 rounded-xl text-center">
-                  <div className="text-lg font-bold text-purple-300">
-                    {selectedGroup.productId?.unita}
-                  </div>
-                  <div className="text-xs text-white/60">Unità di Misura</div>
-                </div>
               </div>
             </div>
 
@@ -860,7 +881,7 @@ const UtilizziManagement = () => {
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => deleteUtilizzo(utilizzo._id)}
+                                onClick={() => openDeleteConfirm(utilizzo)}
                                 className="glass-button p-2 rounded-xl text-red-300 hover:text-red-200 hover:scale-105 transition-all duration-300"
                                 title="Elimina utilizzo"
                               >
@@ -887,6 +908,119 @@ const UtilizziManagement = () => {
                   className="glass-button-secondary px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
                 >
                   Chiudi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup Conferma Eliminazione Utilizzo */}
+      {deleteConfirmOpen && utilizzoToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closeDeleteConfirm}
+          ></div>
+          
+          {/* Popup Content */}
+          <div className="relative glass-modal w-full max-w-md rounded-2xl overflow-hidden">
+            {/* Header */}
+            <div className="glass-modal-header px-6 py-4 border-b border-white/10">
+              <div className="flex items-center space-x-3">
+                <div className="glass-icon p-2 rounded-xl bg-red-500/20 border border-red-400/30">
+                  <AlertCircle className="w-6 h-6 text-red-300" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">
+                    Conferma Eliminazione
+                  </h3>
+                  <p className="text-sm text-white/70">
+                    Questa azione non può essere annullata
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="glass-modal-content px-6 py-6">
+              <div className="space-y-4">
+                <p className="text-white/90">
+                  Sei sicuro di voler eliminare questo utilizzo?
+                </p>
+                
+                {/* Dettagli utilizzo da eliminare */}
+                <div className="glass-utilizzo-summary p-4 rounded-xl border border-red-400/20 bg-red-500/10">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-white/60 mb-1">Prodotto</div>
+                      <div className="text-white font-medium">
+                        {utilizzoToDelete.productId?.nome}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-white/60 mb-1">Quantità</div>
+                      <div className="text-red-300 font-bold">
+                        -{utilizzoToDelete.quantitaUtilizzata} {utilizzoToDelete.productId?.unita}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-white/60 mb-1">Data</div>
+                      <div className="text-white">
+                        {new Date(utilizzoToDelete.dataUtilizzo).toLocaleDateString('it-IT', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric'
+                        })}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-white/60 mb-1">Ora</div>
+                      <div className="text-white">
+                        {new Date(utilizzoToDelete.dataUtilizzo).toLocaleTimeString('it-IT', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </div>
+                    {utilizzoToDelete.note && (
+                      <div className="col-span-2">
+                        <div className="text-white/60 mb-1">Note</div>
+                        <div className="text-white/80 italic">
+                          "{utilizzoToDelete.note}"
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="glass-warning-box p-3 rounded-xl bg-yellow-500/10 border border-yellow-400/20">
+                  <div className="flex items-start space-x-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-300 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-yellow-200">
+                      <strong>Attenzione:</strong> Eliminando questo utilizzo, la quantità del prodotto verrà automaticamente ripristinata nella giacenza dell'operatore.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="glass-modal-footer px-6 py-4 border-t border-white/10">
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={closeDeleteConfirm}
+                  className="glass-button-secondary px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={confirmDeleteUtilizzo}
+                  className="glass-button-danger px-4 py-2 rounded-xl text-white font-semibold hover:scale-105 transition-all duration-300 flex items-center space-x-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Elimina Utilizzo</span>
                 </button>
               </div>
             </div>
@@ -1021,6 +1155,28 @@ const UtilizziManagement = () => {
         .glass-utilizzo-item:hover {
           background: rgba(255, 255, 255, 0.08);
           border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-button-danger {
+          background: rgba(239, 68, 68, 0.3);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(239, 68, 68, 0.4);
+          color: white;
+        }
+
+        .glass-button-danger:hover {
+          background: rgba(239, 68, 68, 0.4);
+          border-color: rgba(239, 68, 68, 0.6);
+        }
+
+        .glass-utilizzo-summary {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+        }
+
+        .glass-warning-box {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
         }
 
 

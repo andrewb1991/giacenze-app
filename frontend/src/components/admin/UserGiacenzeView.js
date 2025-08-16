@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Truck, Plus, User, Package, ArrowLeft, CheckCircle, AlertCircle, Eye, Filter, Search, BarChart3, X, Trash2, Edit, Save } from 'lucide-react';
+import { Calendar, MapPin, Truck, Plus, User, Package, ArrowLeft, CheckCircle, AlertCircle, Eye, Filter, Search, BarChart3, X, Trash2, Edit, Save, ChevronUp, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
@@ -193,6 +193,12 @@ const UserGiacenzeView = () => {
     sogliaMinimaMax: ''
   });
 
+  // Stati per ordinamento
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: 'asc'
+  });
+
   // Mouse tracking per effetti interattivi
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -205,6 +211,62 @@ const UserGiacenzeView = () => {
 
   const selectedUser = users.find(u => u._id === selectedUserForGiacenze);
   const userAssignments = assegnazioni.filter(a => a.userId?._id === selectedUserForGiacenze);
+
+  // Funzione per gestire l'ordinamento
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Funzione per ordinare le giacenze utente
+  const sortUserGiacenze = (giacenze, sortConfig) => {
+    if (!sortConfig.key) return giacenze;
+
+    return [...giacenze].sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sortConfig.key) {
+        case 'prodotto':
+          aValue = a.productId?.nome || '';
+          bValue = b.productId?.nome || '';
+          break;
+        case 'quantitaAssegnata':
+          aValue = a.quantitaAssegnata || 0;
+          bValue = b.quantitaAssegnata || 0;
+          break;
+        case 'quantitaDisponibile':
+          aValue = a.quantitaDisponibile || 0;
+          bValue = b.quantitaDisponibile || 0;
+          break;
+        case 'quantitaMinima':
+          aValue = a.quantitaMinima || 0;
+          bValue = b.quantitaMinima || 0;
+          break;
+        case 'settimana':
+          // Ordina prima le globali, poi per settimana
+          aValue = a.settimanaId ? `1_${a.settimanaId.dataInizio}` : '0_globale';
+          bValue = b.settimanaId ? `1_${b.settimanaId.dataInizio}` : '0_globale';
+          break;
+        case 'stato':
+          aValue = a.quantitaDisponibile <= a.quantitaMinima ? 0 : 1; // 0 per critico, 1 per ok
+          bValue = b.quantitaDisponibile <= b.quantitaMinima ? 0 : 1;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
 
   // ✅ FUNZIONE: Carica giacenze utente con filtri dal backend
   const loadUserGiacenze = async () => {
@@ -252,7 +314,11 @@ const UserGiacenzeView = () => {
       console.log('👤 Filtri per utente:', selectedUser?.username, Object.fromEntries(queryParams));
       
       const data = await apiCall(url, {}, token);
-      setUserGiacenze(Array.isArray(data) ? data : []);
+      const giacenzeData = Array.isArray(data) ? data : [];
+      
+      // Applica ordinamento se configurato
+      const sortedGiacenze = sortUserGiacenze(giacenzeData, sortConfig);
+      setUserGiacenze(sortedGiacenze);
       
     } catch (err) {
       setError('Errore nel caricamento giacenze utente: ' + err.message);
@@ -279,6 +345,14 @@ const UserGiacenzeView = () => {
     filters.sogliaMinimaMin,
     filters.sogliaMinimaMax
   ]);
+
+  // ✅ RIAPPLICA ORDINAMENTO quando cambia sortConfig
+  useEffect(() => {
+    if (userGiacenze.length > 0) {
+      const sortedGiacenze = sortUserGiacenze(userGiacenze, sortConfig);
+      setUserGiacenze(sortedGiacenze);
+    }
+  }, [sortConfig]);
 
   const setSelectedUserForGiacenze = (userId) => {
     dispatch({ type: 'SET_SELECTED_USER_FOR_GIACENZE', payload: userId });
@@ -1113,22 +1187,82 @@ const UserGiacenzeView = () => {
                 <thead className="glass-table-header">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Prodotto
+                      <button
+                        onClick={() => handleSort('prodotto')}
+                        className="flex items-center space-x-1 hover:text-white transition-colors"
+                      >
+                        <span>Prodotto</span>
+                        {sortConfig.key === 'prodotto' ? (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 opacity-30" />
+                        )}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Quantità Assegnata
+                      <button
+                        onClick={() => handleSort('quantitaAssegnata')}
+                        className="flex items-center space-x-1 hover:text-white transition-colors"
+                      >
+                        <span>Quantità Assegnata</span>
+                        {sortConfig.key === 'quantitaAssegnata' ? (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 opacity-30" />
+                        )}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Disponibile
+                      <button
+                        onClick={() => handleSort('quantitaDisponibile')}
+                        className="flex items-center space-x-1 hover:text-white transition-colors"
+                      >
+                        <span>Disponibile</span>
+                        {sortConfig.key === 'quantitaDisponibile' ? (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 opacity-30" />
+                        )}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Soglia Min
+                      <button
+                        onClick={() => handleSort('quantitaMinima')}
+                        className="flex items-center space-x-1 hover:text-white transition-colors"
+                      >
+                        <span>Soglia Min</span>
+                        {sortConfig.key === 'quantitaMinima' ? (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 opacity-30" />
+                        )}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Settimana
+                      <button
+                        onClick={() => handleSort('settimana')}
+                        className="flex items-center space-x-1 hover:text-white transition-colors"
+                      >
+                        <span>Settimana</span>
+                        {sortConfig.key === 'settimana' ? (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 opacity-30" />
+                        )}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Stato
+                      <button
+                        onClick={() => handleSort('stato')}
+                        className="flex items-center space-x-1 hover:text-white transition-colors"
+                      >
+                        <span>Stato</span>
+                        {sortConfig.key === 'stato' ? (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 opacity-30" />
+                        )}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Azioni
