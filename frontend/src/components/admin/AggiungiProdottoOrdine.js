@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { apiCall } from '../../services/api';
+import { useModalAnimation } from '../../hooks/useModalAnimation';
 
 const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
   const { token, setError } = useAuth();
@@ -18,6 +19,14 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
   
   // Determina se l'ordine è in modalità readonly (completato)
   const isReadOnly = ordine?.stato === 'COMPLETATO';
+  
+  // Modal animation
+  const modalAnimation = useModalAnimation(true);
+  
+  // Handle close with animation
+  const handleClose = () => {
+    modalAnimation.closeModal(onClose);
+  };
   
   // Stati per la tabella prodotti unificata
   const [prodottiOrdine, setProdottiOrdine] = useState([]); // Prodotti già nell'ordine
@@ -762,8 +771,8 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
   const operatore = getAssegnazioneForItem(ordine.itemType, ordine.numero)?.userId;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm">
-      <div className="glass-modal w-full h-full flex flex-col">
+    <div className={`fixed inset-0 z-50 bg-black/50 backdrop-blur-sm ${modalAnimation.backdropClass}`}>
+      <div className={`glass-modal w-full h-full flex flex-col ${modalAnimation.modalClass}`}>
         {/* Header */}
         <div className="glass-modal-header p-6 border-b border-white/20 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -781,7 +790,7 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                 </p>
               </div>
             </div>
-            <button onClick={onClose} className="glass-action-button p-2 rounded-xl">
+            <button onClick={handleClose} className="glass-action-button p-2 rounded-xl">
               <X className="w-5 h-5 text-white" />
             </button>
           </div>
@@ -1045,7 +1054,7 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
         <div className="glass-modal-footer p-6 border-t border-white/20 flex-shrink-0">
           <div className="flex items-center justify-between">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="glass-button-secondary flex items-center gap-2 px-6 py-3 rounded-xl hover:scale-105 transition-all"
             >
               <ArrowLeft className="w-4 h-4" />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, Building, MapPin, Search, ChevronUp, ChevronDown, ChevronsUpDown, ArrowLeft } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Truck, Search, ChevronUp, ChevronDown, ChevronsUpDown, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { apiCall } from '../../services/api';
 import { useModalAnimation } from '../../hooks/useModalAnimation';
@@ -14,31 +14,35 @@ const getApiBaseUrl = () => {
     : 'http://localhost:7070/api';
 };
 
-const PoliManagement = () => {
+const MezziManagement = () => {
   const { token, setError, setCurrentPage } = useAuth();
   
   // Stati per dati
-  const [poli, setPoli] = useState([]);
+  const [mezzi, setMezzi] = useState([]);
   const [loading, setLoading] = useState(false);
   
   
-  // Stati per form nuovo polo
+  // Stati per form nuovo mezzo
   const [showAddForm, setShowAddForm] = useState(false);
   const [isClosingForm, setIsClosingForm] = useState(false);
   const [addForm, setAddForm] = useState({
     nome: '',
-    indirizzo: '',
-    latitudine: '',
-    longitudine: ''
+    descrizione: '',
+    targa: '',
+    tipo: '',
+    marca: '',
+    modello: ''
   });
   
   // Stati per editing
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
     nome: '',
-    indirizzo: '',
-    latitudine: '',
-    longitudine: ''
+    descrizione: '',
+    targa: '',
+    tipo: '',
+    marca: '',
+    modello: ''
   });
 
   // Stati per ordinamento
@@ -46,15 +50,17 @@ const PoliManagement = () => {
   const [sortDirection, setSortDirection] = useState('asc');
   
   // Stati per filtri di ricerca
-  const [searchPoli, setSearchPoli] = useState('');
-  const [searchIndirizzi, setSearchIndirizzi] = useState('');
+  const [searchMezzi, setSearchMezzi] = useState('');
+  const [searchTarghe, setSearchTarghe] = useState('');
 
   // Stati per popup conferma eliminazione
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteModalData, setDeleteModalData] = useState(null);
   
-  // Modal animations
-  const deleteModalAnimation = useModalAnimation(showDeleteModal);
+  // Hook per animazioni modal eliminazione
+  const deleteModalAnimation = useModalAnimation(showDeleteModal, () => {
+    setDeleteModalData(null);
+  });
 
   // Carica dati dal server
   const loadData = async () => {
@@ -62,12 +68,12 @@ const PoliManagement = () => {
       setLoading(true);
       setError('');
       
-      // Carica poli
-      const poliData = await apiCall('/poli', {}, token);
-      setPoli(poliData || []);
+      // Carica mezzi
+      const mezziData = await apiCall('/mezzi', {}, token);
+      setMezzi(mezziData || []);
     } catch (err) {
       setError('Errore nel caricamento dati: ' + err.message);
-      setPoli([]);
+      setMezzi([]);
     } finally {
       setLoading(false);
     }
@@ -92,14 +98,16 @@ const PoliManagement = () => {
   const resetAddFormData = () => {
     setAddForm({
       nome: '',
-      indirizzo: '',
-      latitudine: '',
-      longitudine: ''
+      descrizione: '',
+      targa: '',
+      tipo: '',
+      marca: '',
+      modello: ''
     });
   };
 
-  // Aggiunge nuovo polo
-  const addPolo = async () => {
+  // Aggiunge nuovo mezzo
+  const addMezzo = async () => {
     try {
       setError('');
       
@@ -108,37 +116,38 @@ const PoliManagement = () => {
         return;
       }
 
-      // Prepara i dati con coordinate nel formato corretto
-      const newPolo = {
+      const newMezzo = {
         nome: addForm.nome.trim(),
-        indirizzo: addForm.indirizzo.trim(),
-        coordinate: {
-          lat: parseFloat(addForm.latitudine) || '',
-          lng: parseFloat(addForm.longitudine) || ''
-        }
+        descrizione: addForm.descrizione.trim(),
+        targa: addForm.targa.trim(),
+        tipo: addForm.tipo.trim(),
+        marca: addForm.marca.trim(),
+        modello: addForm.modello.trim()
       };
 
-      await apiCall('/poli', {
+      await apiCall('/mezzi', {
         method: 'POST',
-        body: JSON.stringify(newPolo)
+        body: JSON.stringify(newMezzo)
       }, token);
 
       await loadData();
       closeAddForm();
-      setError('Polo aggiunto con successo');
+      setError('Mezzo aggiunto con successo');
     } catch (err) {
-      setError('Errore nell\'aggiunta del polo: ' + err.message);
+      setError('Errore nell\'aggiunta del mezzo: ' + err.message);
     }
   };
 
   // Inizia editing
-  const startEdit = (polo) => {
-    setEditingId(polo._id);
+  const startEdit = (mezzo) => {
+    setEditingId(mezzo._id);
     setEditForm({
-      nome: polo.nome || '',
-      indirizzo: polo.indirizzo || '',
-      latitudine: polo.coordinate?.lat || '',
-      longitudine: polo.coordinate?.lng || ''
+      nome: mezzo.nome || '',
+      descrizione: mezzo.descrizione || '',
+      targa: mezzo.targa || '',
+      tipo: mezzo.tipo || '',
+      marca: mezzo.marca || '',
+      modello: mezzo.modello || ''
     });
   };
 
@@ -147,47 +156,72 @@ const PoliManagement = () => {
     setEditingId(null);
     setEditForm({
       nome: '',
-      indirizzo: '',
-      latitudine: '',
-      longitudine: ''
+      descrizione: '',
+      targa: '',
+      tipo: '',
+      marca: '',
+      modello: ''
     });
   };
 
   // Salva modifiche
-  const saveEdit = async (poloId) => {
+  const saveEdit = async (mezzoId) => {
     try {
       setError('');
       
-      // Prepara i dati con coordinate nel formato corretto
       const updateData = {
         nome: editForm.nome,
-        indirizzo: editForm.indirizzo,
-        coordinate: {
-          lat: parseFloat(editForm.latitudine) || '',
-          lng: parseFloat(editForm.longitudine) || ''
-        }
+        descrizione: editForm.descrizione,
+        targa: editForm.targa,
+        tipo: editForm.tipo,
+        marca: editForm.marca,
+        modello: editForm.modello
       };
 
-      await apiCall(`/poli/${poloId}`, {
+      await apiCall(`/mezzi/${mezzoId}`, {
         method: 'PUT',
         body: JSON.stringify(updateData)
       }, token);
 
       await loadData();
       cancelEdit();
-      setError('Polo aggiornato con successo');
+      setError('Mezzo aggiornato con successo');
     } catch (err) {
       setError('Errore nella modifica: ' + err.message);
     }
   };
 
-  // Inizia processo eliminazione polo
-  const initializeDeletePolo = async (poloId, nome) => {
+  // Inizia processo eliminazione mezzo
+  const initializeDeleteMezzo = (mezzoId, nome) => {
+    // Mostra sempre il popup di conferma
+    setDeleteModalData({
+      mezzoId,
+      nome,
+      conflitti: [],
+      dettagli: `Sei sicuro di voler eliminare il mezzo "${nome}"?`
+    });
+    setShowDeleteModal(true);
+  };
+
+  // Conferma eliminazione
+  const confirmDeleteMezzo = async (force = false) => {
+    if (!deleteModalData) return;
+    
     try {
       setError('');
       
-      // Chiamata diretta per verificare conflitti
-      const response = await fetch(`${getApiBaseUrl()}/poli/${poloId}`, {
+      if (force) {
+        // Eliminazione forzata (se ci sono conflitti)
+        await apiCall(`/mezzi/${deleteModalData.mezzoId}/force`, { method: 'DELETE' }, token);
+        await loadData();
+        setError(`Mezzo "${deleteModalData.nome}" eliminato con successo`);
+        setShowDeleteModal(false);
+        setDeleteModalData(null);
+        return;
+      }
+      
+      // Prima prova l'eliminazione normale
+      const response = await fetch(`${getApiBaseUrl()}/mezzi/${deleteModalData.mezzoId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -198,7 +232,9 @@ const PoliManagement = () => {
       if (response.ok) {
         // Eliminazione avvenuta senza conflitti
         await loadData();
-        setError('Polo eliminato con successo');
+        setError(`Mezzo "${deleteModalData.nome}" eliminato con successo`);
+        setShowDeleteModal(false);
+        setDeleteModalData(null);
         return;
       }
       
@@ -207,15 +243,13 @@ const PoliManagement = () => {
       console.log('📋 Risposta server eliminazione:', { status: response.status, data: errorData });
       
       if (errorData.richiediConferma || response.status === 400) {
-        // Mostra popup con dettagli conflitti
-        console.log('🚨 Conflitti rilevati, mostro popup:', errorData);
+        // Aggiorna il popup con i dettagli dei conflitti
+        console.log('🚨 Conflitti rilevati, aggiorno popup:', errorData);
         setDeleteModalData({
-          poloId,
-          nome,
-          conflitti: errorData.conflitti || ['Dati collegati presenti'],
-          dettagli: errorData.dettagli || `Il polo "${nome}" ha dati collegati`
+          ...deleteModalData,
+          conflitti: errorData.conflitti || ['Il mezzo ha dati collegati'],
+          dettagli: errorData.dettagli || `Il mezzo "${deleteModalData.nome}" ha dati collegati`
         });
-        setShowDeleteModal(true);
         return;
       }
       
@@ -223,39 +257,15 @@ const PoliManagement = () => {
       setError('Errore nell\'eliminazione: ' + (errorData.message || 'Errore sconosciuto'));
       
     } catch (err) {
-      console.error('Errore eliminazione polo:', err);
+      console.error('Errore eliminazione mezzo:', err);
       setError('Errore nell\'eliminazione: ' + err.message);
     }
   };
 
-  // Conferma eliminazione forzata
-  const confirmDeletePolo = async (force = false) => {
-    if (!deleteModalData) return;
-    
-    try {
-      setError('');
-      
-      const endpoint = force 
-        ? `/poli/${deleteModalData.poloId}/force`
-        : `/poli/${deleteModalData.poloId}`;
-        
-      await apiCall(endpoint, { method: 'DELETE' }, token);
-      await loadData();
-      setError(`Polo "${deleteModalData.nome}" eliminato con successo`);
-      
-      setShowDeleteModal(false);
-      setDeleteModalData(null);
-    } catch (err) {
-      setError('Errore nell\'eliminazione: ' + err.message);
-    }
-  };
-
-  // Annulla eliminazione
-  const cancelDeletePolo = () => {
-    deleteModalAnimation.closeModal(() => {
-      setShowDeleteModal(false);
-      setDeleteModalData(null);
-    });
+  // Annulla eliminazione con animazione
+  const cancelDeleteMezzo = () => {
+    deleteModalAnimation.handleAnimatedClose();
+    setShowDeleteModal(false);
   };
 
   // Ordinamento
@@ -268,19 +278,22 @@ const PoliManagement = () => {
     }
   };
 
-  const getSortedPoli = () => {
-    let sorted = [...poli];
+  const getSortedMezzi = () => {
+    let sorted = [...mezzi];
 
     // Applica filtri di ricerca
-    if (searchPoli) {
-      sorted = sorted.filter(polo => 
-        polo.nome?.toLowerCase().includes(searchPoli.toLowerCase())
+    if (searchMezzi) {
+      sorted = sorted.filter(mezzo => 
+        mezzo.nome?.toLowerCase().includes(searchMezzi.toLowerCase()) ||
+        mezzo.tipo?.toLowerCase().includes(searchMezzi.toLowerCase()) ||
+        mezzo.marca?.toLowerCase().includes(searchMezzi.toLowerCase()) ||
+        mezzo.modello?.toLowerCase().includes(searchMezzi.toLowerCase())
       );
     }
 
-    if (searchIndirizzi) {
-      sorted = sorted.filter(polo => 
-        polo.indirizzo?.toLowerCase().includes(searchIndirizzi.toLowerCase())
+    if (searchTarghe) {
+      sorted = sorted.filter(mezzo => 
+        mezzo.targa?.toLowerCase().includes(searchTarghe.toLowerCase())
       );
     }
 
@@ -295,9 +308,21 @@ const PoliManagement = () => {
             aValue = a.nome || '';
             bValue = b.nome || '';
             break;
-          case 'indirizzo':
-            aValue = a.indirizzo || '';
-            bValue = b.indirizzo || '';
+          case 'targa':
+            aValue = a.targa || '';
+            bValue = b.targa || '';
+            break;
+          case 'tipo':
+            aValue = a.tipo || '';
+            bValue = b.tipo || '';
+            break;
+          case 'marca':
+            aValue = a.marca || '';
+            bValue = b.marca || '';
+            break;
+          case 'modello':
+            aValue = a.modello || '';
+            bValue = b.modello || '';
             break;
           default:
             return 0;
@@ -314,7 +339,7 @@ const PoliManagement = () => {
     return sorted;
   };
 
-  const sortedPoli = getSortedPoli();
+  const sortedMezzi = getSortedMezzi();
 
   // Render icona ordinamento
   const renderSortIcon = (field) => {
@@ -343,12 +368,12 @@ const PoliManagement = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="glass-icon p-3 rounded-xl">
-                <Building className="w-8 h-8 text-white" />
+                <Truck className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Gestione Poli</h2>
+                <h2 className="text-2xl font-bold text-white">Gestione Mezzi</h2>
                 <p className="text-white/70">
-                  Gestisci i poli del sistema
+                  Gestisci i mezzi del sistema
                 </p>
               </div>
             </div>
@@ -364,25 +389,25 @@ const PoliManagement = () => {
                 <span>Torna a Postazioni</span>
               </button>
 
-              {/* Aggiungi Polo */}
+              {/* Aggiungi Mezzo */}
               <button
                 onClick={() => setShowAddForm(true)}
                 className="glass-button-primary px-6 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center space-x-2"
               >
                 <Plus className="w-5 h-5" />
-                <span>Nuovo Polo</span>
+                <span>Nuovo Mezzo</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Form Aggiungi Polo */}
+        {/* Form Aggiungi Mezzo */}
         {showAddForm && (
           <div className={`glass-card p-6 rounded-2xl border-l-4 border-green-400 ${isClosingForm ? 'glass-form-slide-up' : 'glass-form-slide-down'}`}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-white flex items-center">
                 <Plus className="w-6 h-6 mr-3 text-green-400" />
-                Aggiungi Nuovo Polo
+                Aggiungi Nuovo Mezzo
               </h3>
               <button
                 onClick={closeAddForm}
@@ -395,13 +420,13 @@ const PoliManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
-                  Nome Polo *
+                  Nome Mezzo *
                 </label>
                 <div className="glass-input-container rounded-xl">
                   <input
                     type="text"
                     className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    placeholder="Es: Sede Centrale Milano"
+                    placeholder="Es: Furgone 1"
                     value={addForm.nome}
                     onChange={(e) => setAddForm({ ...addForm, nome: e.target.value })}
                   />
@@ -410,47 +435,75 @@ const PoliManagement = () => {
 
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
-                  Indirizzo
+                  Descrizione
                 </label>
                 <div className="glass-input-container rounded-xl">
                   <input
                     type="text"
                     className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    placeholder="Es: Via Roma 123, Milano"
-                    value={addForm.indirizzo}
-                    onChange={(e) => setAddForm({ ...addForm, indirizzo: e.target.value })}
+                    placeholder="Es: Descrizione dettagliata del mezzo"
+                    value={addForm.descrizione}
+                    onChange={(e) => setAddForm({ ...addForm, descrizione: e.target.value })}
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
-                  Latitudine
+                  Targa
                 </label>
                 <div className="glass-input-container rounded-xl">
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
                     className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    placeholder="Es: 45.464664"
-                    value={addForm.latitudine}
-                    onChange={(e) => setAddForm({ ...addForm, latitudine: e.target.value })}
+                    placeholder="Es: AB123CD"
+                    value={addForm.targa}
+                    onChange={(e) => setAddForm({ ...addForm, targa: e.target.value })}
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
-                  Longitudine
+                  Tipo
                 </label>
                 <div className="glass-input-container rounded-xl">
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
                     className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    placeholder="Es: 9.188540"
-                    value={addForm.longitudine}
-                    onChange={(e) => setAddForm({ ...addForm, longitudine: e.target.value })}
+                    placeholder="Es: Furgone, Auto, Camion"
+                    value={addForm.tipo}
+                    onChange={(e) => setAddForm({ ...addForm, tipo: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Marca
+                </label>
+                <div className="glass-input-container rounded-xl">
+                  <input
+                    type="text"
+                    className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                    placeholder="Es: Ford, Mercedes, Iveco"
+                    value={addForm.marca}
+                    onChange={(e) => setAddForm({ ...addForm, marca: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Modello
+                </label>
+                <div className="glass-input-container rounded-xl">
+                  <input
+                    type="text"
+                    className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                    placeholder="Es: Transit, Sprinter, Daily"
+                    value={addForm.modello}
+                    onChange={(e) => setAddForm({ ...addForm, modello: e.target.value })}
                   />
                 </div>
               </div>
@@ -458,11 +511,11 @@ const PoliManagement = () => {
 
             <div className="flex justify-start space-x-4 mt-6">
               <button
-                onClick={addPolo}
+                onClick={addMezzo}
                 className="glass-button-success px-6 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center space-x-2"
               >
                 <Save className="w-4 h-4" />
-                <span>Salva Polo</span>
+                <span>Salva Mezzo</span>
               </button>
               <button
                 onClick={closeAddForm}
@@ -484,17 +537,17 @@ const PoliManagement = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-white/80 mb-2">
-                Cerca per Nome Polo
+                Cerca per Nome/Tipo/Marca/Modello
               </label>
               <div className="glass-input-container rounded-xl">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5" />
                   <input
                     type="text"
-                    placeholder="Nome polo..."
+                    placeholder="Nome mezzo, tipo, marca, modello..."
                     className="glass-input w-full pl-10 pr-4 py-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    value={searchPoli}
-                    onChange={(e) => setSearchPoli(e.target.value)}
+                    value={searchMezzi}
+                    onChange={(e) => setSearchMezzi(e.target.value)}
                   />
                 </div>
               </div>
@@ -502,17 +555,17 @@ const PoliManagement = () => {
 
             <div>
               <label className="block text-sm font-medium text-white/80 mb-2">
-                Cerca per Indirizzo
+                Cerca per Targa
               </label>
               <div className="glass-input-container rounded-xl">
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5" />
+                  <Truck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5" />
                   <input
                     type="text"
-                    placeholder="Indirizzo..."
+                    placeholder="Targa..."
                     className="glass-input w-full pl-10 pr-4 py-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    value={searchIndirizzi}
-                    onChange={(e) => setSearchIndirizzi(e.target.value)}
+                    value={searchTarghe}
+                    onChange={(e) => setSearchTarghe(e.target.value)}
                   />
                 </div>
               </div>
@@ -520,12 +573,12 @@ const PoliManagement = () => {
           </div>
         </div>
 
-        {/* Tabella Poli */}
+        {/* Tabella Mezzi */}
         <div className="glass-card-large rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-white/10">
             <h3 className="text-lg font-semibold text-white flex items-center">
-              <Building className="w-5 h-5 mr-2" />
-              Lista Poli ({sortedPoli.length})
+              <Truck className="w-5 h-5 mr-2" />
+              Lista Mezzi ({sortedMezzi.length})
             </h3>
           </div>
           
@@ -535,7 +588,7 @@ const PoliManagement = () => {
               <div className="space-y-2">
                 {/* Header skeleton */}
                 <div className="glass-table-header-row flex">
-                  {[...Array(4)].map((_, i) => (
+                  {[...Array(6)].map((_, i) => (
                     <div key={i} className="flex-1 px-6 py-3">
                       <div className="animate-pulse bg-white/20 h-4 rounded"></div>
                     </div>
@@ -545,10 +598,10 @@ const PoliManagement = () => {
                 {/* Row skeletons */}
                 {[...Array(5)].map((_, rowIndex) => (
                   <div key={rowIndex} className="glass-table-row flex border-t border-white/5">
-                    {[...Array(4)].map((_, colIndex) => (
+                    {[...Array(6)].map((_, colIndex) => (
                       <div key={colIndex} className="flex-1 px-6 py-4">
                         <div className="animate-pulse bg-white/10 h-4 rounded" 
-                             style={{ animationDelay: `${(rowIndex * 4 + colIndex) * 100}ms` }}>
+                             style={{ animationDelay: `${(rowIndex * 6 + colIndex) * 100}ms` }}>
                         </div>
                       </div>
                     ))}
@@ -564,21 +617,45 @@ const PoliManagement = () => {
                       onClick={() => handleSort('nome')}
                     >
                       <div className="flex items-center justify-between">
-                        Nome Polo
+                        Nome Mezzo
                         {renderSortIcon('nome')}
                       </div>
                     </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
-                      onClick={() => handleSort('indirizzo')}
+                      onClick={() => handleSort('targa')}
                     >
                       <div className="flex items-center justify-between">
-                        Indirizzo
-                        {renderSortIcon('indirizzo')}
+                        Targa
+                        {renderSortIcon('targa')}
                       </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Coordinate
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
+                      onClick={() => handleSort('tipo')}
+                    >
+                      <div className="flex items-center justify-between">
+                        Tipo
+                        {renderSortIcon('tipo')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
+                      onClick={() => handleSort('marca')}
+                    >
+                      <div className="flex items-center justify-between">
+                        Marca
+                        {renderSortIcon('marca')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
+                      onClick={() => handleSort('modello')}
+                    >
+                      <div className="flex items-center justify-between">
+                        Modello
+                        {renderSortIcon('modello')}
+                      </div>
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-white/80 uppercase tracking-wider">
                       Azioni
@@ -586,78 +663,110 @@ const PoliManagement = () => {
                   </tr>
                 </thead>
                 <tbody className="glass-table-body">
-                  {sortedPoli.map(polo => {
-                    const isEditing = editingId === polo._id;
+                  {sortedMezzi.map(mezzo => {
+                    const isEditing = editingId === mezzo._id;
                     
                     return (
-                      <tr key={polo._id} className="glass-table-row hover:bg-white/5 transition-all duration-300">
+                      <tr key={mezzo._id} className="glass-table-row hover:bg-white/5 transition-all duration-300">
                         {/* Nome */}
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4">
                           {isEditing ? (
-                            <input
-                              type="text"
-                              className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white"
-                              value={editForm.nome}
-                              onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })}
-                            />
+                            <div className="flex items-start">
+                              <Truck className="w-4 h-4 mr-2 text-blue-300 mt-2" />
+                              <div className="space-y-2 flex-1">
+                                <input
+                                  type="text"
+                                  className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white"
+                                  placeholder="Nome mezzo"
+                                  value={editForm.nome}
+                                  onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })}
+                                />
+                                <input
+                                  type="text"
+                                  className="glass-input w-full px-3 py-1 rounded-lg bg-transparent border border-white/20 outline-none text-white text-xs"
+                                  placeholder="Descrizione"
+                                  value={editForm.descrizione}
+                                  onChange={(e) => setEditForm({ ...editForm, descrizione: e.target.value })}
+                                />
+                              </div>
+                            </div>
                           ) : (
-                            <div className="flex items-center">
-                              <Building className="w-4 h-4 mr-2 text-blue-300" />
+                            <div className="flex items-start">
+                              <Truck className="w-4 h-4 mr-2 text-blue-300 mt-0.5" />
                               <div>
                                 <div className="text-sm font-medium text-white">
-                                  {polo.nome}
+                                  {mezzo.nome}
                                 </div>
+                                {mezzo.descrizione && (
+                                  <div className="text-xs text-white/70 mt-1">
+                                    {mezzo.descrizione}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
                         </td>
 
-                        {/* Indirizzo */}
+                        {/* Targa */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           {isEditing ? (
                             <input
                               type="text"
                               className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white"
-                              value={editForm.indirizzo}
-                              onChange={(e) => setEditForm({ ...editForm, indirizzo: e.target.value })}
+                              value={editForm.targa}
+                              onChange={(e) => setEditForm({ ...editForm, targa: e.target.value })}
                             />
                           ) : (
-                            <div className="flex items-center">
-                              <MapPin className="w-4 h-4 mr-2 text-green-300" />
-                              <div className="text-sm text-white">
-                                {polo.indirizzo || 'N/A'}
-                              </div>
+                            <div className="text-sm text-white">
+                              {mezzo.targa || 'N/A'}
                             </div>
                           )}
                         </td>
 
-                        {/* Coordinate */}
+                        {/* Tipo */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           {isEditing ? (
-                            <div className="grid grid-cols-2 gap-2">
-                              <input
-                                type="number"
-                                step="any"
-                                placeholder="Lat"
-                                className="glass-input w-full px-2 py-1 rounded-lg bg-transparent border border-white/20 outline-none text-white text-xs"
-                                value={editForm.latitudine}
-                                onChange={(e) => setEditForm({ ...editForm, latitudine: e.target.value })}
-                              />
-                              <input
-                                type="number"
-                                step="any"
-                                placeholder="Lng"
-                                className="glass-input w-full px-2 py-1 rounded-lg bg-transparent border border-white/20 outline-none text-white text-xs"
-                                value={editForm.longitudine}
-                                onChange={(e) => setEditForm({ ...editForm, longitudine: e.target.value })}
-                              />
-                            </div>
+                            <input
+                              type="text"
+                              className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white"
+                              value={editForm.tipo}
+                              onChange={(e) => setEditForm({ ...editForm, tipo: e.target.value })}
+                            />
                           ) : (
-                            <div className="text-sm text-white/70">
-                              {polo.coordinate?.lat && polo.coordinate?.lng 
-                                ? `${polo.coordinate.lat}, ${polo.coordinate.lng}`
-                                : 'N/A'
-                              }
+                            <div className="text-sm text-white">
+                              {mezzo.tipo || 'N/A'}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Marca */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white"
+                              value={editForm.marca}
+                              onChange={(e) => setEditForm({ ...editForm, marca: e.target.value })}
+                            />
+                          ) : (
+                            <div className="text-sm text-white">
+                              {mezzo.marca || 'N/A'}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Modello */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white"
+                              value={editForm.modello}
+                              onChange={(e) => setEditForm({ ...editForm, modello: e.target.value })}
+                            />
+                          ) : (
+                            <div className="text-sm text-white">
+                              {mezzo.modello || 'N/A'}
                             </div>
                           )}
                         </td>
@@ -668,7 +777,7 @@ const PoliManagement = () => {
                             {isEditing ? (
                               <>
                                 <button
-                                  onClick={() => saveEdit(polo._id)}
+                                  onClick={() => saveEdit(mezzo._id)}
                                   className="glass-button p-2 rounded-xl text-green-300 hover:text-green-200 hover:scale-105 transition-all duration-300"
                                   title="Salva modifiche"
                                 >
@@ -685,16 +794,16 @@ const PoliManagement = () => {
                             ) : (
                               <>
                                 <button
-                                  onClick={() => startEdit(polo)}
+                                  onClick={() => startEdit(mezzo)}
                                   className="glass-button p-2 rounded-xl text-blue-300 hover:text-blue-200 hover:scale-105 transition-all duration-300"
-                                  title="Modifica polo"
+                                  title="Modifica mezzo"
                                 >
                                   <Edit className="w-4 h-4" />
                                 </button>
                                 <button
-                                  onClick={() => initializeDeletePolo(polo._id, polo.nome)}
+                                  onClick={() => initializeDeleteMezzo(mezzo._id, mezzo.nome)}
                                   className="glass-button p-2 rounded-xl text-red-300 hover:text-red-200 hover:scale-105 transition-all duration-300"
-                                  title="Elimina polo"
+                                  title="Elimina mezzo"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -709,25 +818,25 @@ const PoliManagement = () => {
               </table>
             )}
 
-            {sortedPoli.length === 0 && !loading && (
+            {sortedMezzi.length === 0 && !loading && (
               <div className="glass-empty-state text-center py-16">
                 <div className="glass-icon w-16 h-16 mx-auto mb-6 rounded-2xl flex items-center justify-center">
-                  <Building className="w-8 h-8 text-white/50" />
+                  <Truck className="w-8 h-8 text-white/50" />
                 </div>
                 <p className="text-white/70 text-lg mb-2">
-                  {poli.length === 0 ? 'Nessun polo creato' : 'Nessun polo trovato con i filtri selezionati'}
+                  {mezzi.length === 0 ? 'Nessun mezzo creato' : 'Nessun mezzo trovato con i filtri selezionati'}
                 </p>
                 <p className="text-white/50 text-sm">
-                  {poli.length === 0 
-                    ? 'Clicca "Nuovo Polo" per iniziare'
+                  {mezzi.length === 0 
+                    ? 'Clicca "Nuovo Mezzo" per iniziare'
                     : 'Prova a modificare i filtri per vedere più risultati'
                   }
                 </p>
-                {(searchPoli || searchIndirizzi) && (
+                {(searchMezzi || searchTarghe) && (
                   <button
                     onClick={() => {
-                      setSearchPoli('');
-                      setSearchIndirizzi('');
+                      setSearchMezzi('');
+                      setSearchTarghe('');
                     }}
                     className="glass-button-secondary mt-4 px-6 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
                   >
@@ -741,9 +850,16 @@ const PoliManagement = () => {
       </div>
 
       {/* Popup Conferma Eliminazione */}
-      {showDeleteModal && deleteModalData && (
-        <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${deleteModalAnimation.backdropClass}`}>
-          <div className={`glass-modal max-w-md w-full rounded-2xl p-6 space-y-6 ${deleteModalAnimation.modalClass}`}>
+      {deleteModalAnimation.isVisible && deleteModalData && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            {...deleteModalAnimation.backdropProps}
+            className={`absolute inset-0 bg-black/50 backdrop-blur-sm ${deleteModalAnimation.backdropClasses}`}
+          ></div>
+          <div 
+            {...deleteModalAnimation.modalProps}
+            className={`glass-modal max-w-md w-full rounded-2xl p-6 space-y-6 modal-bounce-in ${deleteModalAnimation.modalClasses}`}
+          >
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -756,7 +872,7 @@ const PoliManagement = () => {
                 </div>
               </div>
               <button
-                onClick={cancelDeletePolo}
+                onClick={cancelDeleteMezzo}
                 className="glass-button p-2 rounded-xl text-white/70 hover:text-white hover:scale-105 transition-all duration-300"
               >
                 <X className="w-5 h-5" />
@@ -765,7 +881,7 @@ const PoliManagement = () => {
 
             {/* Contenuto */}
             <div className="space-y-4">
-              <div className="glass-alert-warning p-4 rounded-xl">
+              <div className={`p-4 rounded-xl ${deleteModalData.conflitti.length > 0 ? 'glass-alert-warning' : 'glass-info-box'}`}>
                 <p className="text-white font-medium mb-2">{deleteModalData.dettagli}</p>
                 {deleteModalData.conflitti.length > 0 && (
                   <ul className="text-white/80 text-sm space-y-1">
@@ -779,30 +895,41 @@ const PoliManagement = () => {
                 )}
               </div>
 
-              <div className="glass-info-box p-4 rounded-xl">
-                <p className="text-white/90 text-sm">
-                  <strong>Eliminando questo polo:</strong>
-                </p>
-                <ul className="text-white/70 text-sm mt-2 space-y-1">
-                  <li>• Verranno disattivate tutte le assegnazioni collegate</li>
-                  <li>• Verranno disattivate tutte le postazioni del polo</li>
-                  <li>• Gli utilizzi rimarranno per storico ma il polo risulterà inattivo</li>
-                </ul>
-              </div>
+              {deleteModalData.conflitti.length > 0 && (
+                <div className="glass-info-box p-4 rounded-xl">
+                  <p className="text-white/90 text-sm">
+                    <strong>Eliminando questo mezzo:</strong>
+                  </p>
+                  <ul className="text-white/70 text-sm mt-2 space-y-1">
+                    <li>• Verranno disattivate tutte le assegnazioni collegate</li>
+                    <li>• Gli utilizzi rimarranno per storico ma il mezzo risulterà inattivo</li>
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* Azioni */}
             <div className="flex flex-col space-y-3">
-              <button
-                onClick={() => confirmDeletePolo(true)}
-                className="glass-button-danger w-full py-3 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Elimina Definitivamente</span>
-              </button>
+              {deleteModalData.conflitti.length > 0 ? (
+                <button
+                  onClick={() => confirmDeleteMezzo(true)}
+                  className="glass-button-danger w-full py-3 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Elimina Definitivamente</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => confirmDeleteMezzo(false)}
+                  className="glass-button-danger w-full py-3 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Elimina Mezzo</span>
+                </button>
+              )}
               
               <button
-                onClick={cancelDeletePolo}
+                onClick={cancelDeleteMezzo}
                 className="glass-button-secondary w-full py-3 rounded-xl text-white hover:scale-105 transition-all duration-300"
               >
                 Annulla
@@ -1000,4 +1127,4 @@ const PoliManagement = () => {
   );
 };
 
-export default PoliManagement;
+export default MezziManagement;

@@ -20,7 +20,7 @@ import { apiCall } from '../../services/api';
 
 const GiacenzePage = () => {
   const { setCurrentPage, token } = useAuth();
-  const { myGiacenze, myAssignments, selectedAssignment, setSelectedAssignment, useProduct, addProduct } = useGiacenze();
+  const { myGiacenze, myUtilizzi, loadUtilizzi, myAssignments, selectedAssignment, setSelectedAssignment, useProduct, addProduct } = useGiacenze();
   const [searchTerm, setSearchTerm] = useState('');
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   
@@ -55,6 +55,17 @@ const GiacenzePage = () => {
       loadPostazioni();
     }
   }, [selectedAssignment]);
+
+  // Load utilizzi when assignment or postazione changes
+  useEffect(() => {
+    if (selectedAssignment?._id && selectedPostazione) {
+      console.log('🔄 Caricando utilizzi per:', {
+        settimanaId: selectedAssignment._id,
+        postazioneId: selectedPostazione
+      });
+      loadUtilizzi(selectedAssignment._id, selectedPostazione);
+    }
+  }, [selectedAssignment?._id, selectedPostazione]);
 
   // Carica postazioni filtrate per polo dell'assegnazione selezionata
   const loadPostazioni = async () => {
@@ -284,12 +295,62 @@ const GiacenzePage = () => {
                 const isSottoSoglia = giacenza.quantitaDisponibile <= giacenza.quantitaMinima;
                 const percentualeRimasta = calculatePercentage(giacenza.quantitaDisponibile, giacenza.quantitaAssegnata);
                 
+                // Debug generale per capire la situazione (solo prima card)
+                if (filteredGiacenze.indexOf(giacenza) === 0) {
+                  console.log("🔍 Debug generale:", {
+                    prodottoNome: giacenza.productId?.nome,
+                    productIdGiacenza: giacenza.productId?._id,
+                    totalUtilizzi: myUtilizzi?.length || 0,
+                    selectedAssignmentId: selectedAssignment?._id,
+                    selectedPostazione: selectedPostazione,
+                    firstUtilizzo: myUtilizzi?.[0],
+                    primi3Utilizzi: myUtilizzi?.slice(0, 3).map(u => ({
+                      productId: u.productId?._id || u.productId,
+                      productName: u.productId?.nome,
+                      settimanaId: u.settimanaId?._id || u.settimanaId,
+                      postazioneId: u.postazioneId?._id || u.postazioneId
+                    }))
+                  });
+
+                  // Test diretto API utilizzi
+                  if (myUtilizzi?.length === 0) {
+                    console.log("🧪 Test chiamata diretta API utilizzi...");
+                    apiCall('/utilizzi/my', {}, token).then(result => {
+                      console.log("📡 Risultato chiamata diretta:", result);
+                    }).catch(error => {
+                      console.error("❌ Errore chiamata diretta:", error);
+                    });
+                  }
+                }
+
+                // Calcola utilizzi per questo prodotto, assegnazione e postazione specifiche
+                const utilizziProdotto = myUtilizzi?.filter(utilizzo => {
+                  // Filtro per prodotto
+                  const productIdUtilizzo = utilizzo.productId?._id || utilizzo.productId;
+                  const productIdGiacenza = giacenza.productId?._id;
+                  const matchProdotto = productIdUtilizzo === productIdGiacenza;
+                  
+                  // Filtro per assegnazione/settimana
+                  const settimanaIdUtilizzo = utilizzo.settimanaId?._id || utilizzo.settimanaId;
+                  const settimanaIdAssegnazione = selectedAssignment?._id;
+                  const matchAssegnazione = settimanaIdUtilizzo === settimanaIdAssegnazione;
+                  
+                  // Filtro per postazione
+                  const postazioneIdUtilizzo = utilizzo.postazioneId?._id || utilizzo.postazioneId;
+                  const matchPostazione = postazioneIdUtilizzo === selectedPostazione;
+                  
+                  return matchProdotto && matchAssegnazione && matchPostazione;
+                }) || [];
+
+                const contatore = utilizziProdotto.length;
+                
                 return (
                   <GiacenzaCard
                     key={giacenza._id}
                     giacenza={giacenza}
                     isSottoSoglia={isSottoSoglia}
                     percentualeRimasta={percentualeRimasta}
+                    utilizziCount={contatore}
                     onUseProduct={(productId, quantity) => useProduct(productId, quantity, selectedPostazione)}
                     onAddProduct={(productId, quantity) => addProduct(productId, quantity, selectedPostazione)}
                   />
@@ -386,6 +447,18 @@ const GiacenzePage = () => {
           border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
+        .glass-counter-badge {
+          background: rgba(59, 130, 246, 0.15);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          transition: all 0.3s ease;
+        }
+
+        .glass-counter-badge:hover {
+          background: rgba(59, 130, 246, 0.2);
+          transform: scale(1.05);
+        }
+
         .glass-input {
           background: rgba(255, 255, 255, 0.08);
           backdrop-filter: blur(15px);
@@ -432,7 +505,7 @@ const GiacenzePage = () => {
   );
 };
 
-const GiacenzaCard = ({ giacenza, isSottoSoglia, percentualeRimasta, onUseProduct, onAddProduct }) => {
+const GiacenzaCard = ({ giacenza, isSottoSoglia, percentualeRimasta, utilizziCount = 0, onUseProduct, onAddProduct }) => {
   const canAdd = giacenza.quantitaDisponibile < giacenza.quantitaAssegnata;
 
   return (
@@ -444,7 +517,14 @@ const GiacenzaCard = ({ giacenza, isSottoSoglia, percentualeRimasta, onUseProduc
           </h3>
           <p className="text-sm text-white/60">{giacenza.productId?.categoria}</p>
         </div>
-        <div className="text-right">
+        <div className="flex items-center space-x-2">
+          {/* Contatore utilizzi */}
+          <div className="glass-counter-badge flex items-center px-2.5 py-1 rounded-full bg-blue-400/20 border border-blue-300/30">
+            <Package className="w-3 h-3 text-blue-300 mr-1" />
+            <span className="text-xs font-medium text-blue-200">{utilizziCount}</span>
+          </div>
+          
+          {/* Badge stato */}
           <span className={`glass-status-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
             isSottoSoglia 
               ? 'text-red-200 border-red-300/30 bg-red-400/20' 

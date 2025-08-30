@@ -4,6 +4,7 @@ import { Edit, Trash2, Save, X, Search, Filter, Eye, User, Package, Calendar, Ch
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { apiCall } from '../../services/api';
+import { useModalAnimation, useStaggerAnimation } from '../../hooks/useModalAnimation';
 import { formatWeek, formatDateTime, getCurrentWeekFromList, sortWeeksChronologically, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
 
 const UtilizziManagement = () => {
@@ -43,6 +44,11 @@ const UtilizziManagement = () => {
   // Stati per popup di conferma eliminazione
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [utilizzoToDelete, setUtilizzoToDelete] = useState(null);
+  
+  // Modal animations
+  const mainModalAnimation = useModalAnimation(modalOpen);
+  const deleteModalAnimation = useModalAnimation(deleteConfirmOpen);
+  const staggeredRows = useStaggerAnimation(modalUtilizzi, modalOpen);
 
   // Mouse tracking per effetti interattivi
   useEffect(() => {
@@ -207,11 +213,13 @@ const UtilizziManagement = () => {
 
   // Chiudi modal
   const closeModal = () => {
-    setModalOpen(false);
-    setSelectedGroup(null);
-    setModalUtilizzi([]);
-    setEditingId(null);
-    setEditForm({ quantitaUtilizzata: '', note: '' });
+    mainModalAnimation.closeModal(() => {
+      setModalOpen(false);
+      setSelectedGroup(null);
+      setModalUtilizzi([]);
+      setEditingId(null);
+      setEditForm({ quantitaUtilizzata: '', note: '' });
+    });
   };
 
   // Funzioni editing nel modal
@@ -297,8 +305,10 @@ const UtilizziManagement = () => {
 
   // Chiudi popup di conferma eliminazione
   const closeDeleteConfirm = () => {
-    setDeleteConfirmOpen(false);
-    setUtilizzoToDelete(null);
+    deleteModalAnimation.closeModal(() => {
+      setDeleteConfirmOpen(false);
+      setUtilizzoToDelete(null);
+    });
   };
 
   // Conferma eliminazione utilizzo
@@ -709,7 +719,7 @@ const UtilizziManagement = () => {
 
       {/* Modal Dettagli Utilizzi */}
       {modalOpen && selectedGroup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${mainModalAnimation.backdropClass}`}>
           {/* Overlay */}
           <div 
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -717,7 +727,7 @@ const UtilizziManagement = () => {
           ></div>
           
           {/* Modal Content */}
-          <div className="relative glass-modal w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-2xl">
+          <div className={`relative glass-modal w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-2xl ${mainModalAnimation.modalClass}`}>
             {/* Header Modal */}
             <div className="glass-modal-header px-6 py-4 border-b border-white/10">
               <div className="flex items-center justify-between">
@@ -751,7 +761,7 @@ const UtilizziManagement = () => {
               </h4>
               
               <div className="space-y-3">
-                {modalUtilizzi.map(utilizzo => {
+                {modalUtilizzi.map((utilizzo, index) => {
                   const isEditing = editingId === utilizzo._id;
                   const dateTime = formatDateTime(utilizzo.dataUtilizzo);
                   
@@ -769,7 +779,7 @@ const UtilizziManagement = () => {
                   });
                   
                   return (
-                    <div key={utilizzo._id} className="glass-utilizzo-item p-4 rounded-xl">
+                    <div key={utilizzo._id} className={`glass-utilizzo-item p-4 rounded-xl ${staggeredRows[index]?.class || ''}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                           {/* Data/Ora */}
@@ -917,7 +927,7 @@ const UtilizziManagement = () => {
 
       {/* Popup Conferma Eliminazione Utilizzo */}
       {deleteConfirmOpen && utilizzoToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${deleteModalAnimation.backdropClass}`}>
           {/* Overlay */}
           <div 
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -925,7 +935,7 @@ const UtilizziManagement = () => {
           ></div>
           
           {/* Popup Content */}
-          <div className="relative glass-modal w-full max-w-md rounded-2xl overflow-hidden">
+          <div className={`relative glass-modal w-full max-w-md rounded-2xl overflow-hidden ${deleteModalAnimation.modalClass}`}>
             {/* Header */}
             <div className="glass-modal-header px-6 py-4 border-b border-white/10">
               <div className="flex items-center space-x-3">

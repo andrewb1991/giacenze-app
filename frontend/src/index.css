@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import custom modal animations */
+@import './styles/modalAnimations.css';
+
 html, body {
   margin: 0;
   padding: 0;

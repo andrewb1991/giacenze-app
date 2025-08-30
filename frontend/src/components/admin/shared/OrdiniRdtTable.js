@@ -23,6 +23,7 @@ import { apiCall } from '../../../services/api';
 import { triggerOrdiniRdtUpdate } from '../../../utils/events';
 import OrdineRdtModal from './OrdineRdtModal';
 import AggiungiProdottoOrdine from '../AggiungiProdottoOrdine';
+import { useModalAnimation } from '../../../hooks/useModalAnimation';
 
 const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsChange }) => {
   const { token, setError } = useAuth();
@@ -44,6 +45,61 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
   // Stati per aggiungi prodotti
   const [showAggiungiProdotti, setShowAggiungiProdotti] = useState(false);
   const [selectedOrderForProducts, setSelectedOrderForProducts] = useState(null);
+  
+  // Stati per popup di conferma
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState({ item: null, action: null });
+  
+  // Animazioni per i modali
+  const deleteModalAnimation = useModalAnimation(showDeleteModal);
+  const finalizeModalAnimation = useModalAnimation(showFinalizeModal);
+  const reopenModalAnimation = useModalAnimation(showReopenModal);
+  
+  // Funzioni per chiudere i modali
+  const closeDeleteModal = () => {
+    deleteModalAnimation.closeModal(() => {
+      setShowDeleteModal(false);
+      setConfirmAction({ item: null, action: null });
+    });
+  };
+  
+  const closeFinalizeModal = () => {
+    finalizeModalAnimation.closeModal(() => {
+      setShowFinalizeModal(false);
+      setConfirmAction({ item: null, action: null });
+    });
+  };
+  
+  const closeReopenModal = () => {
+    reopenModalAnimation.closeModal(() => {
+      setShowReopenModal(false);
+      setConfirmAction({ item: null, action: null });
+    });
+  };
+  
+  // Conferma azioni
+  const confirmDelete = () => {
+    if (confirmAction.item) {
+      handleDelete(confirmAction.item);
+      closeDeleteModal();
+    }
+  };
+  
+  const confirmFinalize = () => {
+    if (confirmAction.item) {
+      finalizeItem(confirmAction.item);
+      closeFinalizeModal();
+    }
+  };
+  
+  const confirmReopen = () => {
+    if (confirmAction.item) {
+      reopenItem(confirmAction.item);
+      closeReopenModal();
+    }
+  };
   
   // Stati per filtri
   const [filters, setFilters] = useState({
@@ -396,14 +452,14 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
     }
   };
 
+  // Mostra popup di conferma eliminazione
+  const showDeleteConfirm = (item) => {
+    setConfirmAction({ item, action: 'delete' });
+    setShowDeleteModal(true);
+  };
+
   // Elimina elemento
   const handleDelete = async (item) => {
-    const isCompleted = item.stato === 'COMPLETATO';
-    const confirmMessage = isCompleted 
-      ? `Sei sicuro di voler eliminare questo ${item.itemType}? Questo rimuoverà anche i collegamenti dalle assegnazioni e decrementerà le giacenze (poiché è finalizzato).`
-      : `Sei sicuro di voler eliminare questo ${item.itemType}? Questo rimuoverà i collegamenti dalle assegnazioni.`;
-      
-    if (!window.confirm(confirmMessage)) return;
     
     try {
       setError('');
@@ -475,11 +531,14 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
     }
   };
 
+  // Mostra popup di conferma finalizzazione
+  const showFinalizeConfirm = (item) => {
+    setConfirmAction({ item, action: 'finalize' });
+    setShowFinalizeModal(true);
+  };
+
   // Finalizza elemento
   const finalizeItem = async (item) => {
-    if (!window.confirm(`Sei sicuro di voler finalizzare questo ${item.itemType}?`)) {
-      return;
-    }
 
     try {
       setError('');
@@ -496,11 +555,14 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
     }
   };
 
+  // Mostra popup di conferma riapertura
+  const showReopenConfirm = (item) => {
+    setConfirmAction({ item, action: 'reopen' });
+    setShowReopenModal(true);
+  };
+
   // Riapri elemento completato con ripristino giacenze
   const reopenItem = async (item) => {
-    if (!window.confirm(`Sei sicuro di voler riaprire questo ${item.itemType}? Le giacenze dei prodotti associati verranno decrementate dalle giacenze disponibili dell'operatore.`)) {
-      return;
-    }
 
     try {
       setError('');
@@ -931,7 +993,7 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
                                 
                                 {item.stato !== 'COMPLETATO' ? (
                                   <button
-                                    onClick={() => finalizeItem(item)}
+                                    onClick={() => showFinalizeConfirm(item)}
                                     className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"
                                     title="Finalizza e cambia stato a COMPLETATO"
                                   >
@@ -939,7 +1001,7 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
                                   </button>
                                 ) : (
                                   <button
-                                    onClick={() => reopenItem(item)}
+                                    onClick={() => showReopenConfirm(item)}
                                     className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"
                                     title="Riapri e ripristina giacenze"
                                   >
@@ -948,7 +1010,7 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
                                 )}
                                 
                                 <button
-                                  onClick={() => handleDelete(item)}
+                                  onClick={() => showDeleteConfirm(item)}
                                   className="glass-action-button p-2 rounded-xl hover:scale-110 transition-all duration-300"
                                   title="Elimina"
                                 >
@@ -996,6 +1058,223 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
           onClose={closeAggiungiProdotti}
           onUpdate={handleProductsAdded}
         />
+      )}
+
+      {/* Popup Conferma Eliminazione */}
+      {showDeleteModal && confirmAction.item && (
+        <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 ${deleteModalAnimation.backdropClass}`}>
+          <div className={`glass-modal max-w-md w-full rounded-2xl p-6 space-y-6 ${deleteModalAnimation.modalClass}`}>
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="glass-icon-danger p-3 rounded-xl">
+                  <Trash2 className="w-6 h-6 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Conferma Eliminazione</h3>
+                  <p className="text-white/70 text-sm">Azione irreversibile</p>
+                </div>
+              </div>
+              <button
+                onClick={closeDeleteModal}
+                className="glass-button p-2 rounded-xl text-white/70 hover:text-white hover:scale-105 transition-all duration-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Contenuto */}
+            <div className="space-y-4">
+              <div className="glass-alert-warning p-4 rounded-xl">
+                <p className="text-white font-medium mb-2">
+                  {confirmAction.item?.stato === 'COMPLETATO' 
+                    ? `Sei sicuro di voler eliminare questo ${confirmAction.item?.itemType}? Questo rimuoverà anche i collegamenti dalle assegnazioni e decrementerà le giacenze (poiché è finalizzato).`
+                    : `Sei sicuro di voler eliminare questo ${confirmAction.item?.itemType}? Questo rimuoverà i collegamenti dalle assegnazioni.`
+                  }
+                </p>
+              </div>
+
+              <div className="glass-info-box p-4 rounded-xl">
+                <p className="text-white/90 text-sm">
+                  <strong>Eliminando questo {confirmAction.item?.itemType}:</strong>
+                </p>
+                <ul className="text-white/80 text-sm mt-2 space-y-1">
+                  <li className="flex items-start space-x-2">
+                    <span className="text-red-400 mt-0.5">•</span>
+                    <span>I collegamenti alle assegnazioni saranno rimossi</span>
+                  </li>
+                  {confirmAction.item?.stato === 'COMPLETATO' && (
+                    <li className="flex items-start space-x-2">
+                      <span className="text-red-400 mt-0.5">•</span>
+                      <span>Le giacenze verranno decrementate automaticamente</span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            </div>
+
+            {/* Bottoni */}
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeDeleteModal}
+                className="glass-button-secondary px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="glass-button-danger px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
+              >
+                Elimina
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup Conferma Finalizzazione */}
+      {showFinalizeModal && confirmAction.item && (
+        <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 ${finalizeModalAnimation.backdropClass}`}>
+          <div className={`glass-modal max-w-md w-full rounded-2xl p-6 space-y-6 ${finalizeModalAnimation.modalClass}`}>
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="glass-icon-success p-3 rounded-xl">
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Conferma Finalizzazione</h3>
+                  <p className="text-white/70 text-sm">Cambio stato a COMPLETATO</p>
+                </div>
+              </div>
+              <button
+                onClick={closeFinalizeModal}
+                className="glass-button p-2 rounded-xl text-white/70 hover:text-white hover:scale-105 transition-all duration-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Contenuto */}
+            <div className="space-y-4">
+              <div className="glass-alert-info p-4 rounded-xl">
+                <p className="text-white font-medium mb-2">
+                  Sei sicuro di voler finalizzare questo {confirmAction.item?.itemType}?
+                </p>
+              </div>
+
+              <div className="glass-info-box p-4 rounded-xl">
+                <p className="text-white/90 text-sm">
+                  <strong>Finalizzando questo {confirmAction.item?.itemType}:</strong>
+                </p>
+                <ul className="text-white/80 text-sm mt-2 space-y-1">
+                  <li className="flex items-start space-x-2">
+                    <span className="text-green-400 mt-0.5">•</span>
+                    <span>Lo stato verrà cambiato a COMPLETATO</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="text-green-400 mt-0.5">•</span>
+                    <span>Le giacenze verranno incrementate automaticamente</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="text-green-400 mt-0.5">•</span>
+                    <span>Il {confirmAction.item?.itemType} non sarà più modificabile</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Bottoni */}
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeFinalizeModal}
+                className="glass-button-secondary px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={confirmFinalize}
+                className="glass-button-success px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
+              >
+                Finalizza
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup Conferma Riapertura */}
+      {showReopenModal && confirmAction.item && (
+        <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 ${reopenModalAnimation.backdropClass}`}>
+          <div className={`glass-modal max-w-md w-full rounded-2xl p-6 space-y-6 ${reopenModalAnimation.modalClass}`}>
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="glass-icon-warning p-3 rounded-xl">
+                  <AlertTriangle className="w-6 h-6 text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Conferma Riapertura</h3>
+                  <p className="text-white/70 text-sm">Ripristino giacenze</p>
+                </div>
+              </div>
+              <button
+                onClick={closeReopenModal}
+                className="glass-button p-2 rounded-xl text-white/70 hover:text-white hover:scale-105 transition-all duration-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Contenuto */}
+            <div className="space-y-4">
+              <div className="glass-alert-warning p-4 rounded-xl">
+                <p className="text-white font-medium mb-2">
+                  Sei sicuro di voler riaprire questo {confirmAction.item?.itemType}?
+                </p>
+                <p className="text-white/80 text-sm">
+                  Le giacenze dei prodotti associati verranno decrementate dalle giacenze disponibili dell'operatore.
+                </p>
+              </div>
+
+              <div className="glass-info-box p-4 rounded-xl">
+                <p className="text-white/90 text-sm">
+                  <strong>Riaprendo questo {confirmAction.item?.itemType}:</strong>
+                </p>
+                <ul className="text-white/80 text-sm mt-2 space-y-1">
+                  <li className="flex items-start space-x-2">
+                    <span className="text-orange-400 mt-0.5">•</span>
+                    <span>Lo stato verrà cambiato da COMPLETATO a BOZZA</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="text-orange-400 mt-0.5">•</span>
+                    <span>Le giacenze verranno decrementate automaticamente</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="text-orange-400 mt-0.5">•</span>
+                    <span>Il {confirmAction.item?.itemType} tornerà modificabile</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Bottoni */}
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeReopenModal}
+                className="glass-button-secondary px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={confirmReopen}
+                className="glass-button-warning px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
+              >
+                Riapri
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

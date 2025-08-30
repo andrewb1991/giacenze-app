@@ -1,0 +1,251 @@
+/* Modal Animations - Automando Portal */
+
+/* 🎭 MODAL ANIMATIONS */
+
+/* Modal Entrance Animation */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Modal Exit Animation */
+@keyframes modalFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+}
+
+/* Backdrop Entrance */
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* Backdrop Exit */
+@keyframes backdropFadeOut {
+  from {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+  to {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+}
+
+/* Slide Down Animation (per form e dropdown) */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide Up Animation (per chiusura form) */
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+/* 🎨 MODAL ANIMATION CLASSES */
+
+/* Modal Container Animations */
+.modal-entering {
+  animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modal-exiting {
+  animation: modalFadeOut 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Backdrop Animations */
+.backdrop-entering {
+  animation: backdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.backdrop-exiting {
+  animation: backdropFadeOut 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Form Slide Animations */
+.form-slide-down {
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.form-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 🌟 ENHANCED MODAL EFFECTS */
+
+/* Modal Glow Effect durante l'apertura */
+@keyframes modalGlow {
+  0% {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 25px 60px rgba(59, 130, 246, 0.15), 0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+  100% {
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.modal-glow {
+  animation: modalGlow 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Pulse Animation per elementi importanti */
+@keyframes modalPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.modal-pulse {
+  animation: modalPulse 2s ease-in-out infinite;
+}
+
+/* 🔥 STAGGER ANIMATION per elementi della lista */
+@keyframes staggerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-item {
+  animation: staggerFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+.stagger-item:nth-child(1) { animation-delay: 0.05s; }
+.stagger-item:nth-child(2) { animation-delay: 0.1s; }
+.stagger-item:nth-child(3) { animation-delay: 0.15s; }
+.stagger-item:nth-child(4) { animation-delay: 0.2s; }
+.stagger-item:nth-child(5) { animation-delay: 0.25s; }
+.stagger-item:nth-child(6) { animation-delay: 0.3s; }
+.stagger-item:nth-child(7) { animation-delay: 0.35s; }
+.stagger-item:nth-child(8) { animation-delay: 0.4s; }
+.stagger-item:nth-child(9) { animation-delay: 0.45s; }
+.stagger-item:nth-child(10) { animation-delay: 0.5s; }
+
+/* 🎯 MODAL SCALE ANIMATIONS (per modali di conferma) */
+@keyframes modalBounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-50px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modalZoomOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.8) translateY(-30px);
+  }
+}
+
+.modal-bounce-in {
+  animation: modalBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.modal-zoom-out {
+  animation: modalZoomOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 📱 RESPONSIVE MODAL ANIMATIONS */
+@media (max-width: 768px) {
+  @keyframes modalSlideInMobile {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes modalSlideOutMobile {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+  }
+  
+  .modal-entering {
+    animation: modalSlideInMobile 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  .modal-exiting {
+    animation: modalSlideOutMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+}
+
+/* 🎪 UTILITY CLASSES */
+
+/* Prevent body scroll durante i modali */
+.modal-open {
+  overflow: hidden;
+}
+
+/* Smooth transitions per tutti gli elementi modali */
+.modal-transition {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Focus ring per accessibilità */
+.modal-focus-ring:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}

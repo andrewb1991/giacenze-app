@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertTriangle, ArrowLeft, FileText, Calendar, Package, ChevronRight, BarChart3, Clock, User, Eye, X, MapPin } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
+import { useModalAnimation, useStaggerAnimation } from '../../hooks/useModalAnimation';
 import { BackButton } from '../shared/Navigation';
 import { formatWeek, formatDateTime, getCurrentWeekAssignment, sortAssignmentsByCurrentWeekFirst } from '../../utils/formatters';
 import { apiCall } from '../../services/api';
@@ -25,6 +26,15 @@ const UtilizziPage = () => {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalUtilizzi, setModalUtilizzi] = useState([]);
+  
+  // Hook per animazioni modal
+  const modalAnimation = useModalAnimation(modalOpen, () => {
+    setSelectedGroup(null);
+    setModalUtilizzi([]);
+  });
+  
+  // Hook per animazioni stagger degli utilizzi nel modal
+  const staggerAnimation = useStaggerAnimation(modalUtilizzi, modalOpen, 75);
 
   // Mouse tracking per effetti interattivi
   useEffect(() => {
@@ -106,16 +116,17 @@ const UtilizziPage = () => {
     }
   }, [myUtilizzi]);
 
-  // Raggruppa utilizzi per prodotto
+  // Raggruppa utilizzi per prodotto, utente e settimana (come UtilizziManagement)
   const groupUtilizzi = (utilizzi) => {
     const grouped = {};
     
     utilizzi.forEach(utilizzo => {
-      const key = utilizzo.productId?._id;
+      const key = `${utilizzo.userId?._id}-${utilizzo.productId?._id}-${utilizzo.settimanaId?._id}`;
       
       if (!grouped[key]) {
         grouped[key] = {
           key,
+          userId: utilizzo.userId,
           productId: utilizzo.productId,
           settimanaId: utilizzo.settimanaId,
           utilizzi: [],
@@ -154,11 +165,10 @@ const UtilizziPage = () => {
     setModalOpen(true);
   };
 
-  // Chiudi modal
+  // Chiudi modal con animazione
   const closeModal = () => {
+    modalAnimation.handleAnimatedClose();
     setModalOpen(false);
-    setSelectedGroup(null);
-    setModalUtilizzi([]);
   };
 
   // Sort assignments with current week first
@@ -348,32 +358,27 @@ const UtilizziPage = () => {
                 <thead className="glass-table-header">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
+                      Operatore
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Prodotto
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Totale Utilizzato
+                      Polo
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
+                      Settimana
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       N° Utilizzi
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Media per Utilizzo
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Periodo
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Dettagli
+                      Azioni
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {groupedUtilizzi.map(group => {
-                    const mediaPerUtilizzo = (group.totalQuantita / group.numeroUtilizzi).toFixed(1);
-                    const periodoUtilizzo = group.dataPrimoUtilizzo === group.dataUltimoUtilizzo 
-                      ? formatDateTime(group.dataUltimoUtilizzo).date
-                      : `${formatDateTime(group.dataPrimoUtilizzo).date} - ${formatDateTime(group.dataUltimoUtilizzo).date}`;
-                    
                     return (
                       <tr 
                         key={group.key} 
@@ -382,9 +387,23 @@ const UtilizziPage = () => {
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="glass-icon-small w-10 h-10 rounded-xl flex items-center justify-center mr-3">
-                              <Package className="w-5 h-5 text-white" />
+                            <div className="glass-avatar w-10 h-10 rounded-xl flex items-center justify-center mr-3">
+                              <User className="w-5 h-5 text-white" />
                             </div>
+                            <div>
+                              <div className="text-sm font-medium text-white">
+                                {group.userId?.username}
+                              </div>
+                              <div className="text-sm text-white/50">
+                                {group.userId?.email}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <Package className="w-4 h-4 mr-2 text-blue-300" />
                             <div>
                               <div className="text-sm font-medium text-white">
                                 {group.productId?.nome}
@@ -395,49 +414,48 @@ const UtilizziPage = () => {
                             </div>
                           </div>
                         </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="glass-quantity-badge px-3 py-1 rounded-full">
-                            <span className="text-sm font-bold text-red-300">
-                              -{group.totalQuantita} {group.productId?.unita}
-                            </span>
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="glass-count-badge px-2 py-1 rounded-full">
-                            <span className="text-sm font-medium text-white">
-                              {group.numeroUtilizzi}
-                            </span>
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-white/80">
-                            {mediaPerUtilizzo} {group.productId?.unita}
-                          </div>
-                        </td>
-                        
+
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <Clock className="w-4 h-4 mr-2 text-purple-300" />
-                            <div className="text-sm text-white">
-                              {periodoUtilizzo}
+                            <MapPin className="w-4 h-4 mr-2 text-orange-300" />
+                            <div className="text-sm font-medium text-white">
+                              {group.utilizzi[0]?.poloId?.nome || 'N/A'}
                             </div>
                           </div>
                         </td>
                         
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openModal(group);
-                            }}
-                            className="glass-button p-2 rounded-xl text-blue-300 hover:text-blue-200 hover:scale-105 transition-all duration-300"
-                            title="Visualizza dettagli"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-2 text-green-300" />
+                            <div className="text-sm font-medium text-white">
+                              {group.settimanaId ? formatWeek(group.settimanaId) : 'N/A'}
+                            </div>
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="glass-count-badge px-2 py-1 rounded-full">
+                              <span className="text-sm font-medium text-white">
+                                {group.numeroUtilizzi}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openModal(group);
+                              }}
+                              className="glass-button p-2 rounded-xl text-blue-300 hover:text-blue-200 hover:scale-105 transition-all duration-300"
+                              title="Visualizza dettagli"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -495,29 +513,32 @@ const UtilizziPage = () => {
       </div>
 
       {/* Modal Dettagli Utilizzi */}
-      {modalOpen && selectedGroup && (
+      {modalAnimation.isVisible && selectedGroup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Overlay */}
           <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={closeModal}
+            {...modalAnimation.backdropProps}
+            className={`absolute inset-0 bg-black/50 backdrop-blur-sm ${modalAnimation.backdropClasses}`}
           ></div>
           
           {/* Modal Content */}
-          <div className="relative glass-modal w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl">
+          <div 
+            {...modalAnimation.modalProps}
+            className={`relative glass-modal w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-2xl modal-glow ${modalAnimation.modalClasses}`}
+          >
             {/* Header Modal */}
             <div className="glass-modal-header px-6 py-4 border-b border-white/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="glass-icon p-2 rounded-xl">
-                    <Package className="w-6 h-6 text-white" />
+                    <FileText className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-white">
                       Dettagli Utilizzi - {selectedGroup.productId?.nome}
                     </h3>
                     <p className="text-white/70">
-                      {selectedAssignmentInfo ? formatWeek(selectedAssignmentInfo.settimanaId) : 'Settimana selezionata'}
+                      {selectedGroup.userId?.username} • {selectedGroup.settimanaId ? formatWeek(selectedGroup.settimanaId) : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -530,78 +551,82 @@ const UtilizziPage = () => {
               </div>
             </div>
 
-            {/* Riepilogo */}
-            <div className="glass-modal-summary px-6 py-4 border-b border-white/10">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="glass-summary-item p-3 rounded-xl text-center">
-                  <div className="text-2xl font-bold text-red-300">
-                    -{selectedGroup.totalQuantita}
-                  </div>
-                  <div className="text-xs text-white/60">Totale Utilizzato</div>
-                </div>
-                <div className="glass-summary-item p-3 rounded-xl text-center">
-                  <div className="text-2xl font-bold text-blue-300">
-                    {selectedGroup.numeroUtilizzi}
-                  </div>
-                  <div className="text-xs text-white/60">Numero Utilizzi</div>
-                </div>
-                <div className="glass-summary-item p-3 rounded-xl text-center">
-                  <div className="text-lg font-bold text-green-300">
-                    {(selectedGroup.totalQuantita / selectedGroup.numeroUtilizzi).toFixed(1)}
-                  </div>
-                  <div className="text-xs text-white/60">Media per Utilizzo</div>
-                </div>
-                <div className="glass-summary-item p-3 rounded-xl text-center">
-                  <div className="text-lg font-bold text-purple-300">
-                    {selectedGroup.productId?.unita}
-                  </div>
-                  <div className="text-xs text-white/60">Unità di Misura</div>
-                </div>
-              </div>
-            </div>
-
             {/* Lista Dettagliata */}
             <div className="glass-modal-content p-6 overflow-y-auto max-h-96">
               <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
-                <FileText className="w-5 h-5 mr-2" />
-                Cronologia Utilizzi ({modalUtilizzi.length})
+                <Eye className="w-5 h-5 mr-2" />
+                Utilizzi Dettagliati ({modalUtilizzi.length})
               </h4>
               
               <div className="space-y-3">
-                {modalUtilizzi.map(utilizzo => {
+                {modalUtilizzi.map((utilizzo, index) => {
                   const dateTime = formatDateTime(utilizzo.dataUtilizzo);
                   
                   return (
-                    <div key={utilizzo._id} className="glass-utilizzo-item p-4 rounded-xl">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {/* Data/Ora */}
-                        <div>
-                          <div className="text-xs text-white/60 mb-1">Data/Ora</div>
-                          <div className="text-sm text-white">{dateTime.date}</div>
-                          <div className="text-xs text-white/50">{dateTime.time}</div>
-                        </div>
-                        
-                        {/* Quantità */}
-                        <div>
-                          <div className="text-xs text-white/60 mb-1">Quantità Usata</div>
-                          <div className="text-sm font-medium text-red-300">
-                            -{utilizzo.quantitaUtilizzata} {utilizzo.productId?.unita}
+                    <div 
+                      key={utilizzo._id} 
+                      className={`glass-utilizzo-item p-4 rounded-xl ${staggerAnimation[index]?.class || ''}`}
+                      style={staggerAnimation[index]?.style || {}}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                          {/* Data/Ora */}
+                          <div>
+                            <div className="text-xs text-white/60 mb-1 flex items-center">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Data/Ora
+                            </div>
+                            <div className="text-sm text-white">{dateTime.date}</div>
+                            <div className="text-xs text-white/50">{dateTime.time}</div>
                           </div>
-                        </div>
-                        
-                        {/* Prima/Dopo */}
-                        <div>
-                          <div className="text-xs text-white/60 mb-1">Prima → Dopo</div>
-                          <div className="text-sm text-white">
-                            {utilizzo.quantitaPrimaDellUso} → {utilizzo.quantitaRimasta}
+                          
+                          {/* Polo */}
+                          <div>
+                            <div className="text-xs text-white/60 mb-1 flex items-center">
+                              <MapPin className="w-3 h-3 mr-1" />
+                              Polo
+                            </div>
+                            <div className="text-sm text-white">
+                              {utilizzo.poloId?.nome || 'N/A'}
+                            </div>
                           </div>
-                        </div>
-                        
-                        {/* Note */}
-                        <div>
-                          <div className="text-xs text-white/60 mb-1">Note</div>
-                          <div className="text-sm text-white/70">
-                            {utilizzo.note || '-'}
+
+                          {/* Postazione */}
+                          <div>
+                            <div className="text-xs text-white/60 mb-1 flex items-center">
+                              <Package className="w-3 h-3 mr-1" />
+                              Postazione
+                            </div>
+                            <div className="text-sm text-white">
+                              {utilizzo.postazioneId?.nome || 'N/A'}
+                            </div>
+                          </div>
+
+                          {/* Settimana */}
+                          <div>
+                            <div className="text-xs text-white/60 mb-1 flex items-center">
+                              <Calendar className="w-3 h-3 mr-1" />
+                              Settimana
+                            </div>
+                            <div className="text-sm text-white">
+                              {utilizzo.settimanaId ? formatWeek(utilizzo.settimanaId) : 'N/A'}
+                            </div>
+                          </div>
+                          
+                          {/* Quantità */}
+                          <div>
+                            <div className="text-xs text-white/60 mb-1">Quantità</div>
+                            <div className="text-sm font-medium text-red-300">
+                              -{utilizzo.quantitaUtilizzata} {utilizzo.productId?.unita}
+                            </div>
+                          </div>
+                          
+                          {/* Note */}
+                          <div>
+                            <div className="text-xs text-white/60 mb-1">Note</div>
+                            <div className="text-sm text-white/70">
+                              {utilizzo.note || '-'}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -612,10 +637,10 @@ const UtilizziPage = () => {
             </div>
 
             {/* Footer Modal */}
-            <div className="glass-modal-footer px-6 py-4 border-t border-white/10">
+            <div className="glass-modal-footer px-6 py-4 border-b border-white/10">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-white/70">
-                  📋 Questa è la cronologia completa dei tuoi utilizzi per questo prodotto
+                  📋 Cronologia completa degli utilizzi per questo prodotto
                 </div>
                 <button
                   onClick={closeModal}
@@ -658,6 +683,12 @@ const UtilizziPage = () => {
         }
 
         .glass-icon-small {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .glass-avatar {
           background: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.15);

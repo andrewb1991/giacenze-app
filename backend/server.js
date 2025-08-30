@@ -68,6 +68,10 @@ const poloSchema = new mongoose.Schema({
 
 const mezzoSchema = new mongoose.Schema({
   nome: { type: String, required: true },
+  targa: String,
+  tipo: String,
+  marca: String,
+  modello: String,
   descrizione: String,
   attivo: { type: Boolean, default: true }
 }, { timestamps: true });
@@ -2365,11 +2369,151 @@ app.delete('/api/poli/:id/force', authenticateToken, async (req, res) => {
   }
 });
 
+// ✅ ROTTE API PER MEZZI
 app.get('/api/mezzi', authenticateToken, async (req, res) => {
   try {
     const mezzi = await Mezzo.find({ attivo: true });
     res.json(mezzi);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Crea nuovo mezzo
+app.post('/api/mezzi', authenticateToken, async (req, res) => {
+  try {
+    const { nome, targa, tipo, marca, modello, descrizione } = req.body;
+    
+    if (!nome) {
+      return res.status(400).json({ message: 'Nome mezzo è obbligatorio' });
+    }
+
+    const nuovoMezzo = new Mezzo({
+      nome: nome.trim(),
+      targa: targa?.trim() || '',
+      tipo: tipo?.trim() || '',
+      marca: marca?.trim() || '',
+      modello: modello?.trim() || '',
+      descrizione: descrizione?.trim() || ''
+    });
+
+    const mezzoSalvato = await nuovoMezzo.save();
+    console.log('✅ Mezzo creato:', mezzoSalvato);
+    res.status(201).json(mezzoSalvato);
+  } catch (error) {
+    console.error('❌ Errore creazione mezzo:', error);
+    if (error.code === 11000) {
+      res.status(400).json({ message: 'Esiste già un mezzo con questo nome' });
+    } else {
+      res.status(500).json({ message: error.message });
+    }
+  }
+});
+
+// PUT - Aggiorna mezzo esistente
+app.put('/api/mezzi/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, targa, tipo, marca, modello, descrizione } = req.body;
+
+    if (!nome) {
+      return res.status(400).json({ message: 'Nome mezzo è obbligatorio' });
+    }
+
+    const mezzoAggiornato = await Mezzo.findByIdAndUpdate(
+      id,
+      {
+        nome: nome.trim(),
+        targa: targa?.trim() || '',
+        tipo: tipo?.trim() || '',
+        marca: marca?.trim() || '',
+        modello: modello?.trim() || '',
+        descrizione: descrizione?.trim() || ''
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!mezzoAggiornato) {
+      return res.status(404).json({ message: 'Mezzo non trovato' });
+    }
+
+    console.log('✅ Mezzo aggiornato:', mezzoAggiornato);
+    res.json(mezzoAggiornato);
+  } catch (error) {
+    console.error('❌ Errore aggiornamento mezzo:', error);
+    if (error.code === 11000) {
+      res.status(400).json({ message: 'Esiste già un mezzo con questo nome' });
+    } else {
+      res.status(500).json({ message: error.message });
+    }
+  }
+});
+
+// DELETE - Elimina mezzo (soft delete)
+app.delete('/api/mezzi/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verifica se il mezzo è utilizzato in assegnazioni attive
+    const assegnazioniAttive = await Assegnazione.countDocuments({
+      mezzoId: id,
+      attiva: true
+    });
+
+    if (assegnazioniAttive > 0) {
+      return res.status(400).json({
+        richiediConferma: true,
+        conflitti: [`Il mezzo è utilizzato in ${assegnazioniAttive} assegnazioni attive`],
+        dettagli: `Il mezzo ha ${assegnazioniAttive} assegnazioni attive. Eliminandolo verranno disattivate tutte le assegnazioni collegate.`
+      });
+    }
+
+    // Soft delete del mezzo
+    const mezzoEliminato = await Mezzo.findByIdAndUpdate(
+      id,
+      { attivo: false },
+      { new: true }
+    );
+
+    if (!mezzoEliminato) {
+      return res.status(404).json({ message: 'Mezzo non trovato' });
+    }
+
+    console.log('✅ Mezzo eliminato (soft delete):', mezzoEliminato.nome);
+    res.json({ message: 'Mezzo eliminato con successo' });
+  } catch (error) {
+    console.error('❌ Errore eliminazione mezzo:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE - Eliminazione forzata mezzo
+app.delete('/api/mezzi/:id/force', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Disattiva tutte le assegnazioni collegate
+    await Assegnazione.updateMany(
+      { mezzoId: id, attiva: true },
+      { attiva: false }
+    );
+
+    // Soft delete del mezzo
+    const mezzoEliminato = await Mezzo.findByIdAndUpdate(
+      id,
+      { attivo: false },
+      { new: true }
+    );
+
+    if (!mezzoEliminato) {
+      return res.status(404).json({ message: 'Mezzo non trovato' });
+    }
+
+    console.log('✅ Mezzo eliminato forzatamente:', mezzoEliminato.nome);
+    console.log('✅ Disattivate assegnazioni collegate al mezzo');
+    res.json({ message: 'Mezzo e assegnazioni collegate eliminate con successo' });
+  } catch (error) {
+    console.error('❌ Errore eliminazione forzata mezzo:', error);
     res.status(500).json({ message: error.message });
   }
 });
