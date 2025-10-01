@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, 
-  Filter, 
-  Trash2, 
-  RotateCcw, 
-  Eye, 
+import {
+  Search,
+  Filter,
+  Trash2,
+  RotateCcw,
+  Eye,
   EyeOff,
   AlertTriangle,
   CheckCircle,
@@ -25,7 +25,9 @@ import {
   Hash,
   BarChart3,
   Save,
-  X
+  X,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
@@ -67,7 +69,13 @@ const AssignmentsManagement = () => {
   
   // Stato per checkbox "tutte le settimane" - ATTIVO DI DEFAULT
   const [showAllWeeks, setShowAllWeeks] = useState(true);
-  
+
+  // Stati per sorting
+  const [sortConfig, setSortConfig] = useState({
+    field: null,
+    direction: 'asc'
+  });
+
   // Stati per dati
   const [assegnazioni, setAssegnazioni] = useState([]);
   const [filteredAssegnazioni, setFilteredAssegnazioni] = useState([]);
@@ -596,31 +604,99 @@ const AssignmentsManagement = () => {
     }
   };
 
+  // Funzione per gestire il sorting
+  const handleSort = (field) => {
+    setSortConfig(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Funzione per ordinare le assegnazioni
+  const sortAssegnazioni = (data) => {
+    if (!sortConfig.field) return data;
+
+    return [...data].sort((a, b) => {
+      let aVal, bVal;
+
+      switch (sortConfig.field) {
+        case 'operatore':
+          aVal = a.userId?.username || '';
+          bVal = b.userId?.username || '';
+          break;
+        case 'polo':
+          aVal = a.poloId?.nome || '';
+          bVal = b.poloId?.nome || '';
+          break;
+        case 'mezzo':
+          aVal = a.mezzoId?.nome || '';
+          bVal = b.mezzoId?.nome || '';
+          break;
+        case 'ordine':
+          aVal = (typeof a.ordine === 'object' ? a.ordine?.numero : a.ordine) || '';
+          bVal = (typeof b.ordine === 'object' ? b.ordine?.numero : b.ordine) || '';
+          break;
+        case 'rdt':
+          aVal = (typeof a.rdt === 'object' ? a.rdt?.numero : a.rdt) || '';
+          bVal = (typeof b.rdt === 'object' ? b.rdt?.numero : b.rdt) || '';
+          break;
+        case 'settimana':
+          aVal = a.settimanaId?.numero || 0;
+          bVal = b.settimanaId?.numero || 0;
+          // Se hanno lo stesso numero, ordina per anno
+          if (aVal === bVal) {
+            aVal = a.settimanaId?.anno || 0;
+            bVal = b.settimanaId?.anno || 0;
+          }
+          break;
+        case 'stato':
+          aVal = a.attiva ? 1 : 0;
+          bVal = b.attiva ? 1 : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      // Confronto stringhe o numeri
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
   // Applica filtri locali - ✅ AGGIORNATO per includere ordine e rdt nella ricerca
   useEffect(() => {
     let filtered = assegnazioni;
-    
+
     if (filters.searchTerm) {
-      filtered = filtered.filter(assegnazione => 
+      filtered = filtered.filter(assegnazione =>
         assegnazione.userId?.username.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
         assegnazione.userId?.email.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
         assegnazione.poloId?.nome.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
         assegnazione.mezzoId?.nome.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
         (assegnazione.ordine && (
-          typeof assegnazione.ordine === 'object' 
+          typeof assegnazione.ordine === 'object'
             ? assegnazione.ordine.numero?.toLowerCase().includes(filters.searchTerm.toLowerCase())
             : assegnazione.ordine.toLowerCase().includes(filters.searchTerm.toLowerCase())
         )) ||  // ✅ NUOVO
         (assegnazione.rdt && (
-          typeof assegnazione.rdt === 'object' 
+          typeof assegnazione.rdt === 'object'
             ? assegnazione.rdt.numero?.toLowerCase().includes(filters.searchTerm.toLowerCase())
             : assegnazione.rdt.toLowerCase().includes(filters.searchTerm.toLowerCase())
         ))             // ✅ NUOVO
       );
     }
-    
+
+    // Applica sorting
+    filtered = sortAssegnazioni(filtered);
+
     setFilteredAssegnazioni(filtered);
-  }, [assegnazioni, filters.searchTerm]);
+  }, [assegnazioni, filters.searchTerm, sortConfig]);
 
   // Ricarica quando cambiano i filtri principali - ✅ AGGIORNATO
   useEffect(() => {
@@ -1623,27 +1699,83 @@ const AssignmentsManagement = () => {
                 <table className="min-w-full divide-y divide-white/10">
                 <thead className="glass-table-header">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Operatore
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('operatore')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Operatore</span>
+                        {sortConfig.field === 'operatore' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Polo
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('polo')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Polo</span>
+                        {sortConfig.field === 'polo' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Mezzo
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('mezzo')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Mezzo</span>
+                        {sortConfig.field === 'mezzo' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
                     {/* ✅ NUOVE COLONNE */}
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Ordine
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('ordine')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Ordine</span>
+                        {sortConfig.field === 'ordine' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      RDT
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('rdt')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>RDT</span>
+                        {sortConfig.field === 'rdt' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Settimana
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('settimana')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Settimana</span>
+                        {sortConfig.field === 'settimana' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Stato
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('stato')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Stato</span>
+                        {sortConfig.field === 'stato' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Azioni
@@ -2257,23 +2389,26 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
   // Ref per lo scroll automatico alla settimana corrente
   const tableRef = useRef(null);
   const currentWeekRef = useRef(null);
-  
-  // Scroll alla settimana corrente quando il componente si monta
+  const hasScrolledToCurrentWeek = useRef(false);
+
+  // Scroll alla settimana corrente SOLO al primo montaggio
   useEffect(() => {
-    if (currentWeekRef.current && tableRef.current) {
+    if (currentWeekRef.current && tableRef.current && !hasScrolledToCurrentWeek.current) {
       // Scroll orizzontale alla settimana corrente
       const currentWeekColumn = currentWeekRef.current;
       const table = tableRef.current;
-      
+
       // Calcola la posizione dello scroll per centrare la settimana corrente
       const columnRect = currentWeekColumn.getBoundingClientRect();
       const tableRect = table.getBoundingClientRect();
       const scrollLeft = currentWeekColumn.offsetLeft - (tableRect.width / 2) + (columnRect.width / 2);
-      
+
       table.scrollTo({
         left: Math.max(0, scrollLeft),
         behavior: 'smooth'
       });
+
+      hasScrolledToCurrentWeek.current = true;
     }
   }, [sortedSettimane, currentWeekIndex]);
   

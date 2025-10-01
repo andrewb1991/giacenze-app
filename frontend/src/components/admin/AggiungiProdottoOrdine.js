@@ -72,12 +72,26 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
       const loadData = async () => {
         // 1. Prima carica i prodotti (che popola la tabella)
         await caricaProdottiOrdine();
-        
+
         // 2. Poi carica le giacenze (che aggiorna le righe esistenti)
         const assegnazione = getAssegnazioneForItem(ordine.itemType, ordine.numero);
+        let userId = null;
+
         if (assegnazione?.userId?._id) {
-          console.log(`🔄 [${timestamp}] Ora carico giacenze per userId:`, assegnazione.userId._id);
-          await caricaGiacenzeOperatore(assegnazione.userId._id);
+          userId = assegnazione.userId._id;
+          console.log(`🔄 [${timestamp}] Carico giacenze da assegnazione per userId:`, userId);
+        } else if (ordine.operatoreId?._id) {
+          userId = ordine.operatoreId._id;
+          console.log(`🔄 [${timestamp}] Carico giacenze da operatoreId per userId:`, userId);
+        } else if (ordine.operatoreId) {
+          userId = ordine.operatoreId;
+          console.log(`🔄 [${timestamp}] Carico giacenze da operatoreId (stringa) per userId:`, userId);
+        }
+
+        if (userId) {
+          await caricaGiacenzeOperatore(userId);
+        } else {
+          console.log(`⚠️ [${timestamp}] Nessun operatore trovato (né assegnazione né operatoreId)`);
         }
       };
       
@@ -101,8 +115,18 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
         const loadData = async () => {
           await caricaProdottiOrdine();
           const assegnazione = getAssegnazioneForItem(ordine.itemType, ordine.numero);
+          let userId = null;
+
           if (assegnazione?.userId?._id) {
-            await caricaGiacenzeOperatore(assegnazione.userId._id);
+            userId = assegnazione.userId._id;
+          } else if (ordine.operatoreId?._id) {
+            userId = ordine.operatoreId._id;
+          } else if (ordine.operatoreId) {
+            userId = ordine.operatoreId;
+          }
+
+          if (userId) {
+            await caricaGiacenzeOperatore(userId);
           }
         };
         loadData().catch(err => console.error('Errore caricamento dati:', err));
@@ -861,13 +885,13 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                               />
                               
                               {openDropdownId === riga.id && (
-                                <div className="absolute top-full left-0 right-0 z-[999999] bg-gray-900 border border-white/20 rounded-lg mt-1 max-h-60 overflow-y-auto shadow-2xl">
-                                  {allProducts?.filter(p => 
+                                <div className="absolute top-full left-0 right-0 z-[999999] glass-card rounded-lg mt-1 max-h-60 overflow-y-auto shadow-2xl">
+                                  {allProducts?.filter(p =>
                                     p.attivo && p.nome.toLowerCase().includes(riga.searchTerm.toLowerCase())
                                   ).slice(0, 15).map(product => (
                                     <div
                                       key={product._id}
-                                      className="dropdown-product p-3 hover:bg-white/10 cursor-pointer"
+                                      className="dropdown-product p-3 hover:bg-white/10 cursor-pointer transition-colors"
                                       onClick={() => {
                                         aggiornaRiga(riga.id, 'productId', product._id);
                                         setOpenDropdownId(null);

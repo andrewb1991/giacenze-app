@@ -323,34 +323,19 @@ const GiacenzePage = () => {
                   }
                 }
 
-                // Calcola utilizzi per questo prodotto, assegnazione e postazione specifiche
-                const utilizziProdotto = myUtilizzi?.filter(utilizzo => {
-                  // Filtro per prodotto
-                  const productIdUtilizzo = utilizzo.productId?._id || utilizzo.productId;
-                  const productIdGiacenza = giacenza.productId?._id;
-                  const matchProdotto = productIdUtilizzo === productIdGiacenza;
-                  
-                  // Filtro per assegnazione/settimana
-                  const settimanaIdUtilizzo = utilizzo.settimanaId?._id || utilizzo.settimanaId;
-                  const settimanaIdAssegnazione = selectedAssignment?._id;
-                  const matchAssegnazione = settimanaIdUtilizzo === settimanaIdAssegnazione;
-                  
-                  // Filtro per postazione
-                  const postazioneIdUtilizzo = utilizzo.postazioneId?._id || utilizzo.postazioneId;
-                  const matchPostazione = postazioneIdUtilizzo === selectedPostazione;
-                  
-                  return matchProdotto && matchAssegnazione && matchPostazione;
-                }) || [];
 
-                const contatore = utilizziProdotto.length;
-                
+                // Calcola utilizzi per questo prodotto
+                const utilizziProdotto = myUtilizzi.filter(u =>
+                  u.productId?._id === giacenza.productId?._id
+                );
+
                 return (
                   <GiacenzaCard
                     key={giacenza._id}
                     giacenza={giacenza}
                     isSottoSoglia={isSottoSoglia}
                     percentualeRimasta={percentualeRimasta}
-                    utilizziCount={contatore}
+                    utilizziCount={utilizziProdotto.length}
                     onUseProduct={(productId, quantity) => useProduct(productId, quantity, selectedPostazione)}
                     onAddProduct={(productId, quantity) => addProduct(productId, quantity, selectedPostazione)}
                   />
@@ -447,17 +432,6 @@ const GiacenzePage = () => {
           border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
-        .glass-counter-badge {
-          background: rgba(59, 130, 246, 0.15);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(59, 130, 246, 0.3);
-          transition: all 0.3s ease;
-        }
-
-        .glass-counter-badge:hover {
-          background: rgba(59, 130, 246, 0.2);
-          transform: scale(1.05);
-        }
 
         .glass-input {
           background: rgba(255, 255, 255, 0.08);
@@ -511,23 +485,25 @@ const GiacenzaCard = ({ giacenza, isSottoSoglia, percentualeRimasta, utilizziCou
   return (
     <div className="glass-card-interactive p-6 rounded-2xl">
       <div className="flex justify-between items-start mb-4">
-        <div>
+        <div className="flex-1">
           <h3 className="text-lg font-semibold text-white">
             {giacenza.productId?.nome}
           </h3>
           <p className="text-sm text-white/60">{giacenza.productId?.categoria}</p>
         </div>
-        <div className="flex items-center space-x-2">
-          {/* Contatore utilizzi */}
-          <div className="glass-counter-badge flex items-center px-2.5 py-1 rounded-full bg-blue-400/20 border border-blue-300/30">
-            <Package className="w-3 h-3 text-blue-300 mr-1" />
-            <span className="text-xs font-medium text-blue-200">{utilizziCount}</span>
+        <div className="flex flex-col items-end space-y-2">
+          {/* Badge utilizzi */}
+          <div className="glass-utilizzi-badge px-3 py-1 rounded-full flex items-center space-x-2">
+            <Package className="w-3.5 h-3.5 text-blue-300" />
+            <span className="text-xs font-medium text-white">
+              {utilizziCount} utilizzi
+            </span>
           </div>
-          
+
           {/* Badge stato */}
           <span className={`glass-status-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-            isSottoSoglia 
-              ? 'text-red-200 border-red-300/30 bg-red-400/20' 
+            isSottoSoglia
+              ? 'text-red-200 border-red-300/30 bg-red-400/20'
               : 'text-green-200 border-green-300/30 bg-green-400/20'
           }`}>
             {isSottoSoglia ? 'SOTTO SOGLIA' : 'OK'}
@@ -616,6 +592,18 @@ const GiacenzaCard = ({ giacenza, isSottoSoglia, percentualeRimasta, utilizziCou
       )}
 
       <style jsx>{`
+        .glass-utilizzi-badge {
+          background: rgba(59, 130, 246, 0.2);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          transition: all 0.3s ease;
+        }
+
+        .glass-utilizzi-badge:hover {
+          background: rgba(59, 130, 246, 0.3);
+          transform: scale(1.05);
+        }
+
         .glass-status-badge {
           backdrop-filter: blur(10px);
         }

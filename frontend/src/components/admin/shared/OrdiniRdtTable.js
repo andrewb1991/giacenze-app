@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, 
-  Filter, 
-  Trash2, 
-  Eye, 
+import {
+  Search,
+  Filter,
+  Trash2,
+  Eye,
   Edit,
   Save,
   X,
@@ -15,7 +15,9 @@ import {
   Calendar,
   User,
   Building,
-  ShoppingCart
+  ShoppingCart,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useGiacenze } from '../../../hooks/useGiacenze';
@@ -102,6 +104,9 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
   };
   
   // Stati per filtri
+  // Stato per ordinamento
+  const [sortConfig, setSortConfig] = useState({ field: null, direction: 'asc' });
+
   const [filters, setFilters] = useState({
     searchTerm: '',
     operatore: '',
@@ -186,12 +191,12 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
   // Filtra dati combinati
   const getFilteredItems = () => {
     let items = getAllItems();
-    
+
     // Filtro tipo
     if (filters.tipo) {
       items = items.filter(item => item.itemType === filters.tipo);
     }
-    
+
     // Filtro ricerca
     if (filters.searchTerm) {
       const searchLower = filters.searchTerm.toLowerCase();
@@ -199,18 +204,19 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
         const assegnazione = getAssegnazioneForItem(item.itemType, item.numero);
         return item.numero?.toLowerCase().includes(searchLower) ||
                item.cliente?.toLowerCase().includes(searchLower) ||
-               assegnazione?.userId?.username?.toLowerCase().includes(searchLower);
+               assegnazione?.userId?.username?.toLowerCase().includes(searchLower) ||
+               item.operatoreId?.username?.toLowerCase().includes(searchLower);
       });
     }
-    
+
     // Filtro operatore
     if (filters.operatore) {
       items = items.filter(item => {
         const assegnazione = getAssegnazioneForItem(item.itemType, item.numero);
-        return assegnazione?.userId?._id === filters.operatore;
+        return assegnazione?.userId?._id === filters.operatore || item.operatoreId?._id === filters.operatore;
       });
     }
-    
+
     // Filtro settimana
     if (filters.settimana) {
       items = items.filter(item => {
@@ -218,13 +224,88 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
         return assegnazione?.settimanaId?._id === filters.settimana;
       });
     }
-    
+
     // Filtro stato
     if (filters.stato) {
       items = items.filter(item => item.stato === filters.stato);
     }
-    
+
+    // Applica ordinamento
+    if (sortConfig.field) {
+      items = sortItems(items);
+    }
+
     return items;
+  };
+
+  // Funzione per gestire il click sulle intestazioni
+  const handleSort = (field) => {
+    setSortConfig(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Funzione per ordinare gli items
+  const sortItems = (items) => {
+    if (!sortConfig.field) return items;
+
+    return [...items].sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sortConfig.field) {
+        case 'tipo':
+          aValue = a.itemType || '';
+          bValue = b.itemType || '';
+          break;
+        case 'numero':
+          aValue = a.numero || '';
+          bValue = b.numero || '';
+          break;
+        case 'cliente':
+          aValue = a.cliente || '';
+          bValue = b.cliente || '';
+          break;
+        case 'operatore':
+          const assegnazioneA = getAssegnazioneForItem(a.itemType, a.numero);
+          const assegnazioneB = getAssegnazioneForItem(b.itemType, b.numero);
+          aValue = assegnazioneA?.userId?.username || a.operatoreId?.username || '';
+          bValue = assegnazioneB?.userId?.username || b.operatoreId?.username || '';
+          break;
+        case 'settimana':
+          const assA = getAssegnazioneForItem(a.itemType, a.numero);
+          const assB = getAssegnazioneForItem(b.itemType, b.numero);
+          aValue = assA?.settimanaId?.numero || 0;
+          bValue = assB?.settimanaId?.numero || 0;
+          break;
+        case 'dataConsegna':
+          aValue = a.dataConsegna ? new Date(a.dataConsegna).getTime() : 0;
+          bValue = b.dataConsegna ? new Date(b.dataConsegna).getTime() : 0;
+          break;
+        case 'stato':
+          aValue = a.stato || '';
+          bValue = b.stato || '';
+          break;
+        case 'prodotti':
+          aValue = a.prodotti?.length || 0;
+          bValue = b.prodotti?.length || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  // Helper per mostrare l'icona di ordinamento
+  const getSortIcon = (field) => {
+    if (sortConfig.field !== field) return null;
+    return sortConfig.direction === 'asc' ?
+      <ChevronUp className="w-4 h-4 inline ml-1" /> :
+      <ChevronDown className="w-4 h-4 inline ml-1" />;
   };
 
   // Aggiorna filtri
@@ -235,13 +316,13 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
   // Avvia editing inline
   const startEdit = (item) => {
     const assegnazione = getAssegnazioneForItem(item.itemType, item.numero);
-    
+
     setEditingItem(item._id);
     setEditValues({
       numero: item.numero || '',
       cliente: item.cliente || '',
       dataConsegna: item.dataConsegna ? new Date(item.dataConsegna).toISOString().split('T')[0] : '',
-      operatore: assegnazione?.userId?._id || '',
+      operatore: assegnazione?.userId?._id || item.operatoreId?._id || '',
       settimanaId: assegnazione?.settimanaId?._id || '',
       stato: item.stato || 'CREATO',
       note: item.note || ''
@@ -460,16 +541,17 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
 
   // Elimina elemento
   const handleDelete = async (item) => {
-    
+
     try {
       setError('');
       setLoading(true);
-      
+
       const assegnazione = getAssegnazioneForItem(item.itemType, item.numero);
       const operatoreId = assegnazione?.userId?._id;
-      
-      console.log('🗑️ Eliminazione ordine:', item._id, 'Stato:', item.stato, 'Operatore:', operatoreId);
-      
+      const isCompleted = item.stato === 'completato';
+
+      console.log('🗑️ Eliminazione ordine:', item._id, 'Stato:', item.stato, 'Operatore:', operatoreId, 'Completato:', isCompleted);
+
       // Step 1: Rimuovi collegamenti dall'assegnazione se esiste
       if (assegnazione) {
         try {
@@ -479,7 +561,7 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
           } else if (item.itemType === 'rdt') {
             updateData.rdt = null;
           }
-          
+
           await apiCall(`/assegnazioni/${assegnazione._id}`, {
             method: 'PUT',
             body: JSON.stringify(updateData)
@@ -490,7 +572,7 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
           // Non bloccare l'eliminazione se fallisce la rimozione collegamento
         }
       }
-      
+
       // Step 2: Decrementa giacenze SOLO se l'ordine/RDT è COMPLETATO
       if (isCompleted && item.prodotti && item.prodotti.length > 0 && operatoreId) {
         try {
@@ -726,23 +808,41 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
             <table className="min-w-full divide-y divide-white/10">
               <thead className="glass-table-header">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                    Tipo/Numero
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                    onClick={() => handleSort('tipo')}
+                  >
+                    Tipo/Numero {getSortIcon('tipo')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                    Cliente
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                    onClick={() => handleSort('cliente')}
+                  >
+                    Cliente {getSortIcon('cliente')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                    Data Consegna
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                    onClick={() => handleSort('dataConsegna')}
+                  >
+                    Data Consegna {getSortIcon('dataConsegna')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                    Operatore
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                    onClick={() => handleSort('operatore')}
+                  >
+                    Operatore {getSortIcon('operatore')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                    Settimana
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                    onClick={() => handleSort('settimana')}
+                  >
+                    Settimana {getSortIcon('settimana')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                    Stato
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
+                    onClick={() => handleSort('stato')}
+                  >
+                    Stato {getSortIcon('stato')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                     Note
@@ -850,7 +950,7 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
                           </select>
                         ) : (
                           <div className="text-sm text-white">
-                            {assegnazione?.userId?.username || (
+                            {assegnazione?.userId?.username || item.operatoreId?.username || (
                               <span className="text-white/40 italic">Non assegnato</span>
                             )}
                           </div>

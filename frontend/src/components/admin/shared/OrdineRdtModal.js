@@ -105,6 +105,12 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
         if (assegnazione) {
           setOperatoreId(assegnazione.userId?._id || '');
           setAssegnazioneId(assegnazione._id);
+        } else if (item.operatoreId) {
+          // Se non c'è assegnazione ma c'è operatoreId, usa quello
+          const opId = item.operatoreId?._id || item.operatoreId;
+          setOperatoreId(opId);
+          setAssegnazioneId('');
+          console.log('📝 OrdineRdtModal: Caricato operatore senza assegnazione:', opId);
         }
       }
     }

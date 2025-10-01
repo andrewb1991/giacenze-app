@@ -138,6 +138,11 @@ export const useGiacenze = () => {
       const updatedGiacenze = await apiCall('/my-giacenze', {}, token);
       dispatch({ type: 'SET_MY_GIACENZE', payload: updatedGiacenze });
 
+      // Ricarica utilizzi per aggiornare il badge
+      if (postazioneId) {
+        await loadUtilizzi(selectedAssignment._id, postazioneId);
+      }
+
       // Mostra notifica se sotto soglia
       if (result.sottoSoglia) {
         setError(`⚠️ Attenzione: Quantità sotto soglia minima! Rimasti: ${result.nuovaQuantitaDisponibile}`);
@@ -146,7 +151,7 @@ export const useGiacenze = () => {
       console.log('Prodotto utilizzato con successo');
     } catch (err) {
       if (handleTokenError(err)) return;
-      
+
       setError('Errore nell\'utilizzo del prodotto: ' + err.message);
     }
   };
@@ -175,27 +180,35 @@ export const useGiacenze = () => {
         return;
       }
 
+      const body = {
+        productId,
+        quantitaAggiunta: quantity,
+        assegnazioneId: selectedAssignment._id
+      };
+
+      // Aggiungi postazioneId se fornito
+      if (postazioneId) {
+        body.postazioneId = postazioneId;
+      }
+
       const result = await apiCall('/add-product', {
         method: 'POST',
-        body: JSON.stringify({
-          productId,
-          quantitaAggiunta: quantity,
-          assegnazioneId: selectedAssignment._id
-        })
+        body: JSON.stringify(body)
       }, token);
 
       // Ricarica giacenze personali
       const updatedGiacenze = await apiCall('/my-giacenze', {}, token);
       dispatch({ type: 'SET_MY_GIACENZE', payload: updatedGiacenze });
 
-      // Ricarica utilizzi
-      const updatedUtilizzi = await apiCall('/utilizzi/my', {}, token);
-      dispatch({ type: 'SET_MY_UTILIZZI', payload: updatedUtilizzi });
+      // Ricarica utilizzi per aggiornare il badge
+      if (postazioneId) {
+        await loadUtilizzi(selectedAssignment._id, postazioneId);
+      }
 
       console.log(result.message || 'Prodotto reintegrato con successo');
     } catch (err) {
       if (handleTokenError(err)) return;
-      
+
       setError('Errore nel ripristino prodotto: ' + err.message);
     }
   };
@@ -203,16 +216,30 @@ export const useGiacenze = () => {
   const loadUtilizzi = async (assignmentId, postazioneId = null) => {
     try {
       setError('');
+
+      // Se assignmentId è null, carica tutti gli utilizzi dell'operatore
+      if (!assignmentId) {
+        let url = `/utilizzi/my`;
+        if (postazioneId && postazioneId !== 'all') {
+          url += `?postazioneId=${postazioneId}`;
+        }
+
+        console.log('🔗 Loading ALL utilizzi with URL:', url);
+        const data = await apiCall(url, {}, token);
+        dispatch({ type: 'SET_MY_UTILIZZI', payload: Array.isArray(data) ? data : [data] });
+        return;
+      }
+
       const assignment = myAssignments.find(a => a._id === assignmentId);
       const settimanaId = assignment?.settimanaId?._id || assignment?.settimanaId;
-      
+
       if (!settimanaId) {
         console.warn('Nessun settimanaId valido trovato.');
         return;
       }
 
       let url = `/utilizzi/my?settimanaId=${settimanaId}`;
-      if (postazioneId) {
+      if (postazioneId && postazioneId !== 'all') {
         url += `&postazioneId=${postazioneId}`;
       }
 
@@ -221,9 +248,9 @@ export const useGiacenze = () => {
       dispatch({ type: 'SET_MY_UTILIZZI', payload: Array.isArray(data) ? data : [data] });
     } catch (err) {
       console.error('Errore nel caricamento utilizzi:', err);
-      
+
       if (handleTokenError(err)) return;
-      
+
       setError('Errore nel caricamento utilizzi: ' + err.message);
     }
   };

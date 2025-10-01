@@ -147,14 +147,14 @@ const CreaOrdini = () => {
     }
   }, [formData.operatoreId, assegnazioni, formData.tipo]);
 
-  // Mostra automaticamente il form prodotti quando operatore e assegnazione sono selezionati
+  // Mostra automaticamente il form prodotti quando operatore è selezionato (assegnazione facoltativa)
   useEffect(() => {
-    if (formData.operatoreId && formData.assegnazioneId) {
+    if (formData.operatoreId) {
       setShowProductForm(true);
     } else {
       setShowProductForm(false);
     }
-  }, [formData.operatoreId, formData.assegnazioneId]);
+  }, [formData.operatoreId]);
   
   const loadUserGiacenze = async (userId) => {
     try {
@@ -285,15 +285,22 @@ const CreaOrdini = () => {
         // Se è stato selezionato un nuovo prodotto, popola i campi
         if (field === 'productId' && value) {
           const product = allProducts?.find(p => p._id === value);
-          const userGiacenza = userGiacenze.find(g => g.productId._id === value);
-          
+          const userGiacenza = userGiacenze.find(g => g.productId?._id === value);
+
+          console.log('🔍 CreaOrdini: Ricerca giacenza per prodotto', value);
+          console.log('📦 Giacenze disponibili:', userGiacenze.length);
+          console.log('🎯 Giacenza trovata:', userGiacenza);
+
           if (product) {
             updated.nome = product.nome;
             // Se non esiste giacenza operatore, usa valori di default
             updated.quantitaAssegnata = userGiacenza?.quantitaAssegnata || 0;
             updated.quantitaDisponibile = userGiacenza?.quantitaDisponibile || 0;
             updated.showDropdown = false;
-            console.log('🎯 Prodotto selezionato:', product.nome, 'Giacenza trovata:', !!userGiacenza);
+            console.log('✅ Prodotto selezionato:', product.nome, 'Giacenza:', {
+              assegnata: updated.quantitaAssegnata,
+              disponibile: updated.quantitaDisponibile
+            });
             // searchTerm verrà chiuso dal click handler
           }
         }

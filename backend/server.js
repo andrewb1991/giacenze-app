@@ -348,16 +348,20 @@ const ordineSchema = new mongoose.Schema({
     type: Boolean, 
     default: true 
   },
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
-  lastModifiedBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
+  lastModifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  operatoreId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
-}, { 
-  timestamps: true 
+}, {
+  timestamps: true
 });
 
 // Assicura indice univoco sul campo numero per ordini
@@ -543,25 +547,29 @@ const rdtSchema = new mongoose.Schema({
     tipo: { type: String, enum: ['CONTRATTO', 'FATTURA', 'PREVENTIVO', 'ALTRO'], default: 'ALTRO' },
     dataCaricamento: { type: Date, default: Date.now }
   }],
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
-  lastModifiedBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
+  lastModifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
-  deleted: { 
-    type: Boolean, 
-    default: false 
+  operatoreId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  deleted: {
+    type: Boolean,
+    default: false
   },
   deletedAt: Date,
-  deletedBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
+  deletedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
-}, { 
-  timestamps: true 
+}, {
+  timestamps: true
 });
 
 // Indici per performance
@@ -760,7 +768,7 @@ app.get('/api/my-giacenze', authenticateToken, async (req, res) => {
 
 app.post('/api/add-product', authenticateToken, async (req, res) => {
   try {
-    const { productId, quantitaAggiunta, assegnazioneId } = req.body;
+    const { productId, quantitaAggiunta, assegnazioneId, postazioneId } = req.body;
 
     // Trova giacenza personale
     const giacenza = await GiacenzaUtente.findOne({
@@ -773,26 +781,42 @@ app.post('/api/add-product', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Giacenza non trovata' });
     }
 
-    // Trova ultimo utilizzo
-    const ultimoUtilizzo = await Utilizzo.findOne({
+    // Costruisci query per trovare ultimo utilizzo
+    const query = {
       userId: req.user.userId,
       productId
-    }).sort({ createdAt: -1 });
+    };
+
+    // Filtra per postazione se fornita
+    if (postazioneId) {
+      query.postazioneId = postazioneId;
+    }
+
+    // Trova ultimo utilizzo (filtrato per postazione se specificata)
+    const ultimoUtilizzo = await Utilizzo.findOne(query).sort({ createdAt: -1 });
 
     if (!ultimoUtilizzo) {
-      return res.status(404).json({ message: 'Nessun utilizzo da annullare' });
+      return res.status(404).json({
+        message: postazioneId
+          ? 'Nessun utilizzo da annullare per questa postazione'
+          : 'Nessun utilizzo da annullare'
+      });
     }
 
     // Aggiunge la quantità
     giacenza.quantitaDisponibile += quantitaAggiunta;
     await giacenza.save();
 
-    // Rimuove l’ultimo utilizzo
+    // Rimuove l'ultimo utilizzo
     await Utilizzo.findByIdAndDelete(ultimoUtilizzo._id);
 
     res.status(200).json({
       message: 'Quantità aumentata e ultimo utilizzo annullato',
-      nuovaQuantitaDisponibile: giacenza.quantitaDisponibile
+      nuovaQuantitaDisponibile: giacenza.quantitaDisponibile,
+      utilizzoAnnullato: {
+        id: ultimoUtilizzo._id,
+        postazioneId: ultimoUtilizzo.postazioneId
+      }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -1841,10 +1865,12 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
     
     // Aggrega dati per report UTILIZZI (foglio 1)
     const reportData = {};
-    
+
     utilizzi.forEach(utilizzo => {
-      const key = `${utilizzo.userId._id}-${utilizzo.productId._id}-${utilizzo.settimanaId?._id || 'global'}`;
-      
+      // Aggiungi postazioneId alla chiave per raggruppare per postazione
+      const postazioneKey = utilizzo.postazioneId?._id || 'no-postazione';
+      const key = `${utilizzo.userId._id}-${utilizzo.productId._id}-${utilizzo.settimanaId?._id || 'global'}-${postazioneKey}`;
+
       if (!reportData[key]) {
         let periodoSettimana = 'Non disponibile';
         if (utilizzo.settimanaId?.dataInizio && utilizzo.settimanaId?.dataFine) {
@@ -1852,16 +1878,16 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
           const dataFine = new Date(utilizzo.settimanaId.dataFine);
           periodoSettimana = `${dataInizio.toLocaleDateString('it-IT')} - ${dataFine.toLocaleDateString('it-IT')}`;
         }
-        
+
         const quantitaDisponibile = utilizzo.giacenzaUtenteId?.quantitaDisponibile || 0;
         const quantitaMinima = utilizzo.giacenzaUtenteId?.quantitaMinima || 0;
         const quantitaAssegnata = utilizzo.giacenzaUtenteId?.quantitaAssegnata || 0;
-        
+
         let quantitaDaOrdinare = 0;
         if (quantitaDisponibile <= quantitaMinima) {
           quantitaDaOrdinare = quantitaAssegnata - quantitaDisponibile;
         }
-        
+
         reportData[key] = {
           'Utente': utilizzo.userId.username,
           'Prodotto': utilizzo.productId.nome,
@@ -1878,7 +1904,7 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
           'Periodo': periodoSettimana
         };
       }
-      
+
       reportData[key]['Quantità Totale Utilizzata'] += utilizzo.quantitaUtilizzata;
     });
     
@@ -3472,6 +3498,7 @@ app.get('/api/rdt', authenticateToken, async (req, res) => {
     const rdt = await RDT.find(filter)
       .populate('createdBy', 'username')
       .populate('lastModifiedBy', 'username')
+      .populate('operatoreId', 'username email')
       .sort(sortObj)
       .limit(parseInt(limit))
       .skip(parseInt(offset));
@@ -3577,7 +3604,8 @@ app.post('/api/rdt', authenticateToken, requireAdmin, async (req, res) => {
       contatti: contatti || {},
       note: note || '',
       createdBy: req.user.userId,
-      lastModifiedBy: req.user.userId
+      lastModifiedBy: req.user.userId,
+      operatoreId: operatoreId || null // Salva operatore anche senza assegnazione
     });
 
     await nuovoRdt.save();
@@ -3684,15 +3712,22 @@ app.post('/api/rdt/:id/finalize', authenticateToken, requireAdmin, async (req, r
     if (rdt.stato === 'COMPLETATO') {
       return res.status(400).json({ message: 'RDT già completato' });
     }
-    
-    // Verifica che esista un'assegnazione solo per il collegamento ordine/RDT
+
+    // Cerca assegnazione (facoltativa)
     const assegnazione = await Assegnazione.findOne({
       rdt: rdt.numero,
       attiva: true
     }).populate('userId');
-    
-    if (!assegnazione) {
-      return res.status(400).json({ message: 'Assegnazione non trovata per questo RDT' });
+
+    // Determina operatoreId: da assegnazione o direttamente dall'RDT
+    let operatoreId;
+    if (assegnazione) {
+      operatoreId = assegnazione.userId._id || assegnazione.userId;
+    } else if (rdt.operatoreId) {
+      operatoreId = rdt.operatoreId;
+      console.log('📝 Finalizzazione RDT senza assegnazione - usando operatoreId dall\'RDT:', operatoreId);
+    } else {
+      return res.status(400).json({ message: 'Nessun operatore trovato per questo RDT (né assegnazione né operatoreId)' });
     }
     
     // DEBUG: Controlla giacenze globali esistenti per RDT
@@ -3737,7 +3772,7 @@ app.post('/api/rdt/:id/finalize', authenticateToken, requireAdmin, async (req, r
           // Trova o crea giacenza GLOBALE dell'OPERATORE
           let giacenzaOperatore = await GiacenzaUtente.findOne({
             productId: product._id,
-            userId: assegnazione.userId._id,
+            userId: operatoreId,
             attiva: true
             // Nessun filtro su settimanaId - giacenza globale operatore
           });
@@ -3829,16 +3864,23 @@ app.post('/api/rdt/:id/reopen', authenticateToken, requireAdmin, async (req, res
       return res.status(400).json({ message: 'Solo gli RDT completati possono essere riaperti' });
     }
     
-    // Verifica che esista un'assegnazione (solo per validazione)
+    // Cerca assegnazione (facoltativa)
     const assegnazione = await Assegnazione.findOne({
       rdt: rdt.numero,
       attiva: true
     }).populate('userId');
-    
-    if (!assegnazione) {
-      return res.status(400).json({ message: 'Assegnazione non trovata per questo RDT' });
+
+    // Determina operatoreId: da assegnazione o direttamente dall'RDT
+    let operatoreId;
+    if (assegnazione) {
+      operatoreId = assegnazione.userId._id || assegnazione.userId;
+    } else if (rdt.operatoreId) {
+      operatoreId = rdt.operatoreId;
+      console.log('📝 Riapertura RDT senza assegnazione - usando operatoreId dall\'RDT:', operatoreId);
+    } else {
+      return res.status(400).json({ message: 'Nessun operatore trovato per questo RDT (né assegnazione né operatoreId)' });
     }
-    
+
     // Decrementa le giacenze OPERATORE per ogni prodotto nell'RDT
     if (rdt.prodotti && rdt.prodotti.length > 0) {
       for (const prodotto of rdt.prodotti) {
@@ -3853,7 +3895,7 @@ app.post('/api/rdt/:id/reopen', authenticateToken, requireAdmin, async (req, res
           // Trova la giacenza dell'OPERATORE per questo prodotto
           const giacenza = await GiacenzaUtente.findOne({
             productId: product._id,
-            userId: assegnazione.userId._id,
+            userId: operatoreId,
             isGlobale: true,  // Giacenze operative globali dell'operatore
             attiva: true
           });
@@ -5572,7 +5614,8 @@ app.get('/api/ordini', authenticateToken, async (req, res) => {
         .sort({ dataConsegna: 1, priorita: 1, createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
-        .populate('createdBy', 'username'),
+        .populate('createdBy', 'username')
+        .populate('operatoreId', 'username email'),
       Ordine.countDocuments(filter)
     ]);
     
@@ -5684,11 +5727,12 @@ app.post('/api/ordini', authenticateToken, requireAdmin, async (req, res) => {
       prodotti: prodotti || [],
       valore: parseFloat(valore) || 0,
       tempoStimato: parseInt(tempoStimato) || 60,
-      createdBy: req.user.userId
+      createdBy: req.user.userId,
+      operatoreId: operatoreId || null // Salva operatore anche senza assegnazione
     });
-    
+
     await ordine.save();
-    
+
     // Se è stata fornita un'assegnazione, collega l'ordine
     if (assegnazioneId) {
       const assegnazione = await Assegnazione.findById(assegnazioneId);
@@ -5800,15 +5844,22 @@ app.post('/api/ordini/:id/finalize', authenticateToken, requireAdmin, async (req
     if (ordine.stato === 'COMPLETATO') {
       return res.status(400).json({ message: 'Ordine già completato' });
     }
-    
-    // Verifica che esista un'assegnazione solo per il collegamento ordine/RDT
+
+    // Cerca assegnazione (facoltativa)
     const assegnazione = await Assegnazione.findOne({
       ordine: ordine.numero,
       attiva: true
     }).populate('userId');
-    
-    if (!assegnazione) {
-      return res.status(400).json({ message: 'Assegnazione non trovata per questo ordine' });
+
+    // Determina operatoreId: da assegnazione o direttamente dall'ordine
+    let operatoreId;
+    if (assegnazione) {
+      operatoreId = assegnazione.userId._id || assegnazione.userId;
+    } else if (ordine.operatoreId) {
+      operatoreId = ordine.operatoreId;
+      console.log('📝 Finalizzazione senza assegnazione - usando operatoreId dall\'ordine:', operatoreId);
+    } else {
+      return res.status(400).json({ message: 'Nessun operatore trovato per questo ordine (né assegnazione né operatoreId)' });
     }
     
     // DEBUG: Controlla giacenze globali esistenti
@@ -5853,7 +5904,7 @@ app.post('/api/ordini/:id/finalize', authenticateToken, requireAdmin, async (req
           // Trova o crea giacenza GLOBALE dell'OPERATORE
           let giacenzaOperatore = await GiacenzaUtente.findOne({
             productId: product._id,
-            userId: assegnazione.userId._id,
+            userId: operatoreId,
             attiva: true
             // Nessun filtro su settimanaId - giacenza globale operatore
           });
@@ -5883,7 +5934,7 @@ app.post('/api/ordini/:id/finalize', authenticateToken, requireAdmin, async (req
             } else {
               // Crea completamente nuova giacenza
               giacenzaOperatore = new GiacenzaUtente({
-                userId: assegnazione.userId._id,
+                userId: operatoreId,
                 productId: product._id,
                 quantitaDisponibile: prodotto.quantita,
                 quantitaAssegnata: prodotto.quantita, // Prende valore da "quantitaDaAggiungere"
@@ -5895,7 +5946,7 @@ app.post('/api/ordini/:id/finalize', authenticateToken, requireAdmin, async (req
                 // Nessun settimanaId - giacenza globale operatore
               });
               await giacenzaOperatore.save();
-              console.log(`✅ Creata nuova giacenza globale per operatore ${assegnazione.userId.username} prodotto ${prodotto.nome}: disp=${giacenzaOperatore.quantitaDisponibile}, assegnata=${giacenzaOperatore.quantitaAssegnata}, min=${giacenzaOperatore.quantitaMinima}`);
+              console.log(`✅ Creata nuova giacenza globale per operatore (ID: ${operatoreId}) prodotto ${prodotto.nome}: disp=${giacenzaOperatore.quantitaDisponibile}, assegnata=${giacenzaOperatore.quantitaAssegnata}, min=${giacenzaOperatore.quantitaMinima}`);
             }
           }
           
@@ -5944,17 +5995,24 @@ app.post('/api/ordini/:id/reopen', authenticateToken, requireAdmin, async (req, 
     if (ordine.stato !== 'COMPLETATO') {
       return res.status(400).json({ message: 'Solo gli ordini completati possono essere riaperti' });
     }
-    
-    // Verifica che esista un'assegnazione (solo per validazione)
+
+    // Cerca assegnazione (facoltativa)
     const assegnazione = await Assegnazione.findOne({
       ordine: ordine.numero,
       attiva: true
     }).populate('userId');
-    
-    if (!assegnazione) {
-      return res.status(400).json({ message: 'Assegnazione non trovata per questo ordine' });
+
+    // Determina operatoreId: da assegnazione o direttamente dall'ordine
+    let operatoreId;
+    if (assegnazione) {
+      operatoreId = assegnazione.userId._id || assegnazione.userId;
+    } else if (ordine.operatoreId) {
+      operatoreId = ordine.operatoreId;
+      console.log('📝 Riapertura ordine senza assegnazione - usando operatoreId dall\'ordine:', operatoreId);
+    } else {
+      return res.status(400).json({ message: 'Nessun operatore trovato per questo ordine (né assegnazione né operatoreId)' });
     }
-    
+
     // Decrementa le giacenze OPERATORE per ogni prodotto nell'ordine
     if (ordine.prodotti && ordine.prodotti.length > 0) {
       for (const prodotto of ordine.prodotti) {
@@ -5969,7 +6027,7 @@ app.post('/api/ordini/:id/reopen', authenticateToken, requireAdmin, async (req, 
           // Trova la giacenza dell'OPERATORE per questo prodotto
           const giacenza = await GiacenzaUtente.findOne({
             productId: product._id,
-            userId: assegnazione.userId._id,
+            userId: operatoreId,
             isGlobale: true,  // Giacenze operative globali dell'operatore
             attiva: true
           });

@@ -2,8 +2,8 @@
 🔑 JWT Secret: Configurato
 🗄️  MongoDB: mongodb+srv://andreabramucci:qWREkLZknWIxlawS@automando.fwkavbr.mongodb.net
 🌐 Test API: http://localhost:7070/api/test
-Dati utenti già presenti nel database
 ℹ️ Indice numeroOrdine_1 non trovato (già rimosso)
+Dati utenti già presenti nel database
 🏢 Postazioni già presenti: 22
 🔍 Filtri applicati: {
   settimanaId: undefined,
@@ -19,7 +19,7 @@ Dati utenti già presenti nel database
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -34,493 +34,255 @@ Dati utenti già presenti nel database
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
 📋 Filter applicato: {}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-Errore aggiornamento ordine: Error: Validation failed: stato: `BOZZA` is not a valid enum value for path `stato`.
-    at ValidationError.inspect (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/error/validation.js:50:26)
-    at formatValue (node:internal/util/inspect:806:19)
-    at inspect (node:internal/util/inspect:365:10)
-    at formatWithOptionsInternal (node:internal/util/inspect:2304:40)
-    at formatWithOptions (node:internal/util/inspect:2166:10)
-    at console.value (node:internal/console/constructor:358:14)
-    at console.error (node:internal/console/constructor:395:61)
-    at /Users/andri/SVILUPPO/automando/backend/server.js:5018:13
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
-  errors: {
-    stato: ValidatorError: `BOZZA` is not a valid enum value for path `stato`.
-        at validate (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/schematype.js:1365:13)
-        at SchemaType.doValidate (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/schematype.js:1349:7)
-        at /Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/helpers/updateValidators.js:151:22
-        at module.exports (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/helpers/updateValidators.js:202:7)
-        at /Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/query.js:3945:7
-        at new Promise (<anonymous>)
-        at model.Query.validate (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/query.js:3944:11)
-        at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-        at async model.Query._findOneAndUpdate (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/query.js:3373:5)
-        at async model.Query.exec (/Users/andri/SVILUPPO/automando/backend/node_modules/mongoose/lib/query.js:4447:11) {
-      properties: [Object],
-      kind: 'enum',
-      path: 'stato',
-      value: 'BOZZA',
-      reason: undefined,
-      [Symbol(mongoose:validatorError)]: true
-    }
-  },
-  _message: 'Validation failed'
-}
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-📊 Risultati trovati: 7
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
 🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+📊 Risultati trovati: 9
+🔍 DEBUG FINALIZZAZIONE: Ordine caricato dal DB: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📝 Finalizzazione senza assegnazione - usando operatoreId dall'ordine: new ObjectId("686434457db6b58f8673df74")
+🔍 DEBUG: Giacenze globali esistenti (58): [
+  'Detergente vetri: 45',
+  'Camici monouso: 22',
+  'Gel igienizzante 1L: 8',
+  'Guanti in lattice M: 31',
+  'Servizio_test2: 18',
+  'Sacchi spazzatura 70L: 45',
+  'Viti M6x20: 40',
+  'Palette: 41',
+  'Sapone liquido: 24',
+  'Carrelli pulizia test: 4',
+  'Servizio_test2: 59',
+  'Camici monouso: 46',
+  'Guanti in lattice M: 47',
+  'Detergente vetri: 54',
+  'Gel igienizzante 1L: 65',
+  'Candeggina: 27',
+  'Carrelli pulizia test: 6',
+  'Camici monouso: 12',
+  'Carta asciugamani: 32',
+  'Carta asciugamani: 61',
+  'Guanti in lattice L: 18',
+  'Rondelle Ø6: 41',
+  'Palette: 31',
+  'Panni microfibra: 29',
+  'Carta asciugamani: 63',
+  'Guanti in lattice L: 78',
+  'Mascherine FFP2: 81',
+  'Candeggina: 16',
+  'Sacchi spazzatura 110L: 38',
+  'Occhiali protettivi: 87',
+  'Secchi: 23',
+  'Rondelle Ø6: 20',
+  'Mascherine FFP2: 55',
+  'Carrelli pulizia test: 19',
+  'Servizio_test2: 40',
+  'Mascherine chirurgiche: 19',
+  'Sgrassatore universale: 50',
+  'Spugne abrasive: 38',
+  'Carta igienica: 72',
+  'Carta asciugamani: 79',
+  'Candeggina: 3',
+  'Detergente pavimenti: 20',
+  'Servizio_test2: 7',
+  'Scope: 40',
+  'Carrelli pulizia test: 11',
+  'Gel igienizzante 1L: 37',
+  'Carta asciugamani: 18',
+  'Sapone liquido: 82',
+  'Viti M6x20: 16',
+  'Mascherine FFP2: 53',
+  'Candeggina: 40',
+  'Mocio completo: 31',
+  'Secchi: 74',
+  'Guanti in lattice S: 26',
+  'Guanti in lattice S: 5',
+  'Guanti in lattice L: 6',
+  'Guanti in lattice S: 10',
+  'Mascherine chirurgiche: 20'
+]
+🔍 DEBUG: Prodotti nell'ordine da finalizzare: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+🔍 DEBUG: Processando prodotto: { nome: 'Palette', quantita: 1, quantitaMinima: 0 }
+🔍 DEBUG: Cercando giacenza globale per prodotto Palette (ID: 686434467db6b58f8673dfa8)
+🔍 DEBUG: Giacenza globale trovata: SI
+✅ Finalizzazione ordine - prodotto Palette già in giacenza: +1 (totale disp: 42, assegnata invariata: 77, min: 5)
+🔍 VERIFICA POST-SALVATAGGIO - Giacenza Palette: {
+  quantitaDisponibile: 42,
+  quantitaAssegnata: 77,
+  quantitaMinima: 5,
+  isGlobale: true
+}
+✅ Ordine 12354 finalizzato con successo e giacenze globali incrementate
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'p' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "p": 10 -> 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pa' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pa": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pal' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pal": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pale' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pale": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+📝 Riapertura ordine senza assegnazione - usando operatoreId dall'ordine: new ObjectId("686434457db6b58f8673df74")
+🔄 Decrementate giacenze operatore per prodotto Palette: 42 → 41 (-1)
+✅ Ordine 12354 riaperto con successo, giacenze operatore decrementate
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'p' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "p": 10 -> 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pa' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pa": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pal' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pal": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pale' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pale": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 DEBUG FINALIZZAZIONE: Ordine caricato dal DB: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📝 Finalizzazione senza assegnazione - usando operatoreId dall'ordine: new ObjectId("686434457db6b58f8673df74")
+🔍 DEBUG: Giacenze globali esistenti (58): [
+  'Detergente vetri: 45',
+  'Camici monouso: 22',
+  'Gel igienizzante 1L: 8',
+  'Guanti in lattice M: 31',
+  'Servizio_test2: 18',
+  'Sacchi spazzatura 70L: 45',
+  'Viti M6x20: 40',
+  'Palette: 41',
+  'Sapone liquido: 24',
+  'Carrelli pulizia test: 4',
+  'Servizio_test2: 59',
+  'Camici monouso: 46',
+  'Guanti in lattice M: 47',
+  'Detergente vetri: 54',
+  'Gel igienizzante 1L: 65',
+  'Candeggina: 27',
+  'Carrelli pulizia test: 6',
+  'Camici monouso: 12',
+  'Carta asciugamani: 32',
+  'Carta asciugamani: 61',
+  'Guanti in lattice L: 18',
+  'Rondelle Ø6: 41',
+  'Palette: 31',
+  'Panni microfibra: 29',
+  'Carta asciugamani: 63',
+  'Guanti in lattice L: 78',
+  'Mascherine FFP2: 81',
+  'Candeggina: 16',
+  'Sacchi spazzatura 110L: 38',
+  'Occhiali protettivi: 87',
+  'Secchi: 23',
+  'Rondelle Ø6: 20',
+  'Mascherine FFP2: 55',
+  'Carrelli pulizia test: 19',
+  'Servizio_test2: 40',
+  'Mascherine chirurgiche: 19',
+  'Sgrassatore universale: 50',
+  'Spugne abrasive: 38',
+  'Carta igienica: 72',
+  'Carta asciugamani: 79',
+  'Candeggina: 3',
+  'Detergente pavimenti: 20',
+  'Servizio_test2: 7',
+  'Scope: 40',
+  'Carrelli pulizia test: 11',
+  'Gel igienizzante 1L: 37',
+  'Carta asciugamani: 18',
+  'Sapone liquido: 82',
+  'Viti M6x20: 16',
+  'Mascherine FFP2: 53',
+  'Candeggina: 40',
+  'Mocio completo: 31',
+  'Secchi: 74',
+  'Guanti in lattice S: 26',
+  'Guanti in lattice S: 5',
+  'Guanti in lattice L: 6',
+  'Guanti in lattice S: 10',
+  'Mascherine chirurgiche: 20'
+]
+🔍 DEBUG: Prodotti nell'ordine da finalizzare: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+🔍 DEBUG: Processando prodotto: { nome: 'Palette', quantita: 1, quantitaMinima: 0 }
+🔍 DEBUG: Cercando giacenza globale per prodotto Palette (ID: 686434467db6b58f8673dfa8)
+🔍 DEBUG: Giacenza globale trovata: SI
+✅ Finalizzazione ordine - prodotto Palette già in giacenza: +1 (totale disp: 42, assegnata invariata: 76, min: 5)
+🔍 VERIFICA POST-SALVATAGGIO - Giacenza Palette: {
+  quantitaDisponibile: 42,
+  quantitaAssegnata: 76,
+  quantitaMinima: 5,
+  isGlobale: true
+}
+✅ Ordine 12354 finalizzato con successo e giacenze globali incrementate
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'p' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "p": 10 -> 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pa' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pa": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pal' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pal": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pale' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pale": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+📝 Riapertura ordine senza assegnazione - usando operatoreId dall'ordine: new ObjectId("686434457db6b58f8673df74")
+🔄 Decrementate giacenze operatore per prodotto Palette: 42 → 41 (-1)
+✅ Ordine 12354 riaperto con successo, giacenze operatore decrementate
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -535,7 +297,11 @@ Errore aggiornamento ordine: Error: Validation failed: stato: `BOZZA` is not a v
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📊 Risultati: 7 di 7 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -549,28 +315,98 @@ Errore aggiornamento ordine: Error: Validation failed: stato: `BOZZA` is not a v
     sogliaMinimaMin: undefined,
     sogliaMinimaMax: undefined
   }
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📋 Filter applicato: {}
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
 }
 📊 Postazioni risultati: 22 di 22
-📊 Risultati: 0 di 0 giacenze
-Primo utilizzo note: 
 🏢 Filtri postazioni: {}
-Primo utilizzo note: undefined
-Primo utilizzo note: 
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Postazioni risultati: 22 di 22
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
 📊 Postazioni risultati: 22 di 22
 📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-Primo utilizzo note: 
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-Primo utilizzo note: 
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -585,7 +421,11 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -600,19 +440,36 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📋 Filter applicato: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🏢 Filtri postazioni: {}
 📋 Filter applicato: {}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
 📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -627,13 +484,7 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -648,13 +499,30 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📊 Risultati trovati: 9
 📋 Filter applicato: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+🏢 Filtri postazioni: {}
+📋 Filter applicato: {}
+📋 Filter applicato: {}
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -669,13 +537,7 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -690,13 +552,23 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -711,7 +583,11 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📊 Risultati: 7 di 7 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -726,19 +602,35 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+🏢 Filtri postazioni: {}
 📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -753,7 +645,15 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📊 Risultati: 7 di 7 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '1',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Guanti in lattice M', quantita: 12, quantitaMinima: 6 },
+    { nome: 'Guanti in lattice L', quantita: 14, quantitaMinima: 7 }
+  ]
+}
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -768,19 +668,63 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
 📋 Filter applicato: {}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '1',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Guanti in lattice M', quantita: 12, quantitaMinima: 6 },
+    { nome: 'Guanti in lattice L', quantita: 14, quantitaMinima: 7 }
+  ]
+}
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🏢 Filtri postazioni: {}
 📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '1',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Guanti in lattice M', quantita: 12, quantitaMinima: 6 },
+    { nome: 'Guanti in lattice L', quantita: 14, quantitaMinima: 7 }
+  ]
+}
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '1',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Guanti in lattice M', quantita: 12, quantitaMinima: 6 },
+    { nome: 'Guanti in lattice L', quantita: 14, quantitaMinima: 7 }
+  ]
+}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -795,13 +739,11 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati: 7 di 7 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -816,7 +758,35 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+🏢 Filtri postazioni: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -831,796 +801,11 @@ Primo utilizzo note:
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
 }
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-📊 Risultati trovati: 7
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1637,12 +822,33 @@ Primo utilizzo note:
 }
 📋 Filter applicato: {}
 🏢 Filtri postazioni: {}
-Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
-    at /Users/andri/SVILUPPO/automando/backend/server.js:2492:75
-    at Array.filter (<anonymous>)
-    at /Users/andri/SVILUPPO/automando/backend/server.js:2492:42
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-📊 Risultati: 0 di 0 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '12354',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 'NON DEFINITA' } ]
+}
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1657,36 +863,622 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati trovati: 7
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+📊 Risultati: 7 di 7 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Risultati: 7 di 7 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Risultati: 7 di 7 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📋 Filter applicato: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Postazioni risultati: 22 di 22
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 DEBUG GET Ordini: Ordine restituito: { numero: '123456', prodotti: [] }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 DEBUG PUT Ordini: Prodotti ricevuti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+🔍 DEBUG PUT Ordini - SALVATO NEL DB: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
 📋 Filter applicato: {}
 📊 Postazioni risultati: 22 di 22
 🏢 Filtri postazioni: {}
-📊 Risultati: 0 di 0 giacenze
-Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
-    at /Users/andri/SVILUPPO/automando/backend/server.js:2492:75
-    at Array.filter (<anonymous>)
-    at /Users/andri/SVILUPPO/automando/backend/server.js:2492:42
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-📊 Risultati trovati: 7
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📊 Risultati: 7 di 7 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+📊 Risultati: 7 di 7 giacenze
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🏢 Filtri postazioni: {}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Risultati: 7 di 7 giacenze
 📊 Postazioni risultati: 22 di 22
 📋 Filter applicato: {}
-📋 Filter applicato: { settimanaId: '6886905ffd65b655cabbf1ba' }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📊 Risultati trovati: 2
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1701,7 +1493,28 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Postazioni risultati: 22 di 22
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Postazioni risultati: 22 di 22
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1716,19 +1529,10 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
 📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
+📊 Risultati trovati: 9
+📊 Risultati: 7 di 7 giacenze
 📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1743,7 +1547,107 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📊 Risultati trovati: 9
+📊 Risultati: 7 di 7 giacenze
+📋 Filter applicato: {}
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📋 Filter applicato: {}
+📊 Risultati trovati: 9
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 DEBUG FINALIZZAZIONE: Ordine caricato dal DB: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📝 Finalizzazione senza assegnazione - usando operatoreId dall'ordine: new ObjectId("686434457db6b58f8673df74")
+🔍 DEBUG: Giacenze globali esistenti (58): [
+  'Detergente vetri: 45',
+  'Camici monouso: 22',
+  'Gel igienizzante 1L: 8',
+  'Guanti in lattice M: 31',
+  'Servizio_test2: 18',
+  'Sacchi spazzatura 70L: 45',
+  'Viti M6x20: 40',
+  'Palette: 41',
+  'Sapone liquido: 24',
+  'Carrelli pulizia test: 4',
+  'Servizio_test2: 59',
+  'Camici monouso: 46',
+  'Guanti in lattice M: 47',
+  'Detergente vetri: 54',
+  'Gel igienizzante 1L: 65',
+  'Candeggina: 27',
+  'Carrelli pulizia test: 6',
+  'Camici monouso: 12',
+  'Carta asciugamani: 32',
+  'Carta asciugamani: 61',
+  'Guanti in lattice L: 18',
+  'Rondelle Ø6: 41',
+  'Palette: 31',
+  'Panni microfibra: 29',
+  'Carta asciugamani: 63',
+  'Guanti in lattice L: 78',
+  'Mascherine FFP2: 81',
+  'Candeggina: 16',
+  'Sacchi spazzatura 110L: 38',
+  'Occhiali protettivi: 87',
+  'Secchi: 23',
+  'Rondelle Ø6: 20',
+  'Mascherine FFP2: 55',
+  'Carrelli pulizia test: 19',
+  'Servizio_test2: 40',
+  'Mascherine chirurgiche: 19',
+  'Sgrassatore universale: 50',
+  'Spugne abrasive: 38',
+  'Carta igienica: 72',
+  'Carta asciugamani: 79',
+  'Candeggina: 3',
+  'Detergente pavimenti: 20',
+  'Servizio_test2: 7',
+  'Scope: 40',
+  'Carrelli pulizia test: 11',
+  'Gel igienizzante 1L: 37',
+  'Carta asciugamani: 18',
+  'Sapone liquido: 82',
+  'Viti M6x20: 16',
+  'Mascherine FFP2: 53',
+  'Candeggina: 40',
+  'Mocio completo: 31',
+  'Secchi: 74',
+  'Guanti in lattice S: 26',
+  'Guanti in lattice S: 5',
+  'Guanti in lattice L: 6',
+  'Guanti in lattice S: 10',
+  'Mascherine chirurgiche: 20'
+]
+🔍 DEBUG: Prodotti nell'ordine da finalizzare: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+🔍 DEBUG: Processando prodotto: { nome: 'Palette', quantita: 1, quantitaMinima: 5 }
+🔍 DEBUG: Cercando giacenza globale per prodotto Palette (ID: 686434467db6b58f8673dfa8)
+🔍 DEBUG: Giacenza globale trovata: SI
+✅ Finalizzazione ordine - prodotto Palette già in giacenza: +1 (totale disp: 42, assegnata invariata: 75, min: 5)
+🔍 VERIFICA POST-SALVATAGGIO - Giacenza Palette: {
+  quantitaDisponibile: 42,
+  quantitaAssegnata: 75,
+  quantitaMinima: 5,
+  isGlobale: true
+}
+✅ Ordine 123456 finalizzato con successo e giacenze globali incrementate
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1758,19 +1662,7 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1785,13 +1677,11 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1806,13 +1696,9 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1827,13 +1713,74 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📊 Risultati: 7 di 7 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📋 Filter applicato: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📋 Filter applicato: {}
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+📊 Postazioni risultati: 22 di 22
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 📋 Filter applicato: {}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'p' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pa' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "p": 10 -> 10
+✅ Risultati finali: 10 di 10 giacenze
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pa": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pal' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pal": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'pale' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "pale": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'palet' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "palet": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'palett' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'palette' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "palett": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "palette": 10 -> 1
+✅ Risultati finali: 1 di 10 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1848,13 +1795,8 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
 📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1869,7 +1811,30 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1884,97 +1849,7 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-📊 Risultati trovati: 7
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
-🔍 Filtri applicati: {
-  settimanaId: undefined,
-  productId: undefined,
-  stato: undefined,
-  searchTerm: undefined,
-  ranges: {
-    quantitaAssegnataMin: undefined,
-    quantitaAssegnataMax: undefined,
-    quantitaDisponibileMin: undefined,
-    quantitaDisponibileMax: undefined,
-    sogliaMinimaMin: undefined,
-    sogliaMinimaMax: undefined
-  }
-}
-📊 Risultati: 0 di 0 giacenze
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -1991,17 +1866,21 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
 }
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati: 0 di 0 giacenze
+🏢 Filtri postazioni: {}
 📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2016,7 +1895,8 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2031,19 +1911,30 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
+📊 Risultati trovati: 9
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
 📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📋 Filter applicato: {}
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+📊 Risultati trovati: 9
+🏢 Filtri postazioni: {}
+📋 Filter applicato: {}
+📋 Filter applicato: {}
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2058,13 +1949,7 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2079,13 +1964,23 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
 📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2100,7 +1995,7 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2115,19 +2010,23 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
 📋 Filter applicato: {}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
 📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+🏢 Filtri postazioni: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2142,13 +2041,9 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-🔍 Parametri ricevuti: {}
-🔍 Filtro MongoDB: { attiva: true }
 📋 Filter applicato: {}
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2163,13 +2058,29 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📋 Filter applicato: {}
+📊 Risultati trovati: 9
+📊 Risultati: 7 di 7 giacenze
+📋 Filter applicato: {}
 📋 Filter applicato: {}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+📋 Filter applicato: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Risultati trovati: 9
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2184,7 +2095,8 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2199,19 +2111,34 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📊 Postazioni risultati: 22 di 22
+Primo utilizzo note: 
+🏢 Filtri postazioni: {}
 📋 Filter applicato: {}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
+📊 Risultati: 7 di 7 giacenze
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+🏢 Filtri postazioni: {}
 📋 Filter applicato: {}
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+Primo utilizzo note: 
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+🏢 Filtri postazioni: {}
+Primo utilizzo note: 
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Postazioni risultati: 22 di 22
+Primo utilizzo note: 
+🏢 Filtri postazioni: {}
+📊 Postazioni risultati: 22 di 22
+🏢 Filtri postazioni: {}
+📊 Postazioni risultati: 22 di 22
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2226,13 +2153,19 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
-📋 Filter applicato: {}
+📊 Risultati: 7 di 7 giacenze
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🏢 Filtri postazioni: {}
+📊 Postazioni risultati: 22 di 22
+🏢 Filtri postazioni: {}
+📊 Postazioni risultati: 22 di 22
 🔍 Filtri applicati: {
   settimanaId: undefined,
   productId: undefined,
@@ -2247,10 +2180,1002 @@ Errore statistiche assegnazioni: TypeError: a.ordine.trim is not a function
     sogliaMinimaMax: undefined
   }
 }
-📊 Risultati: 0 di 0 giacenze
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
 📋 Filter applicato: {}
 🔍 Parametri ricevuti: {}
 🔍 Filtro MongoDB: { attiva: true }
-📊 Risultati trovati: 7
-📦 Giacenze caricate: 55
-✅ Risultati finali: 55 di 55 giacenze
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati: 7 di 7 giacenze
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Risultati: 7 di 7 giacenze
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Risultati trovati: 9
+🏢 Filtri postazioni: {}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Risultati trovati: 9
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Postazioni risultati: 22 di 22
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '4',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Mascherine chirurgiche', quantita: 20, quantitaMinima: 5 }
+  ]
+}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati: 7 di 7 giacenze
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: { userId: '6894dd1782702fb932b723d9' }
+🔍 Filtro MongoDB: { attiva: true, userId: '6894dd1782702fb932b723d9' }
+📋 Filter applicato: {}
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '4',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Mascherine chirurgiche', quantita: 20, quantitaMinima: 5 }
+  ]
+}
+📊 Postazioni risultati: 22 di 22
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 9
+✅ Risultati finali: 9 di 9 giacenze
+🔍 Parametri ricevuti: { userId: '6894dd1782702fb932b723d9' }
+🔍 Filtro MongoDB: { attiva: true, userId: '6894dd1782702fb932b723d9' }
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '4',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Mascherine chirurgiche', quantita: 20, quantitaMinima: 5 }
+  ]
+}
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 9
+✅ Risultati finali: 9 di 9 giacenze
+🔍 Parametri ricevuti: { userId: '6894dd1782702fb932b723d9' }
+🔍 Filtro MongoDB: { attiva: true, userId: '6894dd1782702fb932b723d9' }
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '4',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Mascherine chirurgiche', quantita: 20, quantitaMinima: 5 }
+  ]
+}
+📦 Giacenze caricate: 9
+✅ Risultati finali: 9 di 9 giacenze
+🔍 Parametri ricevuti: { userId: '6894dd1782702fb932b723d9' }
+🔍 Filtro MongoDB: { attiva: true, userId: '6894dd1782702fb932b723d9' }
+📦 Giacenze caricate: 9
+✅ Risultati finali: 9 di 9 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '4',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Mascherine chirurgiche', quantita: 20, quantitaMinima: 5 }
+  ]
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+🔍 Parametri ricevuti: { userId: '6894dd1782702fb932b723d9' }
+🔍 Filtro MongoDB: { attiva: true, userId: '6894dd1782702fb932b723d9' }
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '4',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Mascherine chirurgiche', quantita: 20, quantitaMinima: 5 }
+  ]
+}
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 9
+✅ Risultati finali: 9 di 9 giacenze
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🔍 Parametri ricevuti: { userId: '6894dd1782702fb932b723d9' }
+🔍 Filtro MongoDB: { attiva: true, userId: '6894dd1782702fb932b723d9' }
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '4',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Mascherine chirurgiche', quantita: 20, quantitaMinima: 5 }
+  ]
+}
+📊 Risultati trovati: 9
+📦 Giacenze caricate: 9
+✅ Risultati finali: 9 di 9 giacenze
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: { userId: '6894dd1782702fb932b723d9' }
+🔍 Filtro MongoDB: { attiva: true, userId: '6894dd1782702fb932b723d9' }
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '4',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Mascherine chirurgiche', quantita: 20, quantitaMinima: 5 }
+  ]
+}
+📦 Giacenze caricate: 9
+✅ Risultati finali: 9 di 9 giacenze
+🔍 Parametri ricevuti: { userId: '6894dd1782702fb932b723d9' }
+🔍 Filtro MongoDB: { attiva: true, userId: '6894dd1782702fb932b723d9' }
+📦 Giacenze caricate: 9
+✅ Risultati finali: 9 di 9 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '1',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Guanti in lattice M', quantita: 12, quantitaMinima: 6 },
+    { nome: 'Guanti in lattice L', quantita: 14, quantitaMinima: 7 }
+  ]
+}
+🏢 Filtri postazioni: {}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati: 7 di 7 giacenze
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '1',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Guanti in lattice M', quantita: 12, quantitaMinima: 6 },
+    { nome: 'Guanti in lattice L', quantita: 14, quantitaMinima: 7 }
+  ]
+}
+📊 Risultati trovati: 9
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🏢 Filtri postazioni: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Postazioni risultati: 22 di 22
+📊 Risultati trovati: 9
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '1',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Guanti in lattice M', quantita: 12, quantitaMinima: 6 },
+    { nome: 'Guanti in lattice L', quantita: 14, quantitaMinima: 7 }
+  ]
+}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '1',
+  prodotti: [
+    { nome: 'Guanti in lattice S', quantita: 10, quantitaMinima: 5 },
+    { nome: 'Guanti in lattice M', quantita: 12, quantitaMinima: 6 },
+    { nome: 'Guanti in lattice L', quantita: 14, quantitaMinima: 7 }
+  ]
+}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📝 Riapertura ordine senza assegnazione - usando operatoreId dall'ordine: new ObjectId("686434457db6b58f8673df74")
+🔄 Decrementate giacenze operatore per prodotto Palette: 42 → 41 (-1)
+✅ Ordine 123456 riaperto con successo, giacenze operatore decrementate
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+🏢 Filtri postazioni: {}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📊 Risultati trovati: 9
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📊 Risultati trovati: 9
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📊 Risultati: 7 di 7 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📋 Filter applicato: {}
+📊 Risultati: 7 di 7 giacenze
+🏢 Filtri postazioni: {}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📊 Risultati: 7 di 7 giacenze
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📊 Risultati: 7 di 7 giacenze
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'g' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "g": 10 -> 6
+✅ Risultati finali: 6 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'ga' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "ga": 10 -> 0
+✅ Risultati finali: 0 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'g' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "g": 10 -> 6
+✅ Risultati finali: 6 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'gu' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "gu": 10 -> 3
+✅ Risultati finali: 3 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'gua' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "gua": 10 -> 3
+✅ Risultati finali: 3 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'guan' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "guan": 10 -> 3
+✅ Risultati finali: 3 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'guant' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "guant": 10 -> 3
+✅ Risultati finali: 3 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74', searchTerm: 'guanti' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+🔍 Filtro ricerca "guanti": 10 -> 3
+✅ Risultati finali: 3 di 10 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📋 Filter applicato: {}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📊 Risultati trovati: 9
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📊 Risultati: 7 di 7 giacenze
+🔍 Filtri applicati: {
+  settimanaId: undefined,
+  productId: undefined,
+  stato: undefined,
+  searchTerm: undefined,
+  ranges: {
+    quantitaAssegnataMin: undefined,
+    quantitaAssegnataMax: undefined,
+    quantitaDisponibileMin: undefined,
+    quantitaDisponibileMax: undefined,
+    sogliaMinimaMin: undefined,
+    sogliaMinimaMax: undefined
+  }
+}
+📋 Filter applicato: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+🏢 Filtri postazioni: {}
+📊 Risultati: 7 di 7 giacenze
+📊 Risultati trovati: 9
+📊 Postazioni risultati: 22 di 22
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📋 Filter applicato: {}
+🏢 Filtri postazioni: {}
+🔍 Parametri ricevuti: {}
+🔍 Filtro MongoDB: { attiva: true }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+📊 Risultati trovati: 9
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 58
+✅ Risultati finali: 58 di 58 giacenze
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📊 Postazioni risultati: 22 di 22
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+🔍 DEBUG GET Ordini: Ordine restituito: {
+  numero: '123456',
+  prodotti: [ { nome: 'Palette', quantita: 1, quantitaMinima: 5 } ]
+}
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze
+🔍 Parametri ricevuti: { userId: '686434457db6b58f8673df74' }
+🔍 Filtro MongoDB: { attiva: true, userId: '686434457db6b58f8673df74' }
+📦 Giacenze caricate: 10
+✅ Risultati finali: 10 di 10 giacenze

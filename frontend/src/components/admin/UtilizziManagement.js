@@ -1,6 +1,6 @@
 // components/admin/UtilizziManagement.js
 import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, Save, X, Search, Filter, Eye, User, Package, Calendar, ChevronRight, BarChart3, Clock, FileText, AlertCircle, MapPin } from 'lucide-react';
+import { Edit, Trash2, Save, X, Search, Filter, Eye, User, Package, Calendar, ChevronRight, BarChart3, Clock, FileText, AlertCircle, MapPin, ChevronUp, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { apiCall } from '../../services/api';
@@ -22,7 +22,13 @@ const UtilizziManagement = () => {
   
   // Stato per checkbox "tutte le settimane"
   const [showAllWeeks, setShowAllWeeks] = useState(true);
-  
+
+  // Stati per sorting
+  const [sortConfig, setSortConfig] = useState({
+    field: null,
+    direction: 'asc'
+  });
+
   // Stati per dati
   const [allUtilizzi, setAllUtilizzi] = useState([]);
   const [groupedUtilizzi, setGroupedUtilizzi] = useState([]);
@@ -116,13 +122,69 @@ const UtilizziManagement = () => {
     }
   };
 
+  // Funzione per gestire il sorting
+  const handleSort = (field) => {
+    setSortConfig(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Funzione per ordinare i gruppi
+  const sortGroupedUtilizzi = (data) => {
+    if (!sortConfig.field) return data;
+
+    return [...data].sort((a, b) => {
+      let aVal, bVal;
+
+      switch (sortConfig.field) {
+        case 'operatore':
+          aVal = a.userId?.username || '';
+          bVal = b.userId?.username || '';
+          break;
+        case 'prodotto':
+          aVal = a.productId?.nome || '';
+          bVal = b.productId?.nome || '';
+          break;
+        case 'polo':
+          aVal = a.utilizzi[0]?.poloId?.nome || '';
+          bVal = b.utilizzi[0]?.poloId?.nome || '';
+          break;
+        case 'settimana':
+          aVal = a.settimanaId?.numero || 0;
+          bVal = b.settimanaId?.numero || 0;
+          if (aVal === bVal) {
+            aVal = a.settimanaId?.anno || 0;
+            bVal = b.settimanaId?.anno || 0;
+          }
+          break;
+        case 'utilizzi':
+          aVal = a.numeroUtilizzi || 0;
+          bVal = b.numeroUtilizzi || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      // Confronto stringhe o numeri
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
   // Raggruppa utilizzi per prodotto, utente e settimana
   const groupUtilizzi = (utilizzi) => {
     const grouped = {};
-    
+
     utilizzi.forEach(utilizzo => {
       const key = `${utilizzo.userId?._id}-${utilizzo.productId?._id}-${utilizzo.settimanaId?._id}`;
-      
+
       if (!grouped[key]) {
         grouped[key] = {
           key,
@@ -136,11 +198,11 @@ const UtilizziManagement = () => {
           dataPrimoUtilizzo: utilizzo.dataUtilizzo
         };
       }
-      
+
       grouped[key].utilizzi.push(utilizzo);
       grouped[key].totalQuantita += utilizzo.quantitaUtilizzata;
       grouped[key].numeroUtilizzi += 1;
-      
+
       // Aggiorna date primo e ultimo utilizzo
       if (new Date(utilizzo.dataUtilizzo) > new Date(grouped[key].dataUltimoUtilizzo)) {
         grouped[key].dataUltimoUtilizzo = utilizzo.dataUtilizzo;
@@ -152,17 +214,21 @@ const UtilizziManagement = () => {
 
     // Converte in array e applica filtri di ricerca
     let groupedArray = Object.values(grouped);
-    
+
     if (filters.searchTerm) {
-      groupedArray = groupedArray.filter(group => 
+      groupedArray = groupedArray.filter(group =>
         group.productId?.nome.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
         group.userId?.username.toLowerCase().includes(filters.searchTerm.toLowerCase())
       );
     }
-    
-    // Ordina per data ultimo utilizzo (più recenti prima)
-    groupedArray.sort((a, b) => new Date(b.dataUltimoUtilizzo) - new Date(a.dataUltimoUtilizzo));
-    
+
+    // Ordina per sorting custom o per data ultimo utilizzo (più recenti prima)
+    if (sortConfig.field) {
+      groupedArray = sortGroupedUtilizzi(groupedArray);
+    } else {
+      groupedArray.sort((a, b) => new Date(b.dataUltimoUtilizzo) - new Date(a.dataUltimoUtilizzo));
+    }
+
     setGroupedUtilizzi(groupedArray);
   };
 
@@ -187,12 +253,12 @@ const UtilizziManagement = () => {
     loadAllUtilizzi();
   }, [filters.userId, filters.poloId, filters.settimanaId]);
 
-  // Riapplica raggruppamento quando cambia il termine di ricerca
+  // Riapplica raggruppamento quando cambia il termine di ricerca o il sorting
   useEffect(() => {
     if (allUtilizzi.length > 0) {
       groupUtilizzi(allUtilizzi);
     }
-  }, [filters.searchTerm]);
+  }, [filters.searchTerm, sortConfig]);
 
   // Carica dati iniziali
   useEffect(() => {
@@ -590,20 +656,60 @@ const UtilizziManagement = () => {
                 <table className="min-w-full divide-y divide-white/10">
                   <thead className="glass-table-header">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Operatore
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('operatore')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Operatore</span>
+                        {sortConfig.field === 'operatore' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Prodotto
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('prodotto')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Prodotto</span>
+                        {sortConfig.field === 'prodotto' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Polo
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('polo')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Polo</span>
+                        {sortConfig.field === 'polo' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Settimana
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('settimana')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Settimana</span>
+                        {sortConfig.field === 'settimana' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      N° Utilizzi
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('utilizzi')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>N° Utilizzi</span>
+                        {sortConfig.field === 'utilizzi' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       Azioni
