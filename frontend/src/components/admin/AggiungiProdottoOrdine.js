@@ -180,12 +180,12 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
     }
   };
 
-  // Popola tabella con prodotti esistenti (disabled) + righe nuove
+  // Popola tabella con prodotti esistenti (disabled) + righe nuove + prodotti critici
   const popolaTabella = (prodottiEsistenti) => {
     const timestamp = new Date().toLocaleTimeString();
     console.log(`🔄 [${timestamp}] popolaTabella chiamata con:`, prodottiEsistenti.length, 'prodotti');
     console.log(`🔄 [${timestamp}] Dettaglio prodotti da popolare:`, prodottiEsistenti);
-    
+
     const righeEsistenti = prodottiEsistenti.map((prodotto, index) => ({
       id: `existing-${index}`,
       productId: prodotto.productId || prodotto._id || '', // ← Usa _id se productId non esiste
@@ -201,8 +201,40 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
       originalData: prodotto // Backup dei dati originali
     }));
 
+    // Aggiungi automaticamente prodotti critici (sotto soglia) se è un ordine nuovo
+    const righeCritiche = [];
+    if (prodottiEsistenti.length === 0 && userGiacenze.length > 0 && !isReadOnly) {
+      // Trova prodotti sotto soglia (critici)
+      const prodottiCritici = userGiacenze.filter(g =>
+        g.quantitaDisponibile <= g.quantitaMinima && g.isGlobale === true
+      );
+
+      console.log(`⚠️ [${timestamp}] Trovati ${prodottiCritici.length} prodotti critici`);
+
+      prodottiCritici.forEach((giacenza, index) => {
+        const quantitaSuggerita = Math.max(0, giacenza.quantitaMinima - giacenza.quantitaDisponibile);
+
+        righeCritiche.push({
+          id: `critical-${index}-${Date.now()}`,
+          productId: giacenza.productId._id,
+          nome: giacenza.productId.nome,
+          searchTerm: giacenza.productId.nome,
+          quantitaDisponibile: giacenza.quantitaDisponibile,
+          quantitaAssegnata: giacenza.quantitaAssegnata,
+          quantitaMinima: giacenza.quantitaMinima,
+          quantitaDaAggiungere: quantitaSuggerita.toString(),
+          note: `⚠️ Prodotto sotto soglia (disponibile: ${giacenza.quantitaDisponibile}, minimo: ${giacenza.quantitaMinima})`,
+          isExisting: false,
+          isEditing: false,
+          isCritical: true // Flag per identificare prodotti critici auto-aggiunti
+        });
+
+        console.log(`⚠️ Aggiunto prodotto critico: ${giacenza.productId.nome} (suggerito: ${quantitaSuggerita})`);
+      });
+    }
+
     // Aggiungi riga vuota per nuovi prodotti solo se non è readonly
-    const righeFinali = [...righeEsistenti];
+    const righeFinali = [...righeEsistenti, ...righeCritiche];
     if (!isReadOnly) {
       const rigaVuota = {
         id: Date.now(),
@@ -231,14 +263,16 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
       console.log(`🌐 [${timestamp}] INIZIO caricaGiacenzeOperatore per userId:`, userId);
       const response = await apiCall(`/admin/giacenze?userId=${userId}`, {}, token);
       setUserGiacenze(response || []);
-      
+
       // Debug completo delle giacenze caricate
       console.log(`🔄 [${timestamp}] Giacenze operatore caricate:`, response?.length || 0);
       console.log(`🔄 [${timestamp}] Dettaglio giacenze:`, response);
-      
-      // Aggiorna anche i dati delle giacenze nelle righe esistenti solo se necessario
+
+      // Aggiorna anche i dati delle giacenze nelle righe esistenti + aggiungi prodotti critici
       setRigheTabella(prev => {
         let needsUpdate = false;
+
+        // 1. Aggiorna righe esistenti con dati giacenze
         const newRighe = prev.map(riga => {
           if (riga.isExisting && riga.productId) {
             console.log('🔍 Cercando giacenza per riga:', riga.nome, 'ID:', riga.productId);
@@ -286,7 +320,46 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
           }
           return riga;
         });
-        
+
+        // 2. Aggiungi prodotti critici se è un ordine nuovo (senza prodotti esistenti)
+        const hasProdottiEsistenti = prev.some(r => r.isExisting);
+        const hasCriticalProducts = prev.some(r => r.isCritical);
+
+        if (!hasProdottiEsistenti && !hasCriticalProducts && !isReadOnly && (response || []).length > 0) {
+          // Trova prodotti sotto soglia (critici)
+          const prodottiCritici = (response || []).filter(g =>
+            g.quantitaDisponibile <= g.quantitaMinima && g.isGlobale === true
+          );
+
+          console.log(`⚠️ [${timestamp}] Trovati ${prodottiCritici.length} prodotti critici da aggiungere`);
+
+          prodottiCritici.forEach((giacenza, index) => {
+            const quantitaSuggerita = Math.max(0, giacenza.quantitaMinima - giacenza.quantitaDisponibile);
+
+            // Verifica che il prodotto non sia già presente
+            const alreadyExists = newRighe.some(r => r.productId === giacenza.productId._id);
+            if (!alreadyExists) {
+              newRighe.splice(newRighe.length - 1, 0, { // Inserisci prima dell'ultima riga vuota
+                id: `critical-${index}-${Date.now()}`,
+                productId: giacenza.productId._id,
+                nome: giacenza.productId.nome,
+                searchTerm: giacenza.productId.nome,
+                quantitaDisponibile: giacenza.quantitaDisponibile,
+                quantitaAssegnata: giacenza.quantitaAssegnata,
+                quantitaMinima: giacenza.quantitaMinima,
+                quantitaDaAggiungere: quantitaSuggerita.toString(),
+                note: `⚠️ Prodotto sotto soglia (disponibile: ${giacenza.quantitaDisponibile}, minimo: ${giacenza.quantitaMinima})`,
+                isExisting: false,
+                isEditing: false,
+                isCritical: true
+              });
+
+              console.log(`⚠️ Aggiunto prodotto critico: ${giacenza.productId.nome} (suggerito: ${quantitaSuggerita})`);
+              needsUpdate = true;
+            }
+          });
+        }
+
         // Ritorna il nuovo array solo se c'è stato un cambiamento
         if (needsUpdate) {
           console.log(`✅ [${timestamp}] AGGIORNAMENTO giacenze completato - righe aggiornate`);
