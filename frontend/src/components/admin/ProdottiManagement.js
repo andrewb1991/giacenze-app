@@ -24,16 +24,18 @@ const ProdottiManagement = () => {
   const [isClosingForm, setIsClosingForm] = useState(false);
   const [addForm, setAddForm] = useState({
     nome: '',
+    codice: '',
     descrizione: '',
     categoria: '',
     unita: 'pz',
     attivo: true
   });
-  
+
   // Stati per editing
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
     nome: '',
+    codice: '',
     descrizione: '',
     categoria: '',
     unita: 'pz',
@@ -101,13 +103,14 @@ const ProdottiManagement = () => {
   // Filtra e ordina prodotti
   const filteredProdotti = prodotti.filter(prodotto => {
     const matchCategoria = !filters.categoria || prodotto.categoria === filters.categoria;
-    const matchSearch = !filters.searchTerm || 
+    const matchSearch = !filters.searchTerm ||
       prodotto.nome.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      prodotto.codice?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       prodotto.descrizione?.toLowerCase().includes(filters.searchTerm.toLowerCase());
-    const matchAttivo = filters.attivo === 'all' || 
+    const matchAttivo = filters.attivo === 'all' ||
       (filters.attivo === 'true' && prodotto.attivo) ||
       (filters.attivo === 'false' && !prodotto.attivo);
-    
+
     return matchCategoria && matchSearch && matchAttivo;
   });
 
@@ -152,6 +155,7 @@ const ProdottiManagement = () => {
   const resetAddFormData = () => {
     setAddForm({
       nome: '',
+      codice: '',
       descrizione: '',
       categoria: '',
       unita: 'pz',
@@ -192,6 +196,7 @@ const ProdottiManagement = () => {
     setEditingId(prodotto._id);
     setEditForm({
       nome: prodotto.nome,
+      codice: prodotto.codice || '',
       descrizione: prodotto.descrizione || '',
       categoria: prodotto.categoria || '',
       unita: prodotto.unita,
@@ -313,6 +318,21 @@ const ProdottiManagement = () => {
                     value={addForm.nome}
                     onChange={(e) => setAddForm({ ...addForm, nome: e.target.value })}
                     placeholder="es. Guanti in lattice"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Codice
+                </label>
+                <div className="glass-input-container">
+                  <input
+                    type="text"
+                    className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                    value={addForm.codice}
+                    onChange={(e) => setAddForm({ ...addForm, codice: e.target.value })}
+                    placeholder="es. DPI-001"
                   />
                 </div>
               </div>
@@ -490,7 +510,16 @@ const ProdottiManagement = () => {
               <table className="min-w-full">
                 <thead>
                   <tr className="glass-table-header-row">
-                    <th 
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
+                      onClick={() => handleSort('codice')}
+                    >
+                      <div className="flex items-center justify-between">
+                        Codice
+                        {getSortIcon('codice')}
+                      </div>
+                    </th>
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
                       onClick={() => handleSort('nome')}
                     >
@@ -499,7 +528,7 @@ const ProdottiManagement = () => {
                         {getSortIcon('nome')}
                       </div>
                     </th>
-                    <th 
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
                       onClick={() => handleSort('categoria')}
                     >
@@ -548,6 +577,24 @@ const ProdottiManagement = () => {
                       <tr key={prodotto._id} className="glass-table-row hover:bg-white/5 transition-colors">
                         <td className="px-6 py-4">
                           {isEditing ? (
+                            <div className="glass-input-container">
+                              <input
+                                type="text"
+                                className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+                                value={editForm.codice}
+                                onChange={(e) => setEditForm({ ...editForm, codice: e.target.value })}
+                                placeholder="Codice"
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-sm text-white/70">
+                              {prodotto.codice || '-'}
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {isEditing ? (
                             <div className="space-y-2">
                               <div className="glass-input-container">
                                 <input
@@ -581,7 +628,7 @@ const ProdottiManagement = () => {
                             </div>
                           )}
                         </td>
-                        
+
                         <td className="px-6 py-4">
                           {isEditing ? (
                             <div className="glass-input-container">

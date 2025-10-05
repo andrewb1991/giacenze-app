@@ -49,6 +49,7 @@ const userSchema = new mongoose.Schema({
 
 const productSchema = new mongoose.Schema({
   nome: { type: String, required: true },
+  codice: { type: String, trim: true },
   descrizione: String,
   unita: { type: String, default: 'pz' },
   categoria: String,
@@ -4779,7 +4780,7 @@ app.get('/api/admin/products', authenticateToken, requireAdmin, async (req, res)
 // POST - Crea nuovo prodotto (Admin)
 app.post('/api/admin/products', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { nome, descrizione, categoria, unita = 'pz', attivo = true } = req.body;
+    const { nome, codice, descrizione, categoria, unita = 'pz', attivo = true } = req.body;
 
     // Validazioni
     if (!nome || !categoria) {
@@ -4789,21 +4790,22 @@ app.post('/api/admin/products', authenticateToken, requireAdmin, async (req, res
     // Verifica se il prodotto esiste già (case insensitive)
     const nomeRegex = new RegExp('^' + nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
     const categoriaRegex = new RegExp('^' + categoria.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
-    
-    const existingProduct = await Product.findOne({ 
+
+    const existingProduct = await Product.findOne({
       nome: { $regex: nomeRegex },
       categoria: { $regex: categoriaRegex }
     });
 
     if (existingProduct) {
-      return res.status(400).json({ 
-        message: 'Prodotto con questo nome e categoria già esistente' 
+      return res.status(400).json({
+        message: 'Prodotto con questo nome e categoria già esistente'
       });
     }
 
     // Crea prodotto
     const newProduct = new Product({
       nome: nome.trim(),
+      codice: codice ? codice.trim() : '',
       descrizione: descrizione ? descrizione.trim() : '',
       categoria: categoria.trim(),
       unita: unita.trim(),
@@ -4825,7 +4827,7 @@ app.post('/api/admin/products', authenticateToken, requireAdmin, async (req, res
 app.put('/api/admin/products/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nome, descrizione, categoria, unita, attivo } = req.body;
+    const { nome, codice, descrizione, categoria, unita, attivo } = req.body;
 
     // Validazioni
     if (!nome || !categoria) {
@@ -4841,7 +4843,7 @@ app.put('/api/admin/products/:id', authenticateToken, requireAdmin, async (req, 
     // Verifica se nome/categoria sono già usati da altri prodotti
     const nomeRegex = new RegExp('^' + nome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
     const categoriaRegex = new RegExp('^' + categoria.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
-    
+
     const existingProduct = await Product.findOne({
       _id: { $ne: id },
       nome: { $regex: nomeRegex },
@@ -4849,8 +4851,8 @@ app.put('/api/admin/products/:id', authenticateToken, requireAdmin, async (req, 
     });
 
     if (existingProduct) {
-      return res.status(400).json({ 
-        message: 'Un altro prodotto ha già questo nome e categoria' 
+      return res.status(400).json({
+        message: 'Un altro prodotto ha già questo nome e categoria'
       });
     }
 
@@ -4859,6 +4861,7 @@ app.put('/api/admin/products/:id', authenticateToken, requireAdmin, async (req, 
       id,
       {
         nome: nome.trim(),
+        codice: codice ? codice.trim() : '',
         descrizione: descrizione ? descrizione.trim() : '',
         categoria: categoria.trim(),
         unita: unita ? unita.trim() : product.unita,
