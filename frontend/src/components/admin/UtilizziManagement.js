@@ -142,6 +142,10 @@ const UtilizziManagement = () => {
           aVal = a.userId?.username || '';
           bVal = b.userId?.username || '';
           break;
+        case 'codice':
+          aVal = a.productId?.codice || '';
+          bVal = b.productId?.codice || '';
+          break;
         case 'prodotto':
           aVal = a.productId?.nome || '';
           bVal = b.productId?.nome || '';
@@ -218,6 +222,7 @@ const UtilizziManagement = () => {
     if (filters.searchTerm) {
       groupedArray = groupedArray.filter(group =>
         group.productId?.nome.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        group.productId?.codice?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
         group.userId?.username.toLowerCase().includes(filters.searchTerm.toLowerCase())
       );
     }
@@ -669,6 +674,17 @@ const UtilizziManagement = () => {
                     </th>
                     <th
                       className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('codice')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Codice</span>
+                        {sortConfig.field === 'codice' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
                       onClick={() => handleSort('prodotto')}
                     >
                       <div className="flex items-center gap-2">
@@ -739,7 +755,13 @@ const UtilizziManagement = () => {
                             </div>
                           </div>
                         </td>
-                        
+
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-white/70">
+                            {group.productId?.codice || '-'}
+                          </div>
+                        </td>
+
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <Package className="w-4 h-4 mr-2 text-blue-300" />
