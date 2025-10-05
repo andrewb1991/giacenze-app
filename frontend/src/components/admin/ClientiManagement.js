@@ -253,12 +253,10 @@ const ClientiManagement = () => {
         <SidebarMenu />
 
         {/* Navigation */}
-        <div className="relative z-10">
-          <Navigation title="👔 Gestione Clienti" showBackToDashboard={true} showSidebarToggle={true} />
-        </div>
+        <Navigation title="👔 Gestione Clienti" showBackToDashboard={true} showSidebarToggle={true} />
 
         {/* Content */}
-        <div className="relative z-10 w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 w-full mx-auto pt-20 pb-6 px-4 sm:px-6 lg:px-8">
           <div className="space-y-6">
         {/* Header */}
         <div className="glass-clienti-card p-8 rounded-3xl">

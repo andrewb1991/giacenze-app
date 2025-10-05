@@ -95,8 +95,8 @@ const AdminDashboard = () => {
         <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
         <div className="absolute top-40 right-20 w-72 h-72 bg-gradient-to-r from-yellow-400 to-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
         <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-gradient-to-r from-green-400 to-blue-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-        
-        <div 
+
+        <div
           className="absolute w-96 h-96 bg-gradient-radial from-white/20 to-transparent rounded-full pointer-events-none transition-all duration-300 ease-out"
           style={{
             left: mousePosition.x - 192,
@@ -107,11 +107,9 @@ const AdminDashboard = () => {
       </div>
 
       {/* Navigation */}
-      <div className="relative z-10">
-        <Navigation title="Dashboard Amministratore" />
-      </div>
+      <Navigation title="Dashboard Amministratore" />
 
-      <div className="relative z-10 w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 w-full mx-auto pt-20 pb-6 px-4 sm:px-6 lg:px-8">
         {/* Welcome Section */}
         <div className="glass-card p-4 rounded-xl mb-6">
           <div className="flex items-center justify-between">
@@ -189,36 +187,36 @@ const AdminDashboard = () => {
             ))}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {adminSections.map((section) => (
               <div
                 key={section.id}
                 onClick={() => handleSectionClick(section.id)}
-                className="glass-card p-6 rounded-2xl cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl group"
+                className="glass-card p-4 rounded-xl cursor-pointer transform transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl group"
               >
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
                   {/* Icon and Gradient */}
                   <div className="relative flex-shrink-0">
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${section.color} flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-300`}>
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${section.color} flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-300`}>
                       {section.icon}
                     </div>
-                    <div className={`absolute inset-0 w-16 h-16 rounded-2xl bg-gradient-to-r ${section.color} opacity-20 blur-lg group-hover:opacity-40 transition-opacity duration-300`}></div>
+                    <div className={`absolute inset-0 w-12 h-12 rounded-xl bg-gradient-to-r ${section.color} opacity-20 blur-lg group-hover:opacity-40 transition-opacity duration-300`}></div>
                   </div>
 
                   {/* Content */}
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-200 transition-colors duration-300">
+                    <h3 className="text-lg font-bold text-white mb-1 group-hover:text-blue-200 transition-colors duration-300">
                       {section.label}
                     </h3>
-                    <p className="text-white/70 text-sm leading-relaxed group-hover:text-white/90 transition-colors duration-300">
+                    <p className="text-white/70 text-xs leading-relaxed group-hover:text-white/90 transition-colors duration-300">
                       {section.description}
                     </p>
                   </div>
 
                   {/* Arrow indicator */}
                   <div className="flex items-center text-white/50 group-hover:text-white/80 transition-colors duration-300 flex-shrink-0">
-                    <span className="text-sm font-medium mr-2">Accedi</span>
-                    <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className="text-xs font-medium mr-1">Accedi</span>
+                    <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>

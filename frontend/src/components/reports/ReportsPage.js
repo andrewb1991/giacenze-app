@@ -1,10 +1,10 @@
 // components/reports/ReportsPage.js
 import React, { useEffect, useState } from 'react';
-import { Download, ArrowLeft, FileText, Calendar, MapPin, Truck, User, Building2 } from 'lucide-react';
+import { Download, FileText, Calendar, MapPin, Truck, User, Building2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
-import { BackButton } from '../shared/Navigation';
+import Navigation from '../shared/Navigation';
 import { downloadExcelReport } from '../../services/api';
 import { formatWeek, getCurrentWeekFromList, sortWeeksChronologically, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
 
@@ -91,26 +91,9 @@ const ReportsPage = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-10 glass-nav border-b border-white/10">
-        <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setCurrentPage('dashboard')}
-                className="glass-button p-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="glass-icon p-3 rounded-xl">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-xl font-semibold text-white">Report Giacenze</h1>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navigation title="Report Giacenze" />
 
-      <div className="relative z-10 w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 w-full mx-auto pt-20 pb-6 px-4 sm:px-6 lg:px-8">
         <div className="glass-card p-6 rounded-2xl">
           <div className="flex items-center space-x-3 mb-6">
             <div className="glass-icon p-3 rounded-xl">
@@ -274,12 +257,6 @@ const ReportsPage = () => {
 
       {/* Custom Styles */}
       <style jsx>{`
-        .glass-nav {
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
         .glass-card {
           background: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(20px);
@@ -289,12 +266,6 @@ const ReportsPage = () => {
 
         .glass-icon {
           background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .glass-button {
-          background: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.2);
         }

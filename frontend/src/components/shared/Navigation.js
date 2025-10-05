@@ -53,11 +53,11 @@ const Navigation = ({ title = "Giacenze Personali", showBackToDashboard = false,
   }, []);
 
   return (
-    <div className="relative">
+    <div className="fixed top-0 left-0 right-0 z-50">
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Interactive Light Effect */}
-        <div 
+        <div
           className="absolute w-96 h-96 bg-gradient-radial from-white/10 to-transparent rounded-full pointer-events-none transition-all duration-300 ease-out"
           style={{
             left: mousePosition.x - 192,

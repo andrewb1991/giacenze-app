@@ -56,11 +56,9 @@ const Dashboard = () => {
       </div>
 
       {/* Navigation */}
-      <div className="relative z-10">
-        <Navigation title={user?.role === 'admin' ? 'Dashboard Operatore' : 'Giacenze Personali'} />
-      </div>
+      <Navigation title={user?.role === 'admin' ? 'Dashboard Operatore' : 'Giacenze Personali'} />
 
-      <div className="relative z-10 w-full mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
+      <div className="relative z-10 w-full mx-auto pt-20 pb-6 px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Lista Assegnazioni */}
         {myAssignments.length > 0 ? (
           <div className="glass-card p-6 rounded-2xl">
