@@ -2035,7 +2035,7 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
     }
     
     const giacenze = await GiacenzaUtente.find(filter)
-      .populate('productId', 'codice categoria');
+      .populate('productId', 'categoria');
     
     // Calcola statistiche
     const stats = {
@@ -7056,7 +7056,7 @@ app.get('/api/debug/giacenze-globali', authenticateToken, requireAdmin, async (r
     const giacenzeGlobali = await GiacenzaUtente.find({
       isGlobale: true,
       attiva: true
-    }).populate('productId', 'nome codice categoria').populate('userId', 'username');
+    }).populate('productId', 'nome categoria').populate('userId', 'username');
     
     console.log(`🔍 DEBUG: Trovate ${giacenzeGlobali.length} giacenze globali`);
     

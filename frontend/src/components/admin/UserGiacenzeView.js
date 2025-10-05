@@ -199,6 +199,10 @@ const UserGiacenzeView = () => {
     direction: 'asc'
   });
 
+  // Stati per ricerca prodotto
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+
   // Mouse tracking per effetti interattivi
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -208,6 +212,17 @@ const UserGiacenzeView = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  // Chiudi dropdown quando si clicca fuori
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showProductDropdown && !e.target.closest('.product-search-container')) {
+        setShowProductDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showProductDropdown]);
 
   const selectedUser = users.find(u => u._id === selectedUserForGiacenze);
   const userAssignments = assegnazioni.filter(a => a.userId?._id === selectedUserForGiacenze);
@@ -368,6 +383,50 @@ const UserGiacenzeView = () => {
 
   const updateGiacenzeForm = (updates) => {
     dispatch({ type: 'SET_GIACENZE_FORM', payload: updates });
+  };
+
+  // Funzioni per ricerca prodotto
+  const filteredProducts = React.useMemo(() => {
+    if (!productSearchTerm) return allProducts;
+    const term = productSearchTerm.toLowerCase();
+    return allProducts.filter(p =>
+      p.nome.toLowerCase().includes(term) ||
+      (p.codice && p.codice.toLowerCase().includes(term)) ||
+      (p.categoria && p.categoria.toLowerCase().includes(term))
+    );
+  }, [allProducts, productSearchTerm]);
+
+  const handleProductSelect = (product) => {
+    // Cerca giacenza esistente per questo prodotto e utente
+    const existingGiacenza = userGiacenze.find(g => g.productId?._id === product._id);
+    if (existingGiacenza) {
+      updateGiacenzeForm({
+        productId: product._id,
+        quantitaAssegnata: existingGiacenza.quantitaAssegnata,
+        quantitaMinima: existingGiacenza.quantitaMinima,
+        quantitaAttuale: existingGiacenza.quantitaDisponibile
+      });
+    } else {
+      updateGiacenzeForm({ productId: product._id });
+    }
+    setProductSearchTerm(product.codice ? `${product.codice} - ${product.nome}` : product.nome);
+    setShowProductDropdown(false);
+  };
+
+  const handleProductSearchFocus = () => {
+    setShowProductDropdown(true);
+    if (!productSearchTerm) {
+      setProductSearchTerm('');
+    }
+  };
+
+  const handleProductSearchChange = (e) => {
+    setProductSearchTerm(e.target.value);
+    setShowProductDropdown(true);
+    // Reset productId if search term changes
+    if (giacenzeForm.productId) {
+      updateGiacenzeForm({ productId: '' });
+    }
   };
 
   // ✅ AGGIORNATO: Ricarica giacenze dopo assegnazione
@@ -680,45 +739,54 @@ const UserGiacenzeView = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div>
+            <div className="relative product-search-container">
               <label className="block text-sm font-medium text-white/80 mb-2">
                 Prodotto *
               </label>
-              <select
-                className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                value={giacenzeForm.productId}
-                onChange={(e) => {
-                  updateGiacenzeForm({ productId: e.target.value });
-                  // Reset delle informazioni quando cambia prodotto
-                  if (e.target.value) {
-                    // Cerca giacenza esistente per questo prodotto e utente
-                    const existingGiacenza = userGiacenze.find(g => g.productId?._id === e.target.value);
-                    if (existingGiacenza) {
-                      updateGiacenzeForm({
-                        quantitaAssegnata: existingGiacenza.quantitaAssegnata,
-                        quantitaMinima: existingGiacenza.quantitaMinima,
-                        quantitaAttuale: existingGiacenza.quantitaDisponibile
-                      });
-                    } else {
-                      updateGiacenzeForm({
-                        quantitaAttuale: 0
-                      });
-                    }
-                  }
-                }}
-                onClick={(e) => e.stopPropagation()}
-                onFocus={(e) => e.stopPropagation()}
-              >
-                <option value="" className="bg-gray-800">Seleziona prodotto</option>
-                {allProducts.map(product => {
-                  const hasGiacenza = userGiacenze.find(g => g.productId?._id === product._id);
-                  return (
-                    <option key={product._id} value={product._id} className="bg-gray-800">
-                      {product.codice ? `${product.codice} - ` : ''}{product.nome} ({product.categoria}) {hasGiacenza ? '📦 Esistente' : '🆕 Nuovo'}
-                    </option>
-                  );
-                })}
-              </select>
+              <div className="glass-input-container relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4 pointer-events-none" />
+                <input
+                  type="text"
+                  className="glass-input w-full pl-10 pr-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                  value={productSearchTerm}
+                  onChange={handleProductSearchChange}
+                  onFocus={handleProductSearchFocus}
+                  placeholder="Cerca per nome o codice..."
+                />
+              </div>
+
+              {/* Dropdown prodotti */}
+              {showProductDropdown && filteredProducts.length > 0 && (
+                <div className="absolute z-50 w-full mt-2 glass-dropdown rounded-xl max-h-60 overflow-y-auto shadow-2xl">
+                  {filteredProducts.map(product => {
+                    const hasGiacenza = userGiacenze.find(g => g.productId?._id === product._id);
+                    return (
+                      <button
+                        key={product._id}
+                        type="button"
+                        onClick={() => handleProductSelect(product)}
+                        className="w-full px-3 py-2 text-left hover:bg-white/10 transition-colors border-b border-white/5 last:border-b-0 first:rounded-t-xl last:rounded-b-xl"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-white">
+                              {product.codice ? `${product.codice} - ` : ''}{product.nome}
+                            </div>
+                            <div className="text-xs text-white/60 mt-1">
+                              {product.categoria}
+                            </div>
+                          </div>
+                          {hasGiacenza && (
+                            <span className="ml-2 text-xs bg-blue-500/20 text-blue-200 px-2 py-1 rounded-full">
+                              📦 Esistente
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Mostra quantità attuale se giacenza esistente */}
@@ -1530,6 +1598,31 @@ const UserGiacenzeView = () => {
           backdrop-filter: blur(20px);
           border: 1px solid rgba(255, 255, 255, 0.2);
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-dropdown {
+          background: rgba(20, 20, 40, 0.95);
+          backdrop-filter: blur(40px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+
+        .glass-dropdown::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
         }
 
         .glass-card-interactive {

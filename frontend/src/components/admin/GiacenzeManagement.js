@@ -46,6 +46,10 @@ const GiacenzeManagement = () => {
 
   // Stato per loading - mostra skeleton durante il primo caricamento
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // Stati per ricerca prodotto
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
   
   // Simula il caricamento iniziale
   useEffect(() => {
@@ -64,6 +68,17 @@ const GiacenzeManagement = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  // Chiudi dropdown quando si clicca fuori
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showProductDropdown && !e.target.closest('.product-search-container')) {
+        setShowProductDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showProductDropdown]);
 
   // Funzione per applicare i filtri
   const applyFilters = (giacenze, currentFilters) => {
@@ -89,10 +104,11 @@ const GiacenzeManagement = () => {
     // Filtro ricerca libera
     if (currentFilters.searchTerm) {
       const term = currentFilters.searchTerm.toLowerCase();
-      filtered = filtered.filter(g => 
+      filtered = filtered.filter(g =>
         (g.userId?.username && g.userId.username.toLowerCase().includes(term)) ||
         (g.userId?.email && g.userId.email.toLowerCase().includes(term)) ||
         (g.productId?.nome && g.productId.nome.toLowerCase().includes(term)) ||
+        (g.productId?.codice && g.productId.codice.toLowerCase().includes(term)) ||
         (g.productId?.categoria && g.productId.categoria.toLowerCase().includes(term)) ||
         (g.assegnatoDa?.username && g.assegnatoDa.username.toLowerCase().includes(term))
       );
@@ -220,6 +236,39 @@ const GiacenzeManagement = () => {
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  // Funzioni per ricerca prodotto
+  const filteredProducts = React.useMemo(() => {
+    if (!productSearchTerm) return allProducts;
+    const term = productSearchTerm.toLowerCase();
+    return allProducts.filter(p =>
+      p.nome.toLowerCase().includes(term) ||
+      (p.codice && p.codice.toLowerCase().includes(term)) ||
+      (p.categoria && p.categoria.toLowerCase().includes(term))
+    );
+  }, [allProducts, productSearchTerm]);
+
+  const handleProductSelect = (product) => {
+    updateGiacenzeForm({ productId: product._id });
+    setProductSearchTerm(product.codice ? `${product.codice} - ${product.nome}` : product.nome);
+    setShowProductDropdown(false);
+  };
+
+  const handleProductSearchFocus = () => {
+    setShowProductDropdown(true);
+    if (!productSearchTerm) {
+      setProductSearchTerm('');
+    }
+  };
+
+  const handleProductSearchChange = (e) => {
+    setProductSearchTerm(e.target.value);
+    setShowProductDropdown(true);
+    // Reset productId if search term changes
+    if (giacenzeForm.productId) {
+      updateGiacenzeForm({ productId: '' });
+    }
   };
 
   // Funzioni per edit modal
@@ -419,24 +468,42 @@ const GiacenzeManagement = () => {
               </div>
             </div>
 
-            <div>
+            <div className="relative product-search-container">
               <label className="block text-sm font-medium text-white/80 mb-2">
                 Prodotto *
               </label>
-              <div className="glass-input-container">
-                <select
-                  className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white"
-                  value={giacenzeForm.productId}
-                  onChange={(e) => updateGiacenzeForm({ productId: e.target.value })}
-                >
-                  <option value="" className="bg-gray-800">Seleziona prodotto</option>
-                  {allProducts.map(product => (
-                    <option key={product._id} value={product._id} className="bg-gray-800">
-                      {product.codice ? `${product.codice} - ` : ''}{product.nome} ({product.categoria})
-                    </option>
-                  ))}
-                </select>
+              <div className="glass-input-container relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5 pointer-events-none" />
+                <input
+                  type="text"
+                  className="glass-input w-full pl-12 pr-4 py-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                  value={productSearchTerm}
+                  onChange={handleProductSearchChange}
+                  onFocus={handleProductSearchFocus}
+                  placeholder="Cerca per nome o codice..."
+                />
               </div>
+
+              {/* Dropdown prodotti */}
+              {showProductDropdown && filteredProducts.length > 0 && (
+                <div className="absolute z-50 w-full mt-2 glass-dropdown rounded-xl max-h-60 overflow-y-auto shadow-2xl">
+                  {filteredProducts.map(product => (
+                    <button
+                      key={product._id}
+                      type="button"
+                      onClick={() => handleProductSelect(product)}
+                      className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/5 last:border-b-0 first:rounded-t-xl last:rounded-b-xl"
+                    >
+                      <div className="text-sm font-medium text-white">
+                        {product.codice ? `${product.codice} - ` : ''}{product.nome}
+                      </div>
+                      <div className="text-xs text-white/60 mt-1">
+                        {product.categoria}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
@@ -1180,6 +1247,31 @@ const GiacenzeManagement = () => {
         .glass-filter-section {
           background: rgba(255, 255, 255, 0.05);
           backdrop-filter: blur(10px);
+        }
+
+        .glass-dropdown {
+          background: rgba(20, 20, 40, 0.95);
+          backdrop-filter: blur(40px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+
+        .glass-dropdown::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 10px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
         }
 
         .glass-icon {

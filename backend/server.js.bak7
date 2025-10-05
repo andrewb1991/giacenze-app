@@ -733,9 +733,8 @@ app.get('/api/my-giacenze', authenticateToken, async (req, res) => {
     // Filtro ricerca libera
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filteredGiacenze = filteredGiacenze.filter(g =>
+      filteredGiacenze = filteredGiacenze.filter(g => 
         g.productId?.nome.toLowerCase().includes(term) ||
-        g.productId?.codice?.toLowerCase().includes(term) ||
         g.productId?.categoria.toLowerCase().includes(term) ||
         g.productId?.descrizione?.toLowerCase().includes(term) ||
         g.productId?.unita.toLowerCase().includes(term) ||
@@ -1456,11 +1455,10 @@ app.get('/api/admin/giacenze', authenticateToken, requireAdmin, async (req, res)
     if (searchTerm) {
       const beforeCount = filteredGiacenze.length;
       const term = searchTerm.toLowerCase();
-      filteredGiacenze = filteredGiacenze.filter(g =>
+      filteredGiacenze = filteredGiacenze.filter(g => 
         g.userId?.username.toLowerCase().includes(term) ||
         g.userId?.email.toLowerCase().includes(term) ||
         g.productId?.nome.toLowerCase().includes(term) ||
-        g.productId?.codice?.toLowerCase().includes(term) ||
         g.productId?.categoria.toLowerCase().includes(term) ||
         g.assegnatoDa?.username.toLowerCase().includes(term)
       );
@@ -3750,7 +3748,7 @@ app.post('/api/rdt/:id/finalize', authenticateToken, requireAdmin, async (req, r
     }
     
     // DEBUG: Controlla giacenze globali esistenti per RDT
-    const giacenzeGlobaliEsistentiRDT = await GiacenzaUtente.find({ isGlobale: true, attiva: true }).populate('productId', 'nome codice');
+    const giacenzeGlobaliEsistentiRDT = await GiacenzaUtente.find({ isGlobale: true, attiva: true }).populate('productId', 'nome');
     console.log(`🔍 DEBUG RDT: Giacenze globali esistenti (${giacenzeGlobaliEsistentiRDT.length}):`, giacenzeGlobaliEsistentiRDT.map(g => `${g.productId?.nome}: ${g.quantitaDisponibile}`));
     
     // Incrementa le giacenze GLOBALI per ogni prodotto nell'RDT
@@ -4048,7 +4046,7 @@ app.post('/api/admin/giacenze/update-global', authenticateToken, requireAdmin, a
       productId: productId,
       isGlobale: true,
       attiva: true
-    }).populate('productId', 'nome codice');
+    }).populate('productId', 'nome');
 
     if (giacenzeGlobali.length === 0) {
       return res.status(404).json({ 
@@ -5992,7 +5990,7 @@ app.post('/api/ordini/:id/finalize', authenticateToken, requireAdmin, async (req
     }
     
     // DEBUG: Controlla giacenze globali esistenti
-    const giacenzeGlobaliEsistenti = await GiacenzaUtente.find({ isGlobale: true, attiva: true }).populate('productId', 'nome codice');
+    const giacenzeGlobaliEsistenti = await GiacenzaUtente.find({ isGlobale: true, attiva: true }).populate('productId', 'nome');
     console.log(`🔍 DEBUG: Giacenze globali esistenti (${giacenzeGlobaliEsistenti.length}):`, giacenzeGlobaliEsistenti.map(g => `${g.productId?.nome}: ${g.quantitaDisponibile}`));
     
     // Incrementa le giacenze GLOBALI per ogni prodotto nell'ordine
@@ -7056,7 +7054,7 @@ app.get('/api/debug/giacenze-globali', authenticateToken, requireAdmin, async (r
     const giacenzeGlobali = await GiacenzaUtente.find({
       isGlobale: true,
       attiva: true
-    }).populate('productId', 'nome codice categoria').populate('userId', 'username');
+    }).populate('productId', 'nome categoria').populate('userId', 'username');
     
     console.log(`🔍 DEBUG: Trovate ${giacenzeGlobali.length} giacenze globali`);
     

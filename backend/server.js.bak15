@@ -2035,7 +2035,7 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
     }
     
     const giacenze = await GiacenzaUtente.find(filter)
-      .populate('productId', 'codice categoria');
+      .populate('productId', 'categoria');
     
     // Calcola statistiche
     const stats = {
