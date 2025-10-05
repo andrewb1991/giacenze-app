@@ -957,7 +957,7 @@ app.put('/api/admin/utilizzi/:id', authenticateToken, requireAdmin, async (req, 
     // Trova l'utilizzo esistente
     const utilizzo = await Utilizzo.findById(id)
       .populate('giacenzaUtenteId')
-      .populate('productId', 'nome codice unita');
+      .populate('productId', 'nome unita');
 
     if (!utilizzo) {
       return res.status(404).json({ message: 'Utilizzo non trovato' });
@@ -1034,7 +1034,7 @@ app.delete('/api/admin/utilizzi/:id', authenticateToken, requireAdmin, async (re
     // Trova l'utilizzo da eliminare
     const utilizzo = await Utilizzo.findById(id)
       .populate('giacenzaUtenteId')
-      .populate('productId', 'nome codice unita')
+      .populate('productId', 'nome unita')
       .populate('userId', 'username');
 
     if (!utilizzo) {
@@ -1671,7 +1671,7 @@ async function createOrUpdateGiacenza(data) {
 
   const populated = await GiacenzaUtente.findById(giacenza._id)
     .populate('userId', 'username')
-    .populate('productId', 'nome codice unita')
+    .populate('productId', 'nome unita')
     .populate('assegnatoDa', 'username')
     .populate('settimanaId', 'numero anno');
 
@@ -1750,7 +1750,7 @@ app.put('/api/admin/giacenze/:id', authenticateToken, requireAdmin, async (req, 
     // Ritorna la giacenza aggiornata con populate
     const updatedGiacenza = await GiacenzaUtente.findById(giacenza._id)
       .populate('userId', 'username email')
-      .populate('productId', 'nome codice categoria unita')
+      .populate('productId', 'nome categoria unita')
       .populate('assegnatoDa', 'username')
       .populate('settimanaId', 'numero anno dataInizio dataFine');
 
@@ -1873,7 +1873,7 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
     
     const utilizzi = await Utilizzo.find(filter)
       .populate('userId', 'username email')
-      .populate('productId', 'nome codice categoria unita')
+      .populate('productId', 'nome categoria unita')
       .populate('giacenzaUtenteId')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
       .populate('poloId', 'nome')
@@ -1978,7 +1978,7 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
     // Query per tutte le giacenze (SEMPLIFICATA)
     const giacenze = await GiacenzaUtente.find(giacenzeFilter)
       .populate('userId', 'username email')
-      .populate('productId', 'nome codice categoria unita')
+      .populate('productId', 'nome categoria unita')
       .populate('settimanaId', 'numero anno dataInizio dataFine');
 
     // Query separata per le assegnazioni
@@ -2033,7 +2033,7 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
     }
     
     const giacenze = await GiacenzaUtente.find(filter)
-      .populate('productId', 'codice categoria');
+      .populate('productId', 'categoria');
     
     // Calcola statistiche
     const stats = {

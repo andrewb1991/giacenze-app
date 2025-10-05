@@ -908,7 +908,8 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                 <table className="w-full min-w-[900px]">
                   <thead>
                     <tr className="border-b border-white/20">
-                      <th className="text-left py-3 px-2 text-white/80 min-w-[250px]">Nome Prodotto</th>
+                      <th className="text-left py-3 px-2 text-white/80 min-w-[80px]">Codice</th>
+                      <th className="text-left py-3 px-2 text-white/80 min-w-[200px]">Nome Prodotto</th>
                       <th className="text-center py-3 px-2 text-white/80 min-w-[100px]">Q.tà Disponibile</th>
                       <th className="text-center py-3 px-2 text-white/80 min-w-[100px]">Q.tà Assegnata</th>
                       <th className="text-center py-3 px-2 text-white/80 min-w-[100px]">Q.tà Minima</th>
@@ -920,6 +921,16 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                   <tbody>
                     {righeTabella.map((riga) => (
                       <tr key={riga.id} className="border-b border-white/10">
+                        {/* Codice */}
+                        <td className="py-3 px-2">
+                          <div className="text-sm text-white/70">
+                            {riga.isExisting
+                              ? (riga.codice || '-')
+                              : (riga.prodottoId ? (allProducts?.find(p => p._id === riga.prodottoId)?.codice || '-') : '-')
+                            }
+                          </div>
+                        </td>
+
                         {/* Nome Prodotto */}
                         <td className="py-3 px-2">
                           {riga.isExisting ? (
@@ -960,7 +971,10 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                               {openDropdownId === riga.id && (
                                 <div className="absolute top-full left-0 right-0 z-[999999] glass-card rounded-lg mt-1 max-h-60 overflow-y-auto shadow-2xl">
                                   {allProducts?.filter(p =>
-                                    p.attivo && p.nome.toLowerCase().includes(riga.searchTerm.toLowerCase())
+                                    p.attivo && (
+                                      p.nome.toLowerCase().includes(riga.searchTerm.toLowerCase()) ||
+                                      p.codice?.toLowerCase().includes(riga.searchTerm.toLowerCase())
+                                    )
                                   ).slice(0, 15).map(product => (
                                     <div
                                       key={product._id}
@@ -970,8 +984,10 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                                         setOpenDropdownId(null);
                                       }}
                                     >
-                                      <div className="text-white text-sm font-medium">{product.nome}</div>
-                                      <div className="text-white/50 text-xs">{product.codice}</div>
+                                      <div className="text-white text-sm font-medium">
+                                        {product.codice ? `${product.codice} - ` : ''}{product.nome}
+                                      </div>
+                                      <div className="text-white/50 text-xs">{product.categoria}</div>
                                     </div>
                                   ))}
                                 </div>

@@ -229,6 +229,10 @@ const UserGiacenzeView = () => {
       let aValue, bValue;
 
       switch (sortConfig.key) {
+        case 'codice':
+          aValue = a.productId?.codice || '';
+          bValue = b.productId?.codice || '';
+          break;
         case 'prodotto':
           aValue = a.productId?.nome || '';
           bValue = b.productId?.nome || '';
@@ -710,7 +714,7 @@ const UserGiacenzeView = () => {
                   const hasGiacenza = userGiacenze.find(g => g.productId?._id === product._id);
                   return (
                     <option key={product._id} value={product._id} className="bg-gray-800">
-                      {product.nome} ({product.categoria}) {hasGiacenza ? '📦 Esistente' : '🆕 Nuovo'}
+                      {product.codice ? `${product.codice} - ` : ''}{product.nome} ({product.categoria}) {hasGiacenza ? '📦 Esistente' : '🆕 Nuovo'}
                     </option>
                   );
                 })}
@@ -1038,7 +1042,7 @@ const UserGiacenzeView = () => {
                   <option value="" className="bg-gray-800">Tutti i prodotti</option>
                   {allProducts.map(product => (
                     <option key={product._id} value={product._id} className="bg-gray-800">
-                      {product.nome}
+                      {product.codice ? `${product.codice} - ` : ''}{product.nome}
                     </option>
                   ))}
                 </select>
@@ -1188,6 +1192,19 @@ const UserGiacenzeView = () => {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       <button
+                        onClick={() => handleSort('codice')}
+                        className="flex items-center space-x-1 hover:text-white transition-colors"
+                      >
+                        <span>Codice</span>
+                        {sortConfig.key === 'codice' ? (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 opacity-30" />
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
+                      <button
                         onClick={() => handleSort('prodotto')}
                         className="flex items-center space-x-1 hover:text-white transition-colors"
                       >
@@ -1275,6 +1292,11 @@ const UserGiacenzeView = () => {
                     
                     return (
                       <tr key={giacenza._id} className="glass-table-row hover:bg-white/5 transition-all duration-300">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-white/70">
+                            {giacenza.productId?.codice || '-'}
+                          </div>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-white">
                             {giacenza.productId?.nome}

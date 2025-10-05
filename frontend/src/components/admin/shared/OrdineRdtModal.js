@@ -529,6 +529,7 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-white/20">
+                      <th className="text-left py-3 px-4 text-white/80 font-medium">Codice</th>
                       <th className="text-left py-3 px-4 text-white/80 font-medium">Nome Prodotto</th>
                       <th className="text-center py-3 px-4 text-white/80 font-medium">Quantità</th>
                       <th className="text-left py-3 px-4 text-white/80 font-medium">Note</th>
@@ -537,6 +538,9 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                   <tbody>
                     {formData.prodotti.map((prodotto, index) => (
                       <tr key={prodotto.id || prodotto.productId || index} className="border-b border-white/10">
+                        <td className="py-3 px-4">
+                          <div className="text-white/70 text-sm">{prodotto.codice || '-'}</div>
+                        </td>
                         <td className="py-3 px-4">
                           <div className="text-white font-medium">{prodotto.nome}</div>
                           <div className="text-white/50 text-xs">{prodotto.productId}</div>

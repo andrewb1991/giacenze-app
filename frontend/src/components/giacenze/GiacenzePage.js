@@ -100,7 +100,8 @@ const GiacenzePage = () => {
 
   // Filtra giacenze per ricerca e postazione selezionata
   const filteredGiacenze = myGiacenze.filter(giacenza => {
-    const matchesSearch = giacenza.productId?.nome.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = giacenza.productId?.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          giacenza.productId?.codice?.toLowerCase().includes(searchTerm.toLowerCase());
     // Per ora mostriamo tutte le giacenze se non è selezionata una postazione
     // In futuro si potrebbe filtrare per postazione se le giacenze avessero questo campo
     return matchesSearch;
@@ -487,7 +488,7 @@ const GiacenzaCard = ({ giacenza, isSottoSoglia, percentualeRimasta, utilizziCou
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-white">
-            {giacenza.productId?.nome}
+            {giacenza.productId?.codice ? `${giacenza.productId.codice} - ` : ''}{giacenza.productId?.nome}
           </h3>
           <p className="text-sm text-white/60">{giacenza.productId?.categoria}</p>
         </div>

@@ -532,7 +532,7 @@ const UtilizziPage = () => {
                             <Package className="w-4 h-4 mr-2 text-blue-300" />
                             <div>
                               <div className="text-sm font-medium text-white">
-                                {group.productId?.nome}
+                                {group.productId?.codice ? `${group.productId.codice} - ` : ''}{group.productId?.nome}
                               </div>
                               <div className="text-sm text-white/50">
                                 {group.productId?.categoria}
@@ -663,7 +663,7 @@ const UtilizziPage = () => {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-white">
-                      Dettagli Utilizzi - {selectedGroup.productId?.nome}
+                      Dettagli Utilizzi - {selectedGroup.productId?.codice ? `${selectedGroup.productId.codice} - ` : ''}{selectedGroup.productId?.nome}
                     </h3>
                     <p className="text-white/70">
                       {selectedGroup.userId?.username} • {selectedGroup.settimanaId ? formatWeek(selectedGroup.settimanaId) : 'N/A'}
