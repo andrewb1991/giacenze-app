@@ -17,7 +17,8 @@ import {
   Building,
   ShoppingCart,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useGiacenze } from '../../../hooks/useGiacenze';
@@ -26,6 +27,7 @@ import { triggerOrdiniRdtUpdate } from '../../../utils/events';
 import OrdineRdtModal from './OrdineRdtModal';
 import AggiungiProdottoOrdine from '../AggiungiProdottoOrdine';
 import { useModalAnimation } from '../../../hooks/useModalAnimation';
+import { sortWeeksCenteredOnCurrent, getCurrentWeekFromList } from '../../../utils/formatters';
 
 const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsChange }) => {
   const { token, setError } = useAuth();
@@ -112,8 +114,18 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
     operatore: '',
     settimana: '',
     stato: '',
-    tipo: ''
+    tipo: '',
+    cliente: ''
   });
+
+  // Stato per checkbox "tutte le settimane"
+  const [showAllWeeks, setShowAllWeeks] = useState(true);
+
+  // Ordina settimane centrate sulla settimana corrente
+  const sortedSettimane = React.useMemo(() => {
+    if (!settimane?.length) return [];
+    return sortWeeksCenteredOnCurrent(settimane);
+  }, [settimane]);
 
   // Carica dati iniziali
   useEffect(() => {
@@ -121,6 +133,30 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
       loadData();
     }
   }, [token]);
+
+  // Set default current week for filters when showAllWeeks is false
+  useEffect(() => {
+    if (settimane.length > 0 && !showAllWeeks && filters.settimana === '') {
+      const currentWeek = getCurrentWeekFromList(settimane);
+      if (currentWeek) {
+        setFilters(prev => ({ ...prev, settimana: currentWeek._id }));
+      }
+    }
+  }, [settimane, showAllWeeks, filters.settimana]);
+
+  // Handle showAllWeeks toggle
+  useEffect(() => {
+    if (showAllWeeks) {
+      // When showing all weeks, clear the week filter
+      setFilters(prev => ({ ...prev, settimana: '' }));
+    } else {
+      // When not showing all weeks, set current week as default
+      const currentWeek = getCurrentWeekFromList(settimane);
+      if (currentWeek) {
+        setFilters(prev => ({ ...prev, settimana: currentWeek._id }));
+      }
+    }
+  }, [showAllWeeks, settimane]);
 
   // Listener per eventi di sincronizzazione da AssignmentsManagement
   useEffect(() => {
@@ -217,8 +253,8 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
       });
     }
 
-    // Filtro settimana
-    if (filters.settimana) {
+    // Filtro settimana (solo se non è selezionato "tutte le settimane")
+    if (filters.settimana && !showAllWeeks) {
       items = items.filter(item => {
         const assegnazione = getAssegnazioneForItem(item.itemType, item.numero);
         return assegnazione?.settimanaId?._id === filters.settimana;
@@ -228,6 +264,14 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
     // Filtro stato
     if (filters.stato) {
       items = items.filter(item => item.stato === filters.stato);
+    }
+
+    // Filtro cliente
+    if (filters.cliente) {
+      const clienteLower = filters.cliente.toLowerCase();
+      items = items.filter(item =>
+        item.cliente?.toLowerCase().includes(clienteLower)
+      );
     }
 
     // Applica ordinamento
@@ -311,6 +355,27 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
   // Aggiorna filtri
   const updateFilters = (newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  // Funzione per formattare settimana con periodo (versione compatta)
+  const formatWeek = (settimana) => {
+    if (!settimana) return '';
+    const dataInizio = new Date(settimana.dataInizio).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+    const dataFine = new Date(settimana.dataFine).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+    return `S${settimana.numero}/${settimana.anno} (${dataInizio}-${dataFine})`;
+  };
+
+  // Reset tutti i filtri
+  const resetFilters = () => {
+    setFilters({
+      searchTerm: '',
+      operatore: '',
+      settimana: '',
+      stato: '',
+      tipo: '',
+      cliente: ''
+    });
+    setShowAllWeeks(true);
   };
 
   // Avvia editing inline
@@ -721,49 +786,74 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
     <>
       <div className="glass-card-large rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-white/10">
-          <h3 className="text-lg font-semibold text-white flex items-center">
-            <Package className="w-5 h-5 mr-2" />
-            {title}
-            {!loading && (
-              <span className="ml-2 text-sm text-white/50">
-                ({filteredItems.length} risultati)
-              </span>
-            )}
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-white flex items-center">
+              <Package className="w-5 h-5 mr-2" />
+              {title}
+              {!loading && (
+                <span className="ml-2 text-sm text-white/50">
+                  ({filteredItems.length} risultati)
+                </span>
+              )}
+            </h3>
+
+            {/* Pulsante Reset */}
+            <button
+              onClick={resetFilters}
+              className="glass-button-reset px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
+              title="Reset filtri"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reset Filtri
+            </button>
+          </div>
         </div>
 
         {/* Filtri */}
-        <div className="px-6 py-4 border-b border-white/5">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="glass-input-container rounded-xl">
+        <div className="px-6 py-3 border-b border-white/5">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div className="glass-input-container rounded-lg">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/50 w-3.5 h-3.5" />
                 <input
                   type="text"
-                  placeholder="Cerca numero, cliente..."
-                  className="glass-input w-full pl-10 pr-4 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                  placeholder="Cerca numero..."
+                  className="glass-input w-full pl-8 pr-2 py-1.5 text-sm rounded-lg bg-transparent border-0 outline-none text-white placeholder-white/50"
                   value={filters.searchTerm}
                   onChange={(e) => updateFilters({ searchTerm: e.target.value })}
                 />
               </div>
             </div>
-            
+
+            <div className="glass-input-container rounded-lg">
+              <div className="relative">
+                <Building className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/50 w-3.5 h-3.5" />
+                <input
+                  type="text"
+                  placeholder="Cliente..."
+                  className="glass-input w-full pl-8 pr-2 py-1.5 text-sm rounded-lg bg-transparent border-0 outline-none text-white placeholder-white/50"
+                  value={filters.cliente}
+                  onChange={(e) => updateFilters({ cliente: e.target.value })}
+                />
+              </div>
+            </div>
+
             <select
-              className="glass-input px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
+              className="glass-input px-2 py-1.5 text-sm rounded-lg bg-transparent border-0 outline-none text-white"
               value={filters.tipo}
               onChange={(e) => updateFilters({ tipo: e.target.value })}
             >
-              <option value="" className="bg-gray-800">Tutti i tipi</option>
-              <option value="ordine" className="bg-gray-800">Solo Ordini</option>
-              <option value="rdt" className="bg-gray-800">Solo RDT</option>
+              <option value="" className="bg-gray-800">Tutti</option>
+              <option value="ordine" className="bg-gray-800">Ordini</option>
+              <option value="rdt" className="bg-gray-800">RDT</option>
             </select>
 
             <select
-              className="glass-input px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
+              className="glass-input px-2 py-1.5 text-sm rounded-lg bg-transparent border-0 outline-none text-white"
               value={filters.operatore}
               onChange={(e) => updateFilters({ operatore: e.target.value })}
             >
-              <option value="" className="bg-gray-800">Tutti gli operatori</option>
+              <option value="" className="bg-gray-800">Tutti operatori</option>
               {users?.filter(u => u.role === 'user').map(user => (
                 <option key={user._id} value={user._id} className="bg-gray-800">
                   {user.username}
@@ -771,25 +861,60 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
               ))}
             </select>
 
-            <select
-              className="glass-input px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
-              value={filters.settimana}
-              onChange={(e) => updateFilters({ settimana: e.target.value })}
-            >
-              <option value="" className="bg-gray-800">Tutte le settimane</option>
-              {settimane?.map(settimana => (
-                <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                  Settimana {settimana.numero} - {settimana.anno}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <div className="flex items-center gap-1.5">
+                <select
+                  className={`glass-input flex-1 px-2 py-1.5 text-sm rounded-lg bg-transparent border-0 outline-none text-white ${showAllWeeks ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  value={showAllWeeks ? 'all' : filters.settimana}
+                  onChange={(e) => updateFilters({ settimana: e.target.value })}
+                  disabled={showAllWeeks}
+                >
+                  {showAllWeeks ? (
+                    <option value="all" className="bg-gray-800">
+                      🌍 Tutte
+                    </option>
+                  ) : (
+                    sortedSettimane?.map(settimana => {
+                      const currentWeek = getCurrentWeekFromList(settimane);
+                      const isCurrentWeek = currentWeek && settimana._id === currentWeek._id;
+                      return (
+                        <option key={settimana._id} value={settimana._id} className="bg-gray-800">
+                          {isCurrentWeek ? '📅 ' : ''}{formatWeek(settimana)}
+                        </option>
+                      );
+                    })
+                  )}
+                </select>
+
+                {/* Checkbox "Tutte le settimane" inline */}
+                <label className="glass-checkbox-container flex items-center cursor-pointer shrink-0" title="Tutte le settimane">
+                  <input
+                    type="checkbox"
+                    checked={showAllWeeks}
+                    onChange={(e) => setShowAllWeeks(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`glass-checkbox w-4 h-4 rounded border-2 transition-all duration-200 flex items-center justify-center ${
+                    showAllWeeks
+                      ? 'border-blue-400 bg-blue-400/20'
+                      : 'border-gray-400 bg-gray-400/10'
+                  }`}>
+                    {showAllWeeks && (
+                      <svg className="w-2.5 h-2.5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </label>
+              </div>
+            </div>
 
             <select
-              className="glass-input px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white"
+              className="glass-input px-2 py-1.5 text-sm rounded-lg bg-transparent border-0 outline-none text-white"
               value={filters.stato}
               onChange={(e) => updateFilters({ stato: e.target.value })}
             >
-              <option value="" className="bg-gray-800">Tutti gli stati</option>
+              <option value="" className="bg-gray-800">Tutti stati</option>
               <option value="CREATO" className="bg-gray-800">Creato</option>
               <option value="ASSEGNATO" className="bg-gray-800">Assegnato</option>
               <option value="IN_CORSO" className="bg-gray-800">In Corso</option>
@@ -1376,6 +1501,33 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
           </div>
         </div>
       )}
+
+      {/* Custom Styles */}
+      <style jsx>{`
+        .glass-checkbox-container {
+          user-select: none;
+        }
+
+        .glass-checkbox {
+          flex-shrink: 0;
+        }
+
+        .glass-button-reset {
+          background: rgba(239, 68, 68, 0.2);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
+        }
+
+        .glass-button-reset:hover {
+          background: rgba(239, 68, 68, 0.3);
+          box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .glass-button-reset:active {
+          transform: scale(0.98);
+        }
+      `}</style>
     </>
   );
 };

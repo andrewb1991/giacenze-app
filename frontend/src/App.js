@@ -24,6 +24,7 @@ import AdminCreaOrdiniSection from './components/admin/sections/AdminCreaOrdiniS
 import ErrorMessage from './components/shared/ErrorMessage';
 import OrdiniManagement from './components/admin/OrdiniManagement';
 import CreaOrdini from './components/admin/CreaOrdini';
+import ClientiManagement from './components/admin/ClientiManagement';
 
 // 🔄 Componente di Loading
   // const LoadingScreen = () => (
@@ -250,6 +251,8 @@ const AppContent = () => {
         return user?.role === 'admin' ? <AdminOrdiniSection /> : <Dashboard />;
       case 'admin-crea-ordini':
         return user?.role === 'admin' ? <CreaOrdini /> : <Dashboard />;
+      case 'admin-clienti':
+        return user?.role === 'admin' ? <ClientiManagement /> : <Dashboard />;
       default:
         return <Dashboard />;
     }

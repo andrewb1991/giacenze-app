@@ -48,6 +48,12 @@ const CreaOrdini = () => {
   const [loading, setLoading] = useState(false);
   const [availableAssignments, setAvailableAssignments] = useState([]);
   const [showProductForm, setShowProductForm] = useState(false);
+
+  // Stati per clienti
+  const [clienti, setClienti] = useState([]);
+  const [clientiFiltered, setClientiFiltered] = useState([]);
+  const [showClientiDropdown, setShowClientiDropdown] = useState(false);
+  const [clienteSearchTerm, setClienteSearchTerm] = useState('');
   const [tableProducts, setTableProducts] = useState([{ 
     id: Date.now(),
     productId: '',
@@ -76,7 +82,8 @@ const CreaOrdini = () => {
     searchTerm: '',
     tipo: '',
     operatore: '',
-    stato: ''
+    stato: '',
+    cliente: ''
   });
 
   // Mouse tracking
@@ -87,6 +94,34 @@ const CreaOrdini = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  // Carica clienti dal database
+  useEffect(() => {
+    const loadClienti = async () => {
+      try {
+        const data = await apiCall('/clienti', {}, token);
+        setClienti(data || []);
+      } catch (err) {
+        console.error('Errore caricamento clienti:', err);
+      }
+    };
+
+    if (token) {
+      loadClienti();
+    }
+  }, [token]);
+
+  // Chiudi dropdown clienti quando si clicca fuori
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showClientiDropdown && !event.target.closest('.relative')) {
+        setShowClientiDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showClientiDropdown]);
 
   // Carica dati iniziali
   useEffect(() => {
@@ -253,6 +288,31 @@ const CreaOrdini = () => {
       ...prev,
       prodotti: prev.prodotti.filter(p => (p.id !== productId && p.productId !== productId))
     }));
+  };
+
+  // Gestione ricerca clienti
+  const handleClienteSearch = (value) => {
+    setClienteSearchTerm(value);
+    updateFormData({ cliente: value });
+
+    if (value.length > 0) {
+      const filtered = clienti.filter(c =>
+        c.nome.toLowerCase().includes(value.toLowerCase()) ||
+        (c.email && c.email.toLowerCase().includes(value.toLowerCase())) ||
+        (c.partitaIva && c.partitaIva.toLowerCase().includes(value.toLowerCase()))
+      );
+      setClientiFiltered(filtered);
+      setShowClientiDropdown(true);
+    } else {
+      setClientiFiltered([]);
+      setShowClientiDropdown(false);
+    }
+  };
+
+  const selectCliente = (cliente) => {
+    setClienteSearchTerm(cliente.nome);
+    updateFormData({ cliente: cliente.nome });
+    setShowClientiDropdown(false);
   };
 
   // Modifica prodotto
@@ -504,7 +564,14 @@ const CreaOrdini = () => {
     if (filters.stato) {
       items = items.filter(item => item.stato === filters.stato);
     }
-    
+
+    if (filters.cliente) {
+      const clienteLower = filters.cliente.toLowerCase();
+      items = items.filter(item =>
+        item.cliente?.toLowerCase().includes(clienteLower)
+      );
+    }
+
     return items;
   };
 
@@ -658,7 +725,7 @@ const CreaOrdini = () => {
               </div>
             </div>
 
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-white/80 mb-2">
                 <Building className="w-4 h-4 inline mr-2" />
                 Cliente *
@@ -666,12 +733,53 @@ const CreaOrdini = () => {
               <div className="glass-input-container">
                 <input
                   type="text"
-                  placeholder="Nome cliente"
+                  placeholder="Cerca cliente per nome, email o P.IVA..."
                   className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                  value={formData.cliente}
-                  onChange={(e) => updateFormData({ cliente: e.target.value })}
+                  value={clienteSearchTerm || formData.cliente}
+                  onChange={(e) => handleClienteSearch(e.target.value)}
+                  onFocus={() => {
+                    if (clienteSearchTerm && clientiFiltered.length > 0) {
+                      setShowClientiDropdown(true);
+                    }
+                  }}
                 />
               </div>
+
+              {/* Dropdown clienti */}
+              {showClientiDropdown && clientiFiltered.length > 0 && (
+                <div className="absolute z-50 w-full mt-2 glass-dropdown rounded-2xl overflow-hidden max-h-60 overflow-y-auto">
+                  {clientiFiltered.map((cliente) => (
+                    <div
+                      key={cliente._id}
+                      className="glass-dropdown-item p-4 cursor-pointer hover:bg-white/20 transition-all duration-200"
+                      onClick={() => selectCliente(cliente)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="font-semibold text-white">{cliente.nome}</div>
+                          {cliente.email && (
+                            <div className="text-sm text-white/70">{cliente.email}</div>
+                          )}
+                          {cliente.partitaIva && (
+                            <div className="text-xs text-white/50">P.IVA: {cliente.partitaIva}</div>
+                          )}
+                          {cliente.citta && (
+                            <div className="text-xs text-white/50">{cliente.citta}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {showClientiDropdown && clientiFiltered.length === 0 && clienteSearchTerm && (
+                <div className="absolute z-50 w-full mt-2 glass-dropdown rounded-2xl p-4">
+                  <div className="text-white/70 text-sm text-center">
+                    Nessun cliente trovato. Digita il nome manualmente o crea un nuovo cliente.
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -952,6 +1060,39 @@ const CreaOrdini = () => {
 
         .bg-gradient-radial {
           background: radial-gradient(circle, var(--tw-gradient-stops));
+        }
+
+        .glass-dropdown {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-dropdown-item {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-dropdown-item:last-child {
+          border-bottom: none;
+        }
+
+        .glass-dropdown::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 3px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.5);
         }
       `}</style>
     </div>

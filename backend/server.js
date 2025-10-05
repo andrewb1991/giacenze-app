@@ -584,6 +584,22 @@ rdtSchema.index({ deleted: 1 });
 const RDT = mongoose.model('RDT', rdtSchema);
 const RicaricaGiacenza = mongoose.model('RicaricaGiacenza', ricaricaGiacenzaSchema);
 const Postazione = mongoose.model('Postazione', postazioneSchema);
+
+// Schema Cliente
+const clienteSchema = new mongoose.Schema({
+  nome: { type: String, required: true, trim: true },
+  email: { type: String, trim: true },
+  telefono: { type: String, trim: true },
+  indirizzo: { type: String, trim: true },
+  citta: { type: String, trim: true },
+  cap: { type: String, trim: true },
+  partitaIva: { type: String, trim: true },
+  codiceFiscale: { type: String, trim: true },
+  note: { type: String, trim: true },
+  attivo: { type: Boolean, default: true }
+}, { timestamps: true });
+
+const Cliente = mongoose.model('Cliente', clienteSchema);
 // Middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -5561,6 +5577,114 @@ app.post('/api/postazioni/copy', authenticateToken, requireAdmin, async (req, re
     });
   } catch (error) {
     console.error('❌ Errore copia postazioni:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// =====================================================
+// ROTTE API PER GESTIONE CLIENTI
+// =====================================================
+
+// GET - Lista tutti i clienti
+app.get('/api/clienti', authenticateToken, async (req, res) => {
+  try {
+    const clienti = await Cliente.find({ attivo: true })
+      .sort({ nome: 1 });
+    res.json(clienti);
+  } catch (error) {
+    console.error('❌ Errore caricamento clienti:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - Dettaglio cliente singolo
+app.get('/api/clienti/:id', authenticateToken, async (req, res) => {
+  try {
+    const cliente = await Cliente.findById(req.params.id);
+    if (!cliente) {
+      return res.status(404).json({ message: 'Cliente non trovato' });
+    }
+    res.json(cliente);
+  } catch (error) {
+    console.error('❌ Errore caricamento cliente:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// POST - Crea nuovo cliente
+app.post('/api/clienti', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { nome, email, telefono, indirizzo, citta, cap, partitaIva, codiceFiscale, note } = req.body;
+
+    if (!nome) {
+      return res.status(400).json({ message: 'Il nome del cliente è obbligatorio' });
+    }
+
+    const nuovoCliente = new Cliente({
+      nome,
+      email,
+      telefono,
+      indirizzo,
+      citta,
+      cap,
+      partitaIva,
+      codiceFiscale,
+      note
+    });
+
+    await nuovoCliente.save();
+    console.log('✅ Cliente creato:', nuovoCliente.nome);
+    res.status(201).json(nuovoCliente);
+  } catch (error) {
+    console.error('❌ Errore creazione cliente:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// PUT - Modifica cliente
+app.put('/api/clienti/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { nome, email, telefono, indirizzo, citta, cap, partitaIva, codiceFiscale, note } = req.body;
+
+    const cliente = await Cliente.findById(req.params.id);
+    if (!cliente) {
+      return res.status(404).json({ message: 'Cliente non trovato' });
+    }
+
+    if (nome !== undefined) cliente.nome = nome;
+    if (email !== undefined) cliente.email = email;
+    if (telefono !== undefined) cliente.telefono = telefono;
+    if (indirizzo !== undefined) cliente.indirizzo = indirizzo;
+    if (citta !== undefined) cliente.citta = citta;
+    if (cap !== undefined) cliente.cap = cap;
+    if (partitaIva !== undefined) cliente.partitaIva = partitaIva;
+    if (codiceFiscale !== undefined) cliente.codiceFiscale = codiceFiscale;
+    if (note !== undefined) cliente.note = note;
+
+    await cliente.save();
+    console.log('✅ Cliente modificato:', cliente.nome);
+    res.json(cliente);
+  } catch (error) {
+    console.error('❌ Errore modifica cliente:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// DELETE - Elimina cliente (soft delete)
+app.delete('/api/clienti/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const cliente = await Cliente.findById(req.params.id);
+    if (!cliente) {
+      return res.status(404).json({ message: 'Cliente non trovato' });
+    }
+
+    cliente.attivo = false;
+    await cliente.save();
+
+    console.log('✅ Cliente eliminato (soft):', cliente.nome);
+    res.json({ message: 'Cliente eliminato con successo', cliente });
+  } catch (error) {
+    console.error('❌ Errore eliminazione cliente:', error);
     res.status(400).json({ message: error.message });
   }
 });

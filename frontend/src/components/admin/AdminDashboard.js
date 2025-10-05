@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import Navigation from '../shared/Navigation';
+import { Grid, List } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { setCurrentPage } = useAuth();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'list'
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -66,12 +68,19 @@ const AdminDashboard = () => {
       description: 'Genera e visualizza report dettagliati',
       color: 'from-indigo-400 to-purple-600'
     },
-    { 
-      id: 'ordini', 
-      label: 'Gestione Ordini', 
+    {
+      id: 'ordini',
+      label: 'Gestione Ordini',
       icon: '🛒',
       description: 'Gestisci ordini e rifornimenti',
       color: 'from-emerald-400 to-teal-600'
+    },
+    {
+      id: 'clienti',
+      label: 'Gestione Clienti',
+      icon: '👔',
+      description: 'Gestisci anagrafica clienti e informazioni di contatto',
+      color: 'from-amber-400 to-orange-600'
     }
   ];
 
@@ -104,51 +113,120 @@ const AdminDashboard = () => {
 
       <div className="relative z-10 w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Welcome Section */}
-        <div className="glass-card p-8 rounded-2xl mb-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-white mb-4">
-              🛠️ Pannello di Amministrazione
-            </h1>
-            <p className="text-white/80 text-lg">
-              Seleziona una sezione per iniziare a gestire il sistema
-            </p>
+        <div className="glass-card p-4 rounded-xl mb-6">
+          <div className="flex items-center justify-between">
+            {/* Title */}
+            <div>
+              <h1 className="text-xl font-bold text-white mb-1">
+                🛠️ Pannello di Amministrazione
+              </h1>
+              <p className="text-white/70 text-sm">
+                Seleziona una sezione per iniziare a gestire il sistema
+              </p>
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2 glass-card p-1 rounded-xl">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  viewMode === 'grid'
+                    ? 'bg-blue-500/30 text-white'
+                    : 'text-white/50 hover:text-white/80'
+                }`}
+                title="Vista a griglia"
+              >
+                <Grid className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  viewMode === 'list'
+                    ? 'bg-blue-500/30 text-white'
+                    : 'text-white/50 hover:text-white/80'
+                }`}
+                title="Vista a elenco"
+              >
+                <List className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Admin Sections Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {adminSections.map((section) => (
-            <div
-              key={section.id}
-              onClick={() => handleSectionClick(section.id)}
-              className="glass-card p-6 rounded-2xl cursor-pointer transform transition-all duration-300 hover:scale-105 hover:-translate-y-2 group"
-            >
-              {/* Icon and Gradient */}
-              <div className="relative mb-4">
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${section.color} flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  {section.icon}
+        {/* Admin Sections Grid/List */}
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {adminSections.map((section) => (
+              <div
+                key={section.id}
+                onClick={() => handleSectionClick(section.id)}
+                className="glass-card p-6 rounded-2xl cursor-pointer transform transition-all duration-300 hover:scale-105 hover:-translate-y-2 group"
+              >
+                {/* Icon and Gradient */}
+                <div className="relative mb-4">
+                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${section.color} flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    {section.icon}
+                  </div>
+                  <div className={`absolute inset-0 w-16 h-16 rounded-2xl bg-gradient-to-r ${section.color} opacity-20 blur-lg group-hover:opacity-40 transition-opacity duration-300`}></div>
                 </div>
-                <div className={`absolute inset-0 w-16 h-16 rounded-2xl bg-gradient-to-r ${section.color} opacity-20 blur-lg group-hover:opacity-40 transition-opacity duration-300`}></div>
-              </div>
 
-              {/* Content */}
-              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-200 transition-colors duration-300">
-                {section.label}
-              </h3>
-              <p className="text-white/70 text-sm leading-relaxed group-hover:text-white/90 transition-colors duration-300">
-                {section.description}
-              </p>
+                {/* Content */}
+                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-200 transition-colors duration-300">
+                  {section.label}
+                </h3>
+                <p className="text-white/70 text-sm leading-relaxed group-hover:text-white/90 transition-colors duration-300">
+                  {section.description}
+                </p>
 
-              {/* Arrow indicator */}
-              <div className="mt-4 flex items-center text-white/50 group-hover:text-white/80 transition-colors duration-300">
-                <span className="text-sm font-medium">Accedi</span>
-                <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                {/* Arrow indicator */}
+                <div className="mt-4 flex items-center text-white/50 group-hover:text-white/80 transition-colors duration-300">
+                  <span className="text-sm font-medium">Accedi</span>
+                  <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {adminSections.map((section) => (
+              <div
+                key={section.id}
+                onClick={() => handleSectionClick(section.id)}
+                className="glass-card p-6 rounded-2xl cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl group"
+              >
+                <div className="flex items-center gap-6">
+                  {/* Icon and Gradient */}
+                  <div className="relative flex-shrink-0">
+                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${section.color} flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-300`}>
+                      {section.icon}
+                    </div>
+                    <div className={`absolute inset-0 w-16 h-16 rounded-2xl bg-gradient-to-r ${section.color} opacity-20 blur-lg group-hover:opacity-40 transition-opacity duration-300`}></div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-200 transition-colors duration-300">
+                      {section.label}
+                    </h3>
+                    <p className="text-white/70 text-sm leading-relaxed group-hover:text-white/90 transition-colors duration-300">
+                      {section.description}
+                    </p>
+                  </div>
+
+                  {/* Arrow indicator */}
+                  <div className="flex items-center text-white/50 group-hover:text-white/80 transition-colors duration-300 flex-shrink-0">
+                    <span className="text-sm font-medium mr-2">Accedi</span>
+                    <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Quick Stats Section */}
         <div className="glass-card p-6 rounded-2xl mt-8">
