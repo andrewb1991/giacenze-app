@@ -318,6 +318,8 @@ const ordineSchema = new mongoose.Schema({
   prodotti: [{
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     nome: { type: String, required: true, trim: true },
+    codice: { type: String, trim: true },
+    descrizione: { type: String, trim: true },
     quantita: { type: Number, required: true, min: 0 },
     quantitaMinima: { type: Number, min: 0, default: 0 },
     unita: { type: String, default: 'pz', trim: true },
@@ -507,6 +509,8 @@ const rdtSchema = new mongoose.Schema({
   prodotti: [{
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     nome: { type: String, required: true, trim: true },
+    codice: { type: String, trim: true },
+    descrizione: { type: String, trim: true },
     quantita: { type: Number, required: true, min: 0 },
     quantitaMinima: { type: Number, min: 0, default: 0 },
     unita: { type: String, default: 'pz', trim: true },
@@ -1909,6 +1913,7 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
 
         reportData[key] = {
           'Utente': utilizzo.userId.username,
+          'Codice': utilizzo.productId.codice || '',
           'Prodotto': utilizzo.productId.nome,
           'Categoria': utilizzo.productId.categoria || 'N/A',
           'Quantità Totale Utilizzata': 0,
@@ -2100,6 +2105,7 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
       return {
         'Operatore': giacenza.userId.username,
         'Email': giacenza.userId.email || 'N/A',
+        'Codice': giacenza.productId.codice || '',
         'Prodotto': giacenza.productId.nome,
         'Categoria': giacenza.productId.categoria || 'N/A',
         'Unità': giacenza.productId.unita,
@@ -2127,7 +2133,7 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
     // FOGLIO 1: Report Utilizzi (esistente)
     const ws = xlsx.utils.json_to_sheet(dataArray);
     ws['!cols'] = [
-      { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 8 },
+      { wch: 15 }, { wch: 12 }, { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 8 },
       { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 15 },
       { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 12 }
     ];
@@ -2170,6 +2176,7 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
             quantitaAssegnata - quantitaDisponibile : 0;
             
           ordiniData[ordineKey] = {
+            'Codice': utilizzo.productId.codice || '',
             'Prodotto': utilizzo.productId.nome,
             'Categoria': utilizzo.productId.categoria || 'N/A',
             'Utente': utilizzo.userId.username,
@@ -2189,7 +2196,7 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
     if (riepilogoOrdini.length > 0) {
       const wsOrdini = xlsx.utils.json_to_sheet(riepilogoOrdini);
       wsOrdini['!cols'] = [
-        { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+        { wch: 12 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
         { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 20 }
       ];
       xlsx.utils.book_append_sheet(wb, wsOrdini, 'Lista Ordini');
@@ -2199,7 +2206,7 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
     if (giacenzeData.length > 0) {
       const wsGiacenze = xlsx.utils.json_to_sheet(giacenzeData);
       wsGiacenze['!cols'] = [
-        { wch: 18 }, { wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 8 },
+        { wch: 18 }, { wch: 25 }, { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 8 },
         { wch: 15 }, { wch: 18 }, { wch: 12 }, { wch: 10 }, { wch: 12 },
         { wch: 25 }, { wch: 12 }
       ];
@@ -3542,12 +3549,13 @@ app.get('/api/rdt', authenticateToken, async (req, res) => {
 // GET - Singolo RDT per ID
 app.get('/api/rdt/:id', authenticateToken, async (req, res) => {
   try {
-    const rdt = await RDT.findOne({ 
-      _id: req.params.id, 
-      deleted: false 
+    const rdt = await RDT.findOne({
+      _id: req.params.id,
+      deleted: false
     })
     .populate('createdBy', 'username email')
-    .populate('lastModifiedBy', 'username email');
+    .populate('lastModifiedBy', 'username email')
+    .populate('prodotti.productId', 'nome codice descrizione unita categoria');
 
     if (!rdt) {
       return res.status(404).json({ message: 'RDT non trovato' });
@@ -3683,7 +3691,8 @@ app.put('/api/rdt/:id', authenticateToken, requireAdmin, async (req, res) => {
       { new: true, runValidators: true }
     )
     .populate('createdBy', 'username')
-    .populate('lastModifiedBy', 'username');
+    .populate('lastModifiedBy', 'username')
+    .populate('prodotti.productId', 'nome codice descrizione unita categoria');
 
     if (!rdt) {
       return res.status(404).json({ message: 'RDT non trovato' });
@@ -5767,7 +5776,8 @@ app.get('/api/ordini', authenticateToken, async (req, res) => {
 app.get('/api/ordini/:id', authenticateToken, async (req, res) => {
   try {
     const ordine = await Ordine.findById(req.params.id)
-      .populate('createdBy', 'username email');
+      .populate('createdBy', 'username email')
+      .populate('prodotti.productId', 'nome codice descrizione unita categoria');
     
     if (!ordine) {
       return res.status(404).json({ message: 'Ordine non trovato' });
@@ -5778,6 +5788,9 @@ app.get('/api/ordini/:id', authenticateToken, async (req, res) => {
       numero: ordine.numero,
       prodotti: ordine.prodotti?.map(p => ({
         nome: p.nome,
+        codice: p.productId?.codice || 'NON POPOLATO',
+        descrizione: p.productId?.descrizione || 'NON POPOLATO',
+        productIdType: typeof p.productId,
         quantita: p.quantita,
         quantitaMinima: p.quantitaMinima || 'NON DEFINITA'
       })) || []
@@ -5922,7 +5935,9 @@ app.put('/api/ordini/:id', authenticateToken, requireAdmin, async (req, res) => 
       id,
       req.body,
       { new: true, runValidators: true }
-    ).populate('createdBy', 'username');
+    )
+    .populate('createdBy', 'username')
+    .populate('prodotti.productId', 'nome codice descrizione unita categoria');
     
     if (!ordine) {
       return res.status(404).json({ message: 'Ordine non trovato' });

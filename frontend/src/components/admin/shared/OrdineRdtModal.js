@@ -14,13 +14,31 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useGiacenze } from '../../../hooks/useGiacenze';
+import { useAppContext } from '../../../contexts/AppContext';
 import { apiCall } from '../../../services/api';
 import AggiungiProdottoOrdine from '../AggiungiProdottoOrdine';
 
 const OrdineRdtModal = ({ item, onClose, onSave }) => {
   const { token, setError } = useAuth();
   const { users, assegnazioni } = useGiacenze();
-  
+  const { state } = useAppContext();
+  const colorMode = state.colorMode || 'default';
+
+  // Mappa dei temi con stili inline
+  const themes = {
+    default: 'linear-gradient(to bottom right, rgb(49, 46, 129), rgb(88, 28, 135), rgb(157, 23, 77))',
+    blue: 'linear-gradient(to bottom right, rgb(30, 58, 138), rgb(29, 78, 216), rgb(37, 99, 235))',
+    green: 'linear-gradient(to bottom right, rgb(20, 83, 45), rgb(22, 101, 52), rgb(21, 128, 61))',
+    sunset: 'linear-gradient(to bottom right, rgb(124, 58, 237), rgb(236, 72, 153), rgb(251, 146, 60))',
+    ocean: 'linear-gradient(to bottom right, rgb(13, 148, 136), rgb(6, 182, 212), rgb(14, 165, 233))',
+    dark: 'linear-gradient(to bottom right, rgb(17, 24, 39), rgb(31, 41, 55), rgb(55, 65, 81))'
+  };
+  const bgGradient = themes[colorMode] || themes.default;
+
+  // Debug log
+  console.log('🎨 OrdineRdtModal - colorMode:', colorMode);
+  console.log('🎨 OrdineRdtModal - bgGradient:', bgGradient);
+
   const [formData, setFormData] = useState({
     numero: '',
     cliente: '',
@@ -47,7 +65,10 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
     try {
       const endpoint = item.itemType === 'ordine' ? '/ordini' : '/rdt';
       const response = await apiCall(`${endpoint}/${item._id}`, {}, token);
-      
+
+      console.log('🔍 MODAL: Risposta dal backend:', response);
+      console.log('🔍 MODAL: Prodotti ricevuti:', response.prodotti);
+
       // Aggiorna formData con i nuovi dati
       setFormData({
         numero: response.numero || '',
@@ -215,7 +236,13 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 rounded-2xl border border-white/20 shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div
+        className="rounded-2xl border border-white/20 shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden modal-custom-bg"
+        style={{
+          background: `${bgGradient} !important`,
+          backgroundImage: `${bgGradient} !important`
+        }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <h2 className="text-2xl font-bold text-white flex items-center">
@@ -235,7 +262,7 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className="flex-1 p-6 overflow-y-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Colonna sinistra */}
             <div className="space-y-6">
@@ -537,13 +564,13 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                   </thead>
                   <tbody>
                     {formData.prodotti.map((prodotto, index) => (
-                      <tr key={prodotto.id || prodotto.productId || index} className="border-b border-white/10">
+                      <tr key={prodotto.id || prodotto.productId?._id || prodotto.productId || index} className="border-b border-white/10">
                         <td className="py-3 px-4">
-                          <div className="text-white/70 text-sm">{prodotto.codice || '-'}</div>
+                          <div className="text-white/70 text-sm">{prodotto.productId?.codice || prodotto.codice || '-'}</div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="text-white font-medium">{prodotto.nome}</div>
-                          <div className="text-white/50 text-xs">{prodotto.productId}</div>
+                          <div className="text-white/50 text-xs">{prodotto.productId?.descrizione || '-'}</div>
                         </td>
                         <td className="py-3 px-4 text-center">
                           <div className="text-white bg-white/5 px-3 py-2 rounded-lg">
@@ -597,7 +624,7 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-white/10">
+        <div className="flex-shrink-0 flex items-center justify-between p-6 border-t border-white/10 bg-black/20">
           <div className="text-white/60 text-sm">
             * Campi obbligatori
           </div>
@@ -666,6 +693,11 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
         .glass-action-button:hover {
           background: rgba(255, 255, 255, 0.15);
           box-shadow: 0 4px 16px rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-custom-bg {
+          background: ${bgGradient} !important;
+          background-image: ${bgGradient} !important;
         }
       `}</style>
     </div>

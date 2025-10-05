@@ -839,7 +839,6 @@ const UtilizziManagement = () => {
                     </p>
                   </div>
                 )}
-              )}
             </div>
         </div>
 

@@ -186,20 +186,30 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
     console.log(`🔄 [${timestamp}] popolaTabella chiamata con:`, prodottiEsistenti.length, 'prodotti');
     console.log(`🔄 [${timestamp}] Dettaglio prodotti da popolare:`, prodottiEsistenti);
 
-    const righeEsistenti = prodottiEsistenti.map((prodotto, index) => ({
-      id: `existing-${index}`,
-      productId: prodotto.productId || prodotto._id || '', // ← Usa _id se productId non esiste
-      nome: prodotto.nome || '',
-      searchTerm: prodotto.nome || '',
-      quantitaDisponibile: 0, // Verrà popolata quando si caricano le giacenze
-      quantitaAssegnata: 0,
-      quantitaMinima: prodotto.quantitaMinima || 0, // ← Usa quantitaMinima dal prodotto se esiste
-      quantitaDaAggiungere: prodotto.quantita?.toString() || '',
-      note: prodotto.note || '',
-      isExisting: true, // Flag per identificare prodotti esistenti
-      isEditing: false, // Flag per modalità modifica
-      originalData: prodotto // Backup dei dati originali
-    }));
+    const righeEsistenti = prodottiEsistenti.map((prodotto, index) => {
+      console.log('🔍 Prodotto da mappare:', prodotto);
+      console.log('🔍 productId type:', typeof prodotto.productId);
+      console.log('🔍 productId value:', prodotto.productId);
+      console.log('🔍 productId.codice:', prodotto.productId?.codice);
+      console.log('🔍 productId.descrizione:', prodotto.productId?.descrizione);
+
+      return {
+        id: `existing-${index}`,
+        productId: prodotto.productId?._id || prodotto.productId || prodotto._id || '', // ← Usa _id se productId non esiste
+        nome: prodotto.nome || '',
+        codice: prodotto.productId?.codice || prodotto.codice || '',
+        descrizione: prodotto.productId?.descrizione || prodotto.descrizione || '',
+        searchTerm: prodotto.nome || '',
+        quantitaDisponibile: 0, // Verrà popolata quando si caricano le giacenze
+        quantitaAssegnata: 0,
+        quantitaMinima: prodotto.quantitaMinima || 0, // ← Usa quantitaMinima dal prodotto se esiste
+        quantitaDaAggiungere: prodotto.quantita?.toString() || '',
+        note: prodotto.note || '',
+        isExisting: true, // Flag per identificare prodotti esistenti
+        isEditing: false, // Flag per modalità modifica
+        originalData: prodotto // Backup dei dati originali
+      };
+    });
 
     // Aggiungi automaticamente prodotti critici (sotto soglia) se è un ordine nuovo
     const righeCritiche = [];
@@ -397,9 +407,11 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
             const giacenzaProductId = g.productId?._id || g.productId;
             return giacenzaProductId === valore;
           });
-          
+
           if (prodotto) {
             updated.nome = prodotto.nome;
+            updated.codice = prodotto.codice || '';
+            updated.descrizione = prodotto.descrizione || '';
             updated.searchTerm = prodotto.nome;
             updated.quantitaDisponibile = giacenza?.quantitaDisponibile || 0;
             updated.quantitaAssegnata = giacenza?.quantitaAssegnata || 0;
@@ -813,14 +825,19 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
           tuttiProdotti[index].quantita = parseInt(riga.quantitaDaAggiungere) || 0;
           tuttiProdotti[index].quantitaMinima = parseInt(riga.quantitaMinima) || 0;
           tuttiProdotti[index].note = riga.note || '';
+          tuttiProdotti[index].codice = riga.codice || '';
+          tuttiProdotti[index].descrizione = riga.descrizione || '';
         }
       });
-      
+
       // Aggiungi prodotti nuovi
       prodottiNuovi.forEach(riga => {
+        const prodotto = allProducts?.find(p => p._id === riga.productId);
         tuttiProdotti.push({
           productId: riga.productId,
           nome: riga.nome,
+          codice: prodotto?.codice || riga.codice || '',
+          descrizione: prodotto?.descrizione || riga.descrizione || '',
           quantita: parseInt(riga.quantitaDaAggiungere) || 0,
           quantitaMinima: parseInt(riga.quantitaMinima) || 0,
           note: riga.note || ''
@@ -869,7 +886,7 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
 
   return (
     <div className={`fixed inset-0 z-50 bg-black/50 backdrop-blur-sm ${modalAnimation.backdropClass}`}>
-      <div className={`glass-modal w-full h-full flex flex-col ${modalAnimation.modalClass}`}>
+      <div className={`glass-modal w-full flex flex-col ${modalAnimation.modalClass}`} style={{ height: 'calc(100vh - 64px)', marginTop: '64px' }}>
         {/* Header */}
         <div className="glass-modal-header p-6 border-b border-white/20 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -926,7 +943,7 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                           <div className="text-sm text-white/70">
                             {riga.isExisting
                               ? (riga.codice || '-')
-                              : (riga.prodottoId ? (allProducts?.find(p => p._id === riga.prodottoId)?.codice || '-') : '-')
+                              : (riga.productId ? (allProducts?.find(p => p._id === riga.productId)?.codice || '-') : '-')
                             }
                           </div>
                         </td>
@@ -937,7 +954,7 @@ const AggiungiProdottoOrdine = ({ ordine, onClose, onUpdate }) => {
                             // Prodotto esistente - solo visualizzazione nome
                             <div>
                               <div className="text-white font-medium">{riga.nome}</div>
-                              <div className="text-white/50 text-xs">{riga.productId}</div>
+                              <div className="text-white/50 text-xs">{riga.descrizione || '-'}</div>
                             </div>
                           ) : (
                             // Prodotto nuovo - input con ricerca

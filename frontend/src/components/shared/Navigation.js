@@ -94,16 +94,16 @@ const Navigation = ({ title = "Giacenze Personali", showBackToDashboard = false,
                     <div className="relative w-6 h-6">
                       {/* Burger Lines */}
                       <div className={`absolute w-6 h-0.5 bg-current transition-all duration-300 ease-in-out ${
-                        sidebarState.isSidebarOpen 
-                          ? 'top-3 rotate-45' 
+                        sidebarState.isSidebarOpen
+                          ? 'top-3 rotate-45'
                           : 'top-1'
                       }`}></div>
                       <div className={`absolute w-6 h-0.5 bg-current transition-all duration-300 ease-in-out top-2.5 ${
                         sidebarState.isSidebarOpen ? 'opacity-0' : 'opacity-100'
                       }`}></div>
                       <div className={`absolute w-6 h-0.5 bg-current transition-all duration-300 ease-in-out ${
-                        sidebarState.isSidebarOpen 
-                          ? 'top-3 -rotate-45' 
+                        sidebarState.isSidebarOpen
+                          ? 'top-3 -rotate-45'
                           : 'top-4'
                       }`}></div>
                     </div>

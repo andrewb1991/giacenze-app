@@ -473,7 +473,7 @@ const ProdottiManagement = () => {
                   <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4" />
                   <input
                     type="text"
-                    placeholder="Nome o descrizione..."
+                    placeholder="Codice, nome o descrizione..."
                     className="glass-input-compact w-full pl-8 pr-8 py-1.5 rounded-lg bg-transparent border border-white/20 outline-none text-white placeholder-white/50 text-sm focus:border-blue-400/50 transition-colors"
                     value={filters.searchTerm}
                     onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}

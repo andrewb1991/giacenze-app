@@ -798,12 +798,24 @@ const AssignmentsManagement = () => {
     if (existingModal) {
       existingModal.remove();
     }
-    
+
+    // Ottieni il tema corrente
+    const colorMode = state.colorMode || 'default';
+    const themes = {
+      default: 'linear-gradient(to bottom right, rgb(49, 46, 129), rgb(88, 28, 135), rgb(157, 23, 77))',
+      blue: 'linear-gradient(to bottom right, rgb(30, 58, 138), rgb(29, 78, 216), rgb(37, 99, 235))',
+      green: 'linear-gradient(to bottom right, rgb(20, 83, 45), rgb(22, 101, 52), rgb(21, 128, 61))',
+      sunset: 'linear-gradient(to bottom right, rgb(124, 58, 237), rgb(236, 72, 153), rgb(251, 146, 60))',
+      ocean: 'linear-gradient(to bottom right, rgb(13, 148, 136), rgb(6, 182, 212), rgb(14, 165, 233))',
+      dark: 'linear-gradient(to bottom right, rgb(17, 24, 39), rgb(31, 41, 55), rgb(55, 65, 81))'
+    };
+    const bgGradient = themes[colorMode] || themes.default;
+
     const modalDiv = document.createElement('div');
     modalDiv.id = 'real-modal';
     modalDiv.style.cssText = `
       position: fixed;
-      top: 0;
+      top: 64px;
       left: 0;
       right: 0;
       bottom: 0;
@@ -819,11 +831,15 @@ const AssignmentsManagement = () => {
       <div class="glass-card-large" style="
         max-width: 900px;
         width: 95%;
-        max-height: 90vh;
+        max-height: calc(90vh - 64px);
         overflow-y: auto;
         border-radius: 24px;
         padding: 2rem;
         margin: 1rem;
+        background: ${bgGradient};
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
       ">
         <!-- Header del modal -->
         <div class="glass-card-header" style="

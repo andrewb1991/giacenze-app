@@ -764,10 +764,52 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
   };
 
   // Gestione modale aggiungi prodotti
-  const openAggiungiProdotti = (item) => {
-    console.log('🔓 Apertura modal AggiungiProdotti per:', item);
-    setSelectedOrderForProducts(item);
-    setShowAggiungiProdotti(true);
+  const openAggiungiProdotti = async (item) => {
+    try {
+      console.log('🔓 Apertura modal AggiungiProdotti per:', item);
+
+      // Ricarica i dati completi dell'ordine/RDT dal backend con populate
+      const endpoint = item.itemType === 'ordine' ? '/ordini' : '/rdt';
+      console.log('📡 Chiamata API:', `${endpoint}/${item._id}`);
+
+      const fullItemData = await apiCall(`${endpoint}/${item._id}`, {}, token);
+
+      console.log('🌐 Risposta API completa:', fullItemData);
+      console.log('📦 Dettaglio prodotti dalla risposta:', fullItemData.prodotti);
+
+      // Log dettagliato di ogni prodotto
+      if (fullItemData.prodotti && fullItemData.prodotti.length > 0) {
+        fullItemData.prodotti.forEach((prod, idx) => {
+          console.log(`📦 Prodotto[${idx}]:`, {
+            nome: prod.nome,
+            productId: prod.productId,
+            productId_type: typeof prod.productId,
+            productId_codice: prod.productId?.codice,
+            productId_descrizione: prod.productId?.descrizione,
+            codice_direct: prod.codice,
+            descrizione_direct: prod.descrizione
+          });
+        });
+      }
+
+      // Combina i dati originali con quelli aggiornati dal backend
+      const completeItem = {
+        ...item,
+        ...fullItemData,
+        itemType: item.itemType // Mantieni il tipo dall'item originale
+      };
+
+      console.log('📋 Dati completi ordine per AggiungiProdotti:', completeItem);
+      console.log('📋 Prodotti con populate:', completeItem.prodotti);
+
+      setSelectedOrderForProducts(completeItem);
+      setShowAggiungiProdotti(true);
+    } catch (err) {
+      console.error('❌ Errore caricamento dati completi:', err);
+      // Fallback: usa i dati originali
+      setSelectedOrderForProducts(item);
+      setShowAggiungiProdotti(true);
+    }
   };
 
   const closeAggiungiProdotti = () => {

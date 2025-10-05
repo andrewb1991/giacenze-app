@@ -1,6 +1,6 @@
 // components/reports/ReportsPage.js
 import React, { useEffect, useState } from 'react';
-import { Download, FileText, Calendar, MapPin, Truck, User, Building2 } from 'lucide-react';
+import { Download, FileText, Calendar, MapPin, Truck, User, Building2, ArrowLeft, Package2, LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
@@ -91,7 +91,39 @@ const ReportsPage = () => {
       </div>
 
       {/* Navigation */}
-      <Navigation title="Report Giacenze" />
+      <nav className="relative z-10 glass-nav border-b border-white/10">
+        <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setCurrentPage('dashboard')}
+                className="glass-button p-2 rounded-xl text-white hover:scale-105 transition-all duration-300"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="glass-icon p-2 rounded-xl">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-xl font-semibold text-white">Report Giacenze</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="glass-user-info px-3 py-2 rounded-xl">
+                <span className="text-sm text-white/90">
+                  {user?.username} ({user?.role === 'admin' ? 'Amministratore' : 'Operatore'})
+                </span>
+              </div>
+              {user?.role === 'admin' && (
+                <button
+                  onClick={() => setCurrentPage('admin')}
+                  className="glass-button-admin px-3 py-1 rounded-xl text-white hover:scale-105 transition-all duration-300"
+                >
+                  Vista Admin
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
 
       <div className="relative z-10 w-full mx-auto pt-20 pb-6 px-4 sm:px-6 lg:px-8">
         <div className="glass-card p-6 rounded-2xl">
@@ -257,6 +289,36 @@ const ReportsPage = () => {
 
       {/* Custom Styles */}
       <style jsx>{`
+        .glass-nav {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 50;
+        }
+
+        .glass-button {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-button-admin {
+          background: rgba(59, 130, 246, 0.2);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .glass-user-info {
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
         .glass-card {
           background: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(20px);
