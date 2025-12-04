@@ -2644,11 +2644,12 @@ app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
 // POST - Crea nuova assegnazione con campi aggiornati
 app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { 
-      userId, 
-      poloId, 
-      settimanaId, 
-      mezzoId, 
+    const {
+      userId,
+      poloId,
+      settimanaId,
+      settimanaFineId,  // ✅ CAMPO PER RANGE SETTIMANE
+      mezzoId,
       postazioneId,
       ordine,    // ✅ NUOVO CAMPO
       rdt        // ✅ NUOVO CAMPO
@@ -2716,6 +2717,7 @@ app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) 
       poloId,
       mezzoId,
       settimanaId,
+      settimanaFineId: settimanaFineId || null,  // ✅ RANGE SETTIMANE
       postazioneId,
       ordine: ordine?.trim() || null,  // ✅ NUOVO CAMPO
       rdt: rdt?.trim() || null,        // ✅ NUOVO CAMPO
@@ -2729,6 +2731,7 @@ app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) 
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('settimanaFineId', 'numero anno dataInizio dataFine')
       .populate('postazioneId', 'nome');
     
     res.status(201).json({
