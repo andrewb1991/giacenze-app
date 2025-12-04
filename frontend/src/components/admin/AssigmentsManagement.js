@@ -33,7 +33,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
 import { apiCall } from '../../services/api';
-import { formatWeek, sortAssignmentsByCurrentWeekFirst, sortWeeksChronologically, getCurrentWeekIndex, getCurrentWeekFromList, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
+import { formatWeek, formatWeekRange, sortAssignmentsByCurrentWeekFirst, sortWeeksChronologically, getCurrentWeekIndex, getCurrentWeekFromList, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
 import { listenToOrdiniRdtUpdates, triggerOrdiniRdtUpdate } from '../../utils/events';
 // import OrdineRdtModal from './shared/OrdineRdtModal'; // Non più necessario - usiamo DOM puro
 
@@ -1317,6 +1317,40 @@ const AssignmentsManagement = () => {
                   })}
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                <CalendarDays className="w-4 h-4 inline mr-2" />
+                Settimana Fine (opzionale)
+              </label>
+              <div className="glass-input-container">
+                <select
+                  className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white"
+                  value={assegnazioneForm.settimanaFineId || ''}
+                  onChange={(e) => updateAssegnazioneForm({ settimanaFineId: e.target.value || null })}
+                >
+                  <option value="" className="bg-gray-800">Nessuna (singola settimana)</option>
+                  {sortedSettimane
+                    .filter(s => {
+                      // Mostra solo settimane successive o uguali a settimanaId
+                      if (!assegnazioneForm.settimanaId) return false;
+                      const inizioWeek = settimane.find(w => w._id === assegnazioneForm.settimanaId);
+                      if (!inizioWeek) return false;
+                      return (s.anno > inizioWeek.anno) ||
+                             (s.anno === inizioWeek.anno && s.numero >= inizioWeek.numero);
+                    })
+                    .map((settimana) => (
+                      <option key={settimana._id} value={settimana._id} className="bg-gray-800">
+                        {formatWeek(settimana)}
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+              <p className="text-xs text-white/50 mt-1">
+                Lascia vuoto per assegnazione di una singola settimana
+              </p>
             </div>
 
           </div>

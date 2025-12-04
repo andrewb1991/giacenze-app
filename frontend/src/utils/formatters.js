@@ -35,6 +35,55 @@ export const formatWeek = (settimana) => {
   }
 };
 
+// Formatter per range di settimane (supporta sia singola settimana che range)
+export const formatWeekRange = (settimanaInizio, settimanaFine) => {
+  // Se non c'è settimana inizio, errore
+  if (!settimanaInizio) {
+    return 'Settimana non disponibile';
+  }
+
+  // Se non c'è settimana fine, mostra solo la settimana inizio (singola settimana)
+  if (!settimanaFine) {
+    return formatWeek(settimanaInizio);
+  }
+
+  // Valida settimana fine
+  if (!settimanaFine.numero || !settimanaFine.anno) {
+    return formatWeek(settimanaInizio);
+  }
+
+  // Se le settimane sono uguali, mostra solo una
+  if (settimanaInizio._id === settimanaFine._id ||
+      (settimanaInizio.numero === settimanaFine.numero &&
+       settimanaInizio.anno === settimanaFine.anno)) {
+    return formatWeek(settimanaInizio);
+  }
+
+  // Formatta range di settimane
+  try {
+    // Formato compatto: mostra solo data inizio prima settimana e data fine ultima settimana
+    const startDate = new Date(settimanaInizio.dataInizio);
+    const endDate = new Date(settimanaFine.dataFine);
+
+    if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+      const formatDate = (date) => {
+        return date.toLocaleDateString('it-IT', {
+          day: '2-digit',
+          month: '2-digit'
+        });
+      };
+
+      return `${formatDate(startDate)} - ${formatDate(endDate)} ${settimanaFine.anno} (Sett. ${settimanaInizio.numero}-${settimanaFine.numero})`;
+    }
+
+    // Fallback se le date non sono valide
+    return `Settimana ${settimanaInizio.numero}/${settimanaInizio.anno} - ${settimanaFine.numero}/${settimanaFine.anno}`;
+  } catch (error) {
+    console.warn('Errore formattazione range settimane:', error);
+    return `Settimana ${settimanaInizio.numero}/${settimanaInizio.anno} - ${settimanaFine.numero}/${settimanaFine.anno}`;
+  }
+};
+
 export const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('it-IT');
 };

@@ -221,14 +221,20 @@ const assegnazioneSchema = new mongoose.Schema({
     ref: 'Mezzo', 
     required: true 
   },
-  settimanaId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Settimana', 
-    required: true 
+  settimanaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Settimana',
+    required: true
   },
-  postazioneId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Postazione' 
+  // Campo per range di settimane (opzionale)
+  settimanaFineId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Settimana',
+    default: null  // null = singola settimana, non null = range di settimane
+  },
+  postazioneId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Postazione'
   },
   // ✅ NUOVI CAMPI AGGIUNTI
   ordine: { 
@@ -2594,6 +2600,7 @@ app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('settimanaFineId', 'numero anno dataInizio dataFine')
       .populate('postazioneId', 'nome')
       .populate('ordine', 'numero cliente dataConsegna priorita stato')
       .populate('rdt', 'numero cliente dataConsegna priorita stato')
@@ -2830,6 +2837,7 @@ app.get('/api/assegnazioni/search/ordine/:ordine', authenticateToken, async (req
     .populate('poloId', 'nome')
     .populate('mezzoId', 'nome')
     .populate('settimanaId', 'numero anno dataInizio dataFine')
+    .populate('settimanaFineId', 'numero anno dataInizio dataFine')
     .populate('postazioneId', 'nome');
 
     res.json({
@@ -2856,6 +2864,7 @@ app.get('/api/assegnazioni/search/rdt/:rdt', authenticateToken, async (req, res)
     .populate('poloId', 'nome')
     .populate('mezzoId', 'nome')
     .populate('settimanaId', 'numero anno dataInizio dataFine')
+    .populate('settimanaFineId', 'numero anno dataInizio dataFine')
     .populate('postazioneId', 'nome');
 
     res.json({
@@ -2965,13 +2974,14 @@ app.get('/api/assegnazioni/stats', authenticateToken, async (req, res) => {
 
 app.get('/api/assegnazioni/my', authenticateToken, async (req, res) => {
   try {
-    const assegnazioni = await Assegnazione.find({ 
-      userId: req.user.userId, 
-      attiva: true 
+    const assegnazioni = await Assegnazione.find({
+      userId: req.user.userId,
+      attiva: true
     })
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('settimanaFineId', 'numero anno dataInizio dataFine')
       .sort({ 'settimanaId.anno': -1, 'settimanaId.numero': -1 });
     res.json(assegnazioni);
   } catch (error) {
