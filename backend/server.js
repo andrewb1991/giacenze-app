@@ -238,22 +238,27 @@ const assegnazioneSchema = new mongoose.Schema({
     ref: 'Postazione'
   },
   // ✅ NUOVI CAMPI AGGIUNTI
-  ordine: { 
+  ordine: {
     type: String,
     default: null
   },
-  rdt: { 
+  rdt: {
     type: String,
     default: null
+  },
+  // Campo per collegare assegnazioni dello stesso gruppo (2 operatori sullo stesso polo/settimana)
+  gruppoId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null  // null = assegnazione singola, non null = parte di un gruppo
   },
   // CAMPI ESISTENTI
-  attiva: { 
-    type: Boolean, 
-    default: true 
+  attiva: {
+    type: Boolean,
+    default: true
   },
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, { 
   timestamps: true 
@@ -2641,11 +2646,12 @@ app.get('/api/assegnazioni', authenticateToken, async (req, res) => {
   }
 });
 
-// POST - Crea nuova assegnazione con campi aggiornati
+// POST - Crea nuova assegnazione con campi aggiornati (supporta 2 operatori)
 app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const {
       userId,
+      userId2,      // ✅ OPERATORE 2 (OPZIONALE)
       poloId,
       settimanaId,
       settimanaFineId,  // ✅ CAMPO PER RANGE SETTIMANE
@@ -2655,19 +2661,36 @@ app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) 
       rdt        // ✅ NUOVO CAMPO
     } = req.body;
 
-    // Validazioni esistenti
-    const existingUserAssignment = await Assegnazione.findOne({
-      userId, settimanaId, attiva: true
-    });
-    if (existingUserAssignment) {
-      return res.status(400).json({ message: 'Operatore già assegnato per questa settimana' });
+    // ✅ VALIDAZIONE: userId2 deve essere diverso da userId
+    if (userId2 && userId2 === userId) {
+      return res.status(400).json({ message: 'Gli operatori devono essere diversi' });
     }
 
+    // Array di userId da processare
+    const userIds = [userId];
+    if (userId2) userIds.push(userId2);
+
+    // ✅ VALIDAZIONI per ogni operatore
+    for (const uid of userIds) {
+      const existingUserAssignment = await Assegnazione.findOne({
+        userId: uid, settimanaId, attiva: true
+      });
+      if (existingUserAssignment) {
+        const user = await User.findById(uid);
+        return res.status(400).json({
+          message: `Operatore ${user.username} già assegnato per questa settimana`
+        });
+      }
+    }
+
+    // ✅ VALIDAZIONE: max 2 operatori per polo/settimana (considerando i nuovi)
     const existingPoloAssignments = await Assegnazione.find({
       poloId, settimanaId, attiva: true
     });
-    if (existingPoloAssignments.length >= 2) {
-      return res.status(400).json({ message: 'Polo al completo (max 2 operatori)' });
+    if (existingPoloAssignments.length + userIds.length > 2) {
+      return res.status(400).json({
+        message: `Polo al completo (max 2 operatori). Posti disponibili: ${2 - existingPoloAssignments.length}`
+      });
     }
 
     // ✅ VALIDAZIONE OPZIONALE: Controllo unicità ordine (se fornito)
@@ -2677,7 +2700,7 @@ app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) 
         attiva: true
       });
       if (existingOrdine) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: `Ordine "${ordine}" già assegnato ad un altro operatore`,
           conflictType: 'ORDINE_ALREADY_ASSIGNED'
         });
@@ -2691,53 +2714,52 @@ app.post('/api/assegnazioni', authenticateToken, requireAdmin, async (req, res) 
         attiva: true
       });
       if (existingRdt) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: `RDT "${rdt}" già assegnato ad un altro operatore`,
           conflictType: 'RDT_ALREADY_ASSIGNED'
         });
       }
     }
 
-    // Informazioni per mezzi condivisi
-    let sharedVehicleInfo = null;
-    if (existingPoloAssignments.length === 1) {
-      const existingMezzo = existingPoloAssignments[0].mezzoId;
-      if (existingMezzo.toString() === mezzoId) {
-        sharedVehicleInfo = {
-          shared: true,
-          sharedWith: existingPoloAssignments[0].userId.username,
-          vehicleName: (await Mezzo.findById(mezzoId)).nome
-        };
-      }
+    // ✅ GENERA gruppoId se ci sono 2 operatori
+    const gruppoId = userId2 ? new mongoose.Types.ObjectId() : null;
+
+    // ✅ CREA ASSEGNAZIONI (1 o 2 in base a userId2)
+    const assegnazioniCreate = [];
+
+    for (const uid of userIds) {
+      const assegnazione = new Assegnazione({
+        userId: uid,
+        poloId,
+        mezzoId,
+        settimanaId,
+        settimanaFineId: settimanaFineId || null,
+        postazioneId,
+        ordine: ordine?.trim() || null,
+        rdt: rdt?.trim() || null,
+        gruppoId,  // ✅ STESSO gruppoId per entrambe
+        createdBy: req.user.userId
+      });
+
+      await assegnazione.save();
+
+      const populated = await Assegnazione.findById(assegnazione._id)
+        .populate('userId', 'username email')
+        .populate('poloId', 'nome')
+        .populate('mezzoId', 'nome')
+        .populate('settimanaId', 'numero anno dataInizio dataFine')
+        .populate('settimanaFineId', 'numero anno dataInizio dataFine')
+        .populate('postazioneId', 'nome');
+
+      assegnazioniCreate.push(populated);
     }
 
-    // ✅ CREA ASSEGNAZIONE con nuovi campi
-    const assegnazione = new Assegnazione({
-      userId,
-      poloId,
-      mezzoId,
-      settimanaId,
-      settimanaFineId: settimanaFineId || null,  // ✅ RANGE SETTIMANE
-      postazioneId,
-      ordine: ordine?.trim() || null,  // ✅ NUOVO CAMPO
-      rdt: rdt?.trim() || null,        // ✅ NUOVO CAMPO
-      createdBy: req.user.userId
-    });
-    
-    await assegnazione.save();
-    
-    const populated = await Assegnazione.findById(assegnazione._id)
-      .populate('userId', 'username email')
-      .populate('poloId', 'nome')
-      .populate('mezzoId', 'nome')
-      .populate('settimanaId', 'numero anno dataInizio dataFine')
-      .populate('settimanaFineId', 'numero anno dataInizio dataFine')
-      .populate('postazioneId', 'nome');
-    
     res.status(201).json({
-      message: 'Assegnazione creata con successo',
-      assegnazione: populated,
-      sharedVehicleInfo
+      message: userId2
+        ? `Assegnazioni create per 2 operatori (gruppo condiviso)`
+        : 'Assegnazione creata con successo',
+      assegnazioni: assegnazioniCreate,
+      gruppoId: gruppoId?.toString()
     });
   } catch (error) {
     console.error('Errore creazione assegnazione:', error);
