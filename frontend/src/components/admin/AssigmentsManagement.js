@@ -2048,10 +2048,7 @@ const AssignmentsManagement = () => {
                         ) : (
                           <div>
                             <div className="text-sm font-medium text-white">
-                              Settimana {assegnazione.settimanaId?.numero}/{assegnazione.settimanaId?.anno}
-                            </div>
-                            <div className="text-sm text-white/50">
-                              {new Date(assegnazione.settimanaId?.dataInizio).toLocaleDateString('it-IT')} - {new Date(assegnazione.settimanaId?.dataFine).toLocaleDateString('it-IT')}
+                              {formatWeekRange(assegnazione.settimanaId, assegnazione.settimanaFineId)}
                             </div>
                           </div>
                         )}
