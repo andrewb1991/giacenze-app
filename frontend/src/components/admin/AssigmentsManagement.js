@@ -1876,6 +1876,17 @@ const AssignmentsManagement = () => {
                     </th>
                     <th
                       className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
+                      onClick={() => handleSort('settimana')}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>Settimana</span>
+                        {sortConfig.field === 'settimana' && (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
                       onClick={() => handleSort('polo')}
                     >
                       <div className="flex items-center gap-2">
@@ -1915,17 +1926,6 @@ const AssignmentsManagement = () => {
                       <div className="flex items-center gap-2">
                         <span>RDT</span>
                         {sortConfig.field === 'rdt' && (
-                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                        )}
-                      </div>
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
-                      onClick={() => handleSort('settimana')}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>Settimana</span>
-                        {sortConfig.field === 'settimana' && (
                           sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                         )}
                       </div>
@@ -1984,6 +1984,40 @@ const AssignmentsManagement = () => {
                         ) : (
                           <div className="text-sm text-white/30 italic">
                             -
+                          </div>
+                        )}
+                      </td>
+
+                      {/* ✅ SETTIMANA - con modifica inline */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {editAssignmentId === assegnazione._id ? (
+                          <div className="glass-input-container">
+                            <select
+                              className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
+                              value={editForm.settimanaId}
+                              onChange={(e) => updateEditForm({ settimanaId: e.target.value })}
+                            >
+                              <option value="" className="bg-gray-800">Seleziona Settimana</option>
+                              {sortedSettimane.filter(s => {
+                                // Mostra solo settimane dove l'operatore selezionato ha assegnazioni attive
+                                if (!editForm.userId) return true; // Se nessun operatore selezionato, mostra tutte
+                                return assegnazioni.some(a =>
+                                  a.userId?._id === editForm.userId &&
+                                  a.settimanaId?._id === s._id &&
+                                  a.attiva
+                                );
+                              }).map(s => (
+                                <option key={s._id} value={s._id} className="bg-gray-800">
+                                  {formatWeek(s)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="text-sm font-medium text-white">
+                              {formatWeekRange(assegnazione.settimanaId, assegnazione.settimanaFineId)}
+                            </div>
                           </div>
                         )}
                       </td>
@@ -2172,41 +2206,7 @@ const AssignmentsManagement = () => {
                           )}
                         </div>
                       </td>
-                      
-                      {/* ✅ SETTIMANA - con modifica inline */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editAssignmentId === assegnazione._id ? (
-                          <div className="glass-input-container">
-                            <select
-                              className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
-                              value={editForm.settimanaId}
-                              onChange={(e) => updateEditForm({ settimanaId: e.target.value })}
-                            >
-                              <option value="" className="bg-gray-800">Seleziona Settimana</option>
-                              {sortedSettimane.filter(s => {
-                                // Mostra solo settimane dove l'operatore selezionato ha assegnazioni attive
-                                if (!editForm.userId) return true; // Se nessun operatore selezionato, mostra tutte
-                                return assegnazioni.some(a => 
-                                  a.userId?._id === editForm.userId && 
-                                  a.settimanaId?._id === s._id && 
-                                  a.attiva
-                                );
-                              }).map(s => (
-                                <option key={s._id} value={s._id} className="bg-gray-800">
-                                  {formatWeek(s)}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="text-sm font-medium text-white">
-                              {formatWeekRange(assegnazione.settimanaId, assegnazione.settimanaFineId)}
-                            </div>
-                          </div>
-                        )}
-                      </td>
-                      
+
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`glass-status-badge inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
                           assegnazione.attiva 
