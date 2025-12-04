@@ -206,6 +206,9 @@ const AssignmentsManagement = () => {
         rdt: assegnazioneForm.rdt?.trim() || null           // ✅ NUOVO CAMPO
       };
 
+      console.log('🔍 DEBUG - assegnazioneForm prima dell\'invio:', assegnazioneForm);
+      console.log('🔍 DEBUG - assegnazioneData da inviare:', assegnazioneData);
+
       const response = await apiCall('/assegnazioni', {
         method: 'POST',
         body: JSON.stringify(assegnazioneData)
@@ -1344,7 +1347,11 @@ const AssignmentsManagement = () => {
                 <select
                   className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white"
                   value={assegnazioneForm.settimanaFineId || ''}
-                  onChange={(e) => updateAssegnazioneForm({ settimanaFineId: e.target.value || null })}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? null : e.target.value;
+                    console.log('settimanaFineId onChange:', value);
+                    updateAssegnazioneForm({ settimanaFineId: value });
+                  }}
                 >
                   <option value="" className="bg-gray-800">Nessuna (singola settimana)</option>
                   {sortedSettimane
