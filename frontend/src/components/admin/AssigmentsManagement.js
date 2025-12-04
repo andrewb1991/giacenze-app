@@ -672,7 +672,36 @@ const AssignmentsManagement = () => {
     });
   };
 
-  // Applica filtri locali - ✅ AGGIORNATO per includere ordine e rdt nella ricerca
+  // ✅ FUNZIONE PER RAGGRUPPARE ASSEGNAZIONI con stesso polo/settimana
+  const groupAssegnazioni = (assegnazioni) => {
+    const grouped = new Map();
+    const result = [];
+
+    assegnazioni.forEach(assegnazione => {
+      // Crea chiave univoca: polo + settimana + settimanaFine
+      const key = `${assegnazione.poloId?._id || ''}_${assegnazione.settimanaId?._id || ''}_${assegnazione.settimanaFineId?._id || ''}`;
+
+      if (!grouped.has(key)) {
+        // Prima assegnazione di questo gruppo
+        grouped.set(key, {
+          ...assegnazione,
+          operatore2: null  // Placeholder per il secondo operatore
+        });
+      } else {
+        // Seconda assegnazione dello stesso gruppo - aggiungi come operatore2
+        const existing = grouped.get(key);
+        existing.operatore2 = assegnazione.userId;  // Salva il secondo operatore
+        existing._id2 = assegnazione._id;  // Salva anche l'ID della seconda assegnazione per eliminazione
+      }
+    });
+
+    // Converti Map in array
+    grouped.forEach(value => result.push(value));
+
+    return result;
+  };
+
+  // Applica filtri locali - ✅ AGGIORNATO per includere ordine e rdt nella ricerca + raggruppamento
   useEffect(() => {
     let filtered = assegnazioni;
 
@@ -697,6 +726,9 @@ const AssignmentsManagement = () => {
 
     // Applica sorting
     filtered = sortAssegnazioni(filtered);
+
+    // ✅ RAGGRUPPA assegnazioni con stesso polo/settimana
+    filtered = groupAssegnazioni(filtered);
 
     setFilteredAssegnazioni(filtered);
   }, [assegnazioni, filters.searchTerm, sortConfig]);
@@ -1118,35 +1150,75 @@ const AssignmentsManagement = () => {
     closeOrdineRdtModal();
   };
 
-  // Soft delete (disattiva)
+  // Soft delete (disattiva) - ✅ AGGIORNATO per gestire assegnazioni collegate
   const handleSoftDelete = async (assegnazioneId) => {
-    if (!window.confirm('Sei sicuro di voler disattivare questa assegnazione?')) return;
-    
+    // Trova l'assegnazione corrente per vedere se ha un operatore2
+    const assegnazione = filteredAssegnazioni.find(a => a._id === assegnazioneId);
+    const hasOperatore2 = assegnazione?.operatore2 && assegnazione?._id2;
+
+    const message = hasOperatore2
+      ? `Questa assegnazione ha 2 operatori collegati. Vuoi disattivare entrambe le assegnazioni?`
+      : 'Sei sicuro di voler disattivare questa assegnazione?';
+
+    if (!window.confirm(message)) return;
+
     try {
       setError('');
+
+      // Disattiva la prima assegnazione
       await apiCall(`/assegnazioni/${assegnazioneId}`, { method: 'DELETE' }, token);
+
+      // Se ha operatore2, disattiva anche la seconda assegnazione
+      if (hasOperatore2) {
+        await apiCall(`/assegnazioni/${assegnazione._id2}`, { method: 'DELETE' }, token);
+      }
+
       await loadAssegnazioni();
       await loadStats(); // ✅ RICARICA STATISTICHE
-      setError('Assegnazione disattivata con successo');
+
+      const successMessage = hasOperatore2
+        ? 'Entrambe le assegnazioni disattivate con successo'
+        : 'Assegnazione disattivata con successo';
+
+      setError(successMessage);
     } catch (err) {
       setError('Errore nella disattivazione: ' + err.message);
     }
   };
 
-  // Hard delete (eliminazione definitiva)
+  // Hard delete (eliminazione definitiva) - ✅ AGGIORNATO per gestire assegnazioni collegate
   const handleHardDelete = async (assegnazioneId) => {
-    const confirmed = window.confirm(
-      '⚠️ ATTENZIONE: Questa azione eliminerà DEFINITIVAMENTE l\'assegnazione e ripristinerà tutti gli utilizzi correlati. Questa operazione NON può essere annullata. Sei sicuro?'
-    );
-    
-    if (!confirmed) return;
-    
+    // Trova l'assegnazione corrente per vedere se ha un operatore2
+    const assegnazione = filteredAssegnazioni.find(a => a._id === assegnazioneId);
+    const hasOperatore2 = assegnazione?.operatore2 && assegnazione?._id2;
+
+    const message = hasOperatore2
+      ? '⚠️ ATTENZIONE: Questa assegnazione ha 2 operatori collegati. Questa azione eliminerà DEFINITIVAMENTE ENTRAMBE le assegnazioni e ripristinerà tutti gli utilizzi correlati. Questa operazione NON può essere annullata. Sei sicuro?'
+      : '⚠️ ATTENZIONE: Questa azione eliminerà DEFINITIVAMENTE l\'assegnazione e ripristinerà tutti gli utilizzi correlati. Questa operazione NON può essere annullata. Sei sicuro?';
+
+    if (!window.confirm(message)) return;
+
     try {
       setError('');
-      const response = await apiCall(`/assegnazioni/${assegnazioneId}/permanent`, { method: 'DELETE' }, token);
+
+      // Elimina la prima assegnazione
+      const response1 = await apiCall(`/assegnazioni/${assegnazioneId}/permanent`, { method: 'DELETE' }, token);
+      let totalUtilizzi = response1.utilizziRipristinati || 0;
+
+      // Se ha operatore2, elimina anche la seconda assegnazione
+      if (hasOperatore2) {
+        const response2 = await apiCall(`/assegnazioni/${assegnazione._id2}/permanent`, { method: 'DELETE' }, token);
+        totalUtilizzi += response2.utilizziRipristinati || 0;
+      }
+
       await loadAssegnazioni();
       await loadStats(); // ✅ RICARICA STATISTICHE
-      setError(`Eliminazione completata: ${response.utilizziRipristinati} utilizzi ripristinati`);
+
+      const successMessage = hasOperatore2
+        ? `Eliminazione completata: ${totalUtilizzi} utilizzi totali ripristinati (entrambe le assegnazioni)`
+        : `Eliminazione completata: ${totalUtilizzi} utilizzi ripristinati`;
+
+      setError(successMessage);
     } catch (err) {
       setError('Errore nell\'eliminazione definitiva: ' + err.message);
     }
@@ -1248,7 +1320,7 @@ const AssignmentsManagement = () => {
             <div>
               <label className="block text-sm font-medium text-white/80 mb-2">
                 <UserCheck className="w-4 h-4 inline mr-2" />
-                Utente *
+                Operatore 1 *
               </label>
               <div className="glass-input-container">
                 <select
@@ -1256,7 +1328,7 @@ const AssignmentsManagement = () => {
                   value={assegnazioneForm.userId}
                   onChange={(e) => updateAssegnazioneForm({ userId: e.target.value })}
                 >
-                  <option value="" className="bg-gray-800">Seleziona utente</option>
+                  <option value="" className="bg-gray-800">Seleziona operatore 1</option>
                   {users.filter(u => u.role === 'user').map(user => (
                     <option key={user._id} value={user._id} className="bg-gray-800">
                       {user.username}
@@ -1264,6 +1336,36 @@ const AssignmentsManagement = () => {
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                <UserCheck className="w-4 h-4 inline mr-2" />
+                Operatore 2 (opzionale)
+              </label>
+              <div className="glass-input-container">
+                <select
+                  className="glass-input w-full p-4 rounded-2xl bg-transparent border-0 outline-none text-white"
+                  value={assegnazioneForm.userId2 || ''}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : e.target.value;
+                    updateAssegnazioneForm({ userId2: value });
+                  }}
+                >
+                  <option value="" className="bg-gray-800">Nessuno (solo operatore 1)</option>
+                  {users
+                    .filter(u => u.role === 'user' && u._id !== assegnazioneForm.userId)
+                    .map(user => (
+                      <option key={user._id} value={user._id} className="bg-gray-800">
+                        {user.username}
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+              <p className="text-xs text-white/50 mt-1">
+                Crea 2 assegnazioni collegate per lo stesso polo/settimana
+              </p>
             </div>
 
             <div>
@@ -1761,10 +1863,15 @@ const AssignmentsManagement = () => {
                       onClick={() => handleSort('operatore')}
                     >
                       <div className="flex items-center gap-2">
-                        <span>Operatore</span>
+                        <span>Operatore 1</span>
                         {sortConfig.field === 'operatore' && (
                           sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                         )}
+                      </div>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <span>Operatore 2</span>
                       </div>
                     </th>
                     <th
@@ -1857,7 +1964,30 @@ const AssignmentsManagement = () => {
                           </div>
                         </div>
                       </td>
-                      
+
+                      {/* ✅ OPERATORE 2 */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {assegnazione.operatore2 ? (
+                          <div className="flex items-center">
+                            <div className="glass-avatar w-10 h-10 rounded-xl flex items-center justify-center mr-3">
+                              <User className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-white">
+                                {assegnazione.operatore2.username}
+                              </div>
+                              <div className="text-sm text-white/50">
+                                {assegnazione.operatore2.email}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-white/30 italic">
+                            -
+                          </div>
+                        )}
+                      </td>
+
                       {/* ✅ POLO - con modifica inline */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">

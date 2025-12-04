@@ -46,6 +46,7 @@ const initialState = {
   },
   assegnazioneForm: {
     userId: '',
+    userId2: '',  // ✅ OPERATORE 2 (OPZIONALE)
     poloId: '',
     mezzoId: '',
     settimanaId: '',
@@ -160,6 +161,7 @@ const appReducer = (state, action) => {
         ...state,
         assegnazioneForm: {
           userId: '',
+          userId2: '',  // ✅ OPERATORE 2 (OPZIONALE)
           poloId: '',
           mezzoId: '',
           settimanaId: '',
