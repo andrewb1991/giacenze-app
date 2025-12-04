@@ -48,7 +48,10 @@ const initialState = {
     userId: '',
     poloId: '',
     mezzoId: '',
-    settimanaId: ''
+    settimanaId: '',
+    settimanaFineId: null,
+    ordine: '',
+    rdt: ''
   },
   reportFilters: {
     settimanaId: '',
@@ -159,7 +162,10 @@ const appReducer = (state, action) => {
           userId: '',
           poloId: '',
           mezzoId: '',
-          settimanaId: ''
+          settimanaId: '',
+          settimanaFineId: null,
+          ordine: '',
+          rdt: ''
         }
       };
     

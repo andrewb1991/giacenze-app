@@ -16,7 +16,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import Navigation from '../shared/Navigation';
-import { formatWeek } from '../../utils/formatters';
+import { formatWeekRange } from '../../utils/formatters';
 
 const Dashboard = () => {
   const { user, setCurrentPage } = useAuth();
@@ -78,7 +78,7 @@ const Dashboard = () => {
                     <div className="flex items-center space-x-4 text-white">
                       <Calendar className="w-5 h-5 text-blue-300" />
                       <span className="font-medium">
-                        {assignment.settimanaId ? formatWeek(assignment.settimanaId) : 'Settimana N/A'}
+                        {assignment.settimanaId ? formatWeekRange(assignment.settimanaId, assignment.settimanaFineId) : 'Settimana N/A'}
                       </span>
                       <MapPin className="w-5 h-5 text-green-300" />
                       <span>{assignment.poloId?.nome || 'N/A'}</span>

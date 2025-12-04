@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { useModalAnimation, useStaggerAnimation } from '../../hooks/useModalAnimation';
 import { BackButton } from '../shared/Navigation';
-import { formatWeek, formatDateTime, getCurrentWeekAssignment, sortAssignmentsByCurrentWeekFirst } from '../../utils/formatters';
+import { formatWeek, formatWeekRange, formatDateTime, getCurrentWeekAssignment, sortAssignmentsByCurrentWeekFirst } from '../../utils/formatters';
 import { apiCall } from '../../services/api';
 
 const UtilizziPage = () => {
@@ -329,7 +329,7 @@ const UtilizziPage = () => {
                 const isCurrentWeek = index === 0 && getCurrentWeekAssignment(myAssignments)?._id === assignment._id;
                 return (
                   <option key={assignment._id} value={assignment._id} className="bg-gray-800">
-                    {isCurrentWeek ? '📅 ' : ''}{formatWeek(assignment.settimanaId)}{isCurrentWeek ? ' (Corrente)' : ''} - {assignment.poloId?.nome} - {assignment.mezzoId?.nome}
+                    {isCurrentWeek ? '📅 ' : ''}{formatWeekRange(assignment.settimanaId, assignment.settimanaFineId)}{isCurrentWeek ? ' (Corrente)' : ''} - {assignment.poloId?.nome} - {assignment.mezzoId?.nome}
                   </option>
                 );
               })}
@@ -346,7 +346,7 @@ const UtilizziPage = () => {
             ) : selectedAssignmentInfo && (
               <div className="mt-4 glass-info-display p-3 rounded-xl">
                 <div className="flex items-center space-x-4 text-sm text-white/80">
-                  <span>📅 <strong>{formatWeek(selectedAssignmentInfo.settimanaId)}</strong></span>
+                  <span>📅 <strong>{formatWeekRange(selectedAssignmentInfo.settimanaId, selectedAssignmentInfo.settimanaFineId)}</strong></span>
                   <span>🏢 <strong>{selectedAssignmentInfo.poloId?.nome}</strong></span>
                   <span>🚛 <strong>{selectedAssignmentInfo.mezzoId?.nome}</strong></span>
                 </div>

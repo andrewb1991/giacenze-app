@@ -15,7 +15,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import Navigation, { BackButton } from '../shared/Navigation';
-import { formatWeek, calculatePercentage, getProgressBarColor, getCurrentWeekAssignment, sortAssignmentsByCurrentWeekFirst } from '../../utils/formatters';
+import { formatWeek, formatWeekRange, calculatePercentage, getProgressBarColor, getCurrentWeekAssignment, sortAssignmentsByCurrentWeekFirst } from '../../utils/formatters';
 import { apiCall } from '../../services/api';
 
 const GiacenzePage = () => {
@@ -167,7 +167,7 @@ const GiacenzePage = () => {
                 const isCurrentWeek = index === 0 && getCurrentWeekAssignment(myAssignments)?._id === assignment._id;
                 return (
                   <option key={assignment._id} value={assignment._id} className="bg-gray-800">
-                    {isCurrentWeek ? '📅 ' : ''}{formatWeek(assignment.settimanaId)}{isCurrentWeek ? ' (Corrente)' : ''} - {assignment.poloId?.nome} - {assignment.mezzoId?.nome}
+                    {isCurrentWeek ? '📅 ' : ''}{formatWeekRange(assignment.settimanaId, assignment.settimanaFineId)}{isCurrentWeek ? ' (Corrente)' : ''} - {assignment.poloId?.nome} - {assignment.mezzoId?.nome}
                   </option>
                 );
               })}
@@ -257,7 +257,7 @@ const GiacenzePage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-white/90">
                 <div className="flex items-center space-x-2">
                   <Calendar className="w-4 h-4 text-blue-300" />
-                  <span>{formatWeek(selectedAssignment.settimanaId)}</span>
+                  <span>{formatWeekRange(selectedAssignment.settimanaId, selectedAssignment.settimanaFineId)}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <MapPin className="w-4 h-4 text-green-300" />
