@@ -94,8 +94,8 @@ export const getCurrentWeekAssignment = (assignments) => {
     return 1 + Math.ceil((firstThursday - target) / 604800000);
   };
   
-  const currentWeekNumber = getISOWeek(today);
-  
+  const currentWeekNumber = getISOWeek(today) - 1;
+
   // Find assignment that matches current week and year
   const currentAssignment = assignments.find(assignment => {
     const settimana = assignment.settimanaId;
@@ -169,8 +169,8 @@ export const sortAssignmentsByCurrentWeekFirst = (assignments) => {
     return 1 + Math.ceil((firstThursday - target) / 604800000);
   };
   
-  const currentWeekNumber = getISOWeek(today);
-  
+  const currentWeekNumber = getISOWeek(today) - 1;
+
   // Separate current week, current year weeks, and other weeks
   const currentWeek = [];
   const currentYearWeeks = [];
@@ -248,8 +248,8 @@ export const getCurrentWeekIndex = (settimane) => {
     return 1 + Math.ceil((firstThursday - target) / 604800000);
   };
   
-  const currentWeekNumber = getISOWeek(today);
-  
+  const currentWeekNumber = getISOWeek(today) - 1;
+
   // Find the index of the current week
   const currentWeekIndex = settimane.findIndex(settimana => 
     settimana && 
@@ -290,8 +290,8 @@ export const getCurrentWeekFromList = (settimane) => {
     return 1 + Math.ceil((firstThursday - target) / 604800000);
   };
   
-  const currentWeekNumber = getISOWeek(today);
-  
+  const currentWeekNumber = getISOWeek(today) - 1;
+
   // Find the exact current week
   const currentWeek = settimane.find(settimana => 
     settimana && 
@@ -328,8 +328,8 @@ export const sortWeeksCenteredOnCurrent = (settimane) => {
   
   const today = new Date();
   const currentYear = today.getFullYear();
-  const currentWeekNumber = getISOWeek(today);
-  
+  const currentWeekNumber = getISOWeek(today) - 1;
+
   // Separate weeks into current, past and future
   const currentWeek = [];
   const pastWeeks = [];
