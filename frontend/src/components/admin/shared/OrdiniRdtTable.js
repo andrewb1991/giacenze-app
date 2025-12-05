@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useGiacenze } from '../../../hooks/useGiacenze';
+import { useAppContext } from '../../../contexts/AppContext';
 import { apiCall } from '../../../services/api';
 import { triggerOrdiniRdtUpdate } from '../../../utils/events';
 import OrdineRdtModal from './OrdineRdtModal';
@@ -32,6 +33,7 @@ import { sortWeeksCenteredOnCurrent, getCurrentWeekFromList } from '../../../uti
 const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsChange }) => {
   const { token, setError } = useAuth();
   const { users, settimane, assegnazioni } = useGiacenze();
+  const { state, dispatch: contextDispatch } = useAppContext();
 
   // Stati per dati
   const [ordini, setOrdini] = useState([]);
@@ -157,6 +159,27 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
       }
     }
   }, [showAllWeeks, settimane]);
+
+  // Applica filtro automatico da navigazione AssigmentsManagement
+  useEffect(() => {
+    if (state.filtroOrdineRdt && state.filtroOrdineRdt.searchTerm) {
+      console.log('🔍 Applicazione filtro automatico:', state.filtroOrdineRdt.searchTerm);
+
+      // Applica il filtro di ricerca
+      setFilters(prev => ({
+        ...prev,
+        searchTerm: state.filtroOrdineRdt.searchTerm
+      }));
+
+      // Cancella il filtro dal contesto dopo averlo applicato
+      contextDispatch({
+        type: 'SET_FILTRO_ORDINE_RDT',
+        payload: null
+      });
+
+      console.log('✅ Filtro applicato e rimosso dal contesto');
+    }
+  }, [state.filtroOrdineRdt, contextDispatch]);
 
   // Listener per eventi di sincronizzazione da AssignmentsManagement
   useEffect(() => {

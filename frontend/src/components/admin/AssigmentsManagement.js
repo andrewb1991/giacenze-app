@@ -807,7 +807,7 @@ const AssignmentsManagement = () => {
   // Apri modal per ordine/RDT
   const openOrdineRdtModal = (numeroOrdine, numeroRdt) => {
     let itemData = null;
-    
+
     // Trova i dati reali dell'ordine/RDT
     if (numeroOrdine) {
       itemData = getOrdineCompleto(numeroOrdine);
@@ -820,16 +820,28 @@ const AssignmentsManagement = () => {
         itemData.itemType = 'rdt';
       }
     }
-    
+
     if (itemData) {
-      createDOMModal(itemData);
+      // Trova l'assegnazione collegata per ottenere l'operatore
+      const assegnazione = assegnazioni.find(a => {
+        if (numeroOrdine) {
+          const ordineNumero = typeof a.ordine === 'object' ? a.ordine.numero : a.ordine;
+          return ordineNumero === numeroOrdine && a.attiva;
+        } else if (numeroRdt) {
+          const rdtNumero = typeof a.rdt === 'object' ? a.rdt.numero : a.rdt;
+          return rdtNumero === numeroRdt && a.attiva;
+        }
+        return false;
+      });
+
+      createDOMModal(itemData, assegnazione);
     } else {
       setError('Dati non trovati per ' + (numeroOrdine ? 'ordine ' + numeroOrdine : 'RDT ' + numeroRdt));
     }
   };
   
   // Funzione per creare modal con DOM puro usando dati reali
-  const createDOMModal = (itemData) => {
+  const createDOMModal = (itemData, assegnazione = null) => {
     // Rimuovi modal esistente
     const existingModal = document.getElementById('real-modal');
     if (existingModal) {
@@ -928,9 +940,9 @@ const AssignmentsManagement = () => {
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
           <div class="glass-card" style="padding: 1.5rem; border-radius: 16px;">
             <label style="
-              display: block; 
-              font-weight: 600; 
-              color: rgba(255, 255, 255, 0.9); 
+              display: block;
+              font-weight: 600;
+              color: rgba(255, 255, 255, 0.9);
               margin-bottom: 0.75rem;
               font-size: 0.875rem;
               text-transform: uppercase;
@@ -945,12 +957,12 @@ const AssignmentsManagement = () => {
               ${itemData.numero}
             </div>
           </div>
-          
+
           <div class="glass-card" style="padding: 1.5rem; border-radius: 16px;">
             <label style="
-              display: block; 
-              font-weight: 600; 
-              color: rgba(255, 255, 255, 0.9); 
+              display: block;
+              font-weight: 600;
+              color: rgba(255, 255, 255, 0.9);
               margin-bottom: 0.75rem;
               font-size: 0.875rem;
               text-transform: uppercase;
@@ -965,31 +977,12 @@ const AssignmentsManagement = () => {
               ${itemData.cliente}
             </div>
           </div>
-          
-          <div class="glass-card" style="grid-column: 1 / -1; padding: 1.5rem; border-radius: 16px;">
-            <label style="
-              display: block; 
-              font-weight: 600; 
-              color: rgba(255, 255, 255, 0.9); 
-              margin-bottom: 0.75rem;
-              font-size: 0.875rem;
-              text-transform: uppercase;
-              letter-spacing: 0.05em;
-            ">Descrizione</label>
-            <div style="
-              font-size: 1rem;
-              color: rgba(255, 255, 255, 0.9);
-              line-height: 1.5;
-            ">
-              ${itemData.descrizione || 'Nessuna descrizione'}
-            </div>
-          </div>
-          
+
           <div class="glass-card" style="padding: 1.5rem; border-radius: 16px;">
             <label style="
-              display: block; 
-              font-weight: 600; 
-              color: rgba(255, 255, 255, 0.9); 
+              display: block;
+              font-weight: 600;
+              color: rgba(255, 255, 255, 0.9);
               margin-bottom: 0.75rem;
               font-size: 0.875rem;
               text-transform: uppercase;
@@ -1004,24 +997,24 @@ const AssignmentsManagement = () => {
               ${new Date(itemData.dataConsegna).toLocaleDateString('it-IT')}
             </div>
           </div>
-          
+
           <div class="glass-card" style="padding: 1.5rem; border-radius: 16px;">
             <label style="
-              display: block; 
-              font-weight: 600; 
-              color: rgba(255, 255, 255, 0.9); 
+              display: block;
+              font-weight: 600;
+              color: rgba(255, 255, 255, 0.9);
               margin-bottom: 0.75rem;
               font-size: 0.875rem;
               text-transform: uppercase;
               letter-spacing: 0.05em;
-            ">Priorità</label>
+            ">Operatore</label>
             <div style="
               font-size: 1.125rem;
               font-weight: 600;
               color: white;
               text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
             ">
-              ${itemData.priorita}
+              ${assegnazione?.userId?.username || 'Non assegnato'}
             </div>
           </div>
         </div>
@@ -1107,22 +1100,30 @@ const AssignmentsManagement = () => {
     document.getElementById('close-real-modal').onclick = () => modalDiv.remove();
     document.getElementById('close-real-modal-btn').onclick = () => modalDiv.remove();
     
-    // Pulsante "Vai a Ordini/RDT" - naviga a OrdiniManagement
+    // Pulsante "Vai a Ordini/RDT" - naviga a OrdiniManagement con filtro
     document.getElementById('goto-management-btn').onclick = () => {
       console.log('🔍 DEBUG: Click su Vai a Ordini');
       console.log('🔍 DEBUG: activeTab attuale:', activeTab);
-      
+      console.log('🔍 DEBUG: Numero ordine/rdt:', itemData.numero);
+
       modalDiv.remove();
-      
+
       try {
+        // Imposta il filtro per la ricerca
+        dispatch({
+          type: 'SET_FILTRO_ORDINE_RDT',
+          payload: { searchTerm: itemData.numero }
+        });
+        console.log('✅ DEBUG: Filtro impostato:', itemData.numero);
+
+        // Naviga alla sezione ordini se non ci siamo già
         if (activeTab !== 'ordini') {
-          // Solo naviga se non siamo già nella sezione ordini
           dispatch({ type: 'SET_ACTIVE_TAB', payload: 'ordini' });
           console.log('✅ DEBUG: Navigato alla sezione ordini');
         } else {
-          console.log('✅ DEBUG: Già nella sezione ordini - scroll verso alto');
+          console.log('✅ DEBUG: Già nella sezione ordini - filtro applicato');
         }
-        
+
         // Scroll verso l'alto per una migliore UX
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (error) {

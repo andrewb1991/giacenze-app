@@ -70,7 +70,10 @@ const initialState = {
   
   // Admin View
   adminView: 'overview',
-  activeTab: 'giacenze'
+  activeTab: 'giacenze',
+
+  // Filtro per navigazione da AssigmentsManagement a OrdiniManagement
+  filtroOrdineRdt: null // { searchTerm: 'ORDINE-123' } oppure null
 };
 
 const appReducer = (state, action) => {
@@ -185,14 +188,17 @@ const appReducer = (state, action) => {
     
     case 'SET_ACTIVE_TAB':
       return { ...state, activeTab: action.payload };
-    
+
+    case 'SET_FILTRO_ORDINE_RDT':
+      return { ...state, filtroOrdineRdt: action.payload };
+
     case 'LOGOUT':
       return {
         ...initialState,
         currentPage: 'login',
         dataLoaded: false
       };
-    
+
     default:
       return state;
   }
