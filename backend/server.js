@@ -1898,6 +1898,7 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
       .populate('productId', 'nome codice categoria unita')
       .populate('giacenzaUtenteId')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('settimanaFineId', 'numero anno dataInizio dataFine')
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
       .populate('postazioneId', 'nome');
@@ -1912,10 +1913,18 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
 
       if (!reportData[key]) {
         let periodoSettimana = 'Non disponibile';
-        if (utilizzo.settimanaId?.dataInizio && utilizzo.settimanaId?.dataFine) {
+        if (utilizzo.settimanaId?.dataInizio) {
           const dataInizio = new Date(utilizzo.settimanaId.dataInizio);
-          const dataFine = new Date(utilizzo.settimanaId.dataFine);
-          periodoSettimana = `${dataInizio.toLocaleDateString('it-IT')} - ${dataFine.toLocaleDateString('it-IT')}`;
+          // Se c'è settimanaFineId, usa la data fine di quella, altrimenti usa la data fine di settimanaId
+          const dataFineSettimana = utilizzo.settimanaFineId?.dataFine || utilizzo.settimanaId.dataFine;
+          if (dataFineSettimana) {
+            const dataFine = new Date(dataFineSettimana);
+            periodoSettimana = `${dataInizio.toLocaleDateString('it-IT')} - ${dataFine.toLocaleDateString('it-IT')}`;
+            // Aggiungi numero settimane se c'è un range
+            if (utilizzo.settimanaFineId && utilizzo.settimanaFineId._id !== utilizzo.settimanaId._id) {
+              periodoSettimana += ` (Sett. ${utilizzo.settimanaId.numero}-${utilizzo.settimanaFineId.numero})`;
+            }
+          }
         }
 
         const quantitaDisponibile = utilizzo.giacenzaUtenteId?.quantitaDisponibile || 0;
@@ -2019,7 +2028,8 @@ app.get('/api/reports/excel', authenticateToken, async (req, res) => {
         .populate('poloId', 'nome')
         .populate('mezzoId', 'nome')
         .populate('postazioneId', 'nome')
-        .populate('settimanaId', 'numero anno');
+        .populate('settimanaId', 'numero anno dataInizio dataFine')
+        .populate('settimanaFineId', 'numero anno dataInizio dataFine');
       
       // Crea mappa per lookup veloce
       assegnazioni.forEach(ass => {
@@ -2107,10 +2117,19 @@ app.get('/api/my-giacenze/stats', authenticateToken, async (req, res) => {
                           assegnazioniMap[userKey];
       
       let periodoSettimana = 'Globale';
-      if (giacenza.settimanaId?.dataInizio && giacenza.settimanaId?.dataFine) {
+      if (giacenza.settimanaId?.dataInizio) {
         const dataInizio = new Date(giacenza.settimanaId.dataInizio);
-        const dataFine = new Date(giacenza.settimanaId.dataFine);
-        periodoSettimana = `Sett. ${giacenza.settimanaId.numero}/${giacenza.settimanaId.anno} (${dataInizio.toLocaleDateString('it-IT')} - ${dataFine.toLocaleDateString('it-IT')})`;
+        // Usa settimanaFineId dall'assegnazione se disponibile
+        const settimanaFine = assegnazione?.settimanaFineId || giacenza.settimanaId;
+        const dataFine = new Date(settimanaFine.dataFine);
+
+        if (assegnazione?.settimanaFineId && assegnazione.settimanaFineId._id !== giacenza.settimanaId._id) {
+          // Range di settimane
+          periodoSettimana = `Sett. ${giacenza.settimanaId.numero}-${settimanaFine.numero}/${settimanaFine.anno} (${dataInizio.toLocaleDateString('it-IT')} - ${dataFine.toLocaleDateString('it-IT')})`;
+        } else {
+          // Singola settimana
+          periodoSettimana = `Sett. ${giacenza.settimanaId.numero}/${giacenza.settimanaId.anno} (${dataInizio.toLocaleDateString('it-IT')} - ${dataFine.toLocaleDateString('it-IT')})`;
+        }
       }
       
       const stato = giacenza.quantitaDisponibile <= giacenza.quantitaMinima ? 'CRITICO' : 'OK';
