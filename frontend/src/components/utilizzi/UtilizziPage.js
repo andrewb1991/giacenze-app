@@ -199,6 +199,7 @@ const UtilizziPage = () => {
           userId: utilizzo.userId,
           productId: utilizzo.productId,
           settimanaId: utilizzo.settimanaId,
+          settimanaFineId: utilizzo.settimanaFineId,
           utilizzi: [],
           totalQuantita: 0,
           numeroUtilizzi: 0,
@@ -554,7 +555,7 @@ const UtilizziPage = () => {
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-2 text-green-300" />
                             <div className="text-sm font-medium text-white">
-                              {group.settimanaId ? formatWeek(group.settimanaId) : 'N/A'}
+                              {group.settimanaId ? formatWeekRange(group.settimanaId, group.settimanaFineId) : 'N/A'}
                             </div>
                           </div>
                         </td>
@@ -666,7 +667,7 @@ const UtilizziPage = () => {
                       Dettagli Utilizzi - {selectedGroup.productId?.codice ? `${selectedGroup.productId.codice} - ` : ''}{selectedGroup.productId?.nome}
                     </h3>
                     <p className="text-white/70">
-                      {selectedGroup.userId?.username} • {selectedGroup.settimanaId ? formatWeek(selectedGroup.settimanaId) : 'N/A'}
+                      {selectedGroup.userId?.username} • {selectedGroup.settimanaId ? formatWeekRange(selectedGroup.settimanaId, selectedGroup.settimanaFineId) : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -737,7 +738,7 @@ const UtilizziPage = () => {
                               Settimana
                             </div>
                             <div className="text-sm text-white">
-                              {utilizzo.settimanaId ? formatWeek(utilizzo.settimanaId) : 'N/A'}
+                              {utilizzo.settimanaId ? formatWeekRange(utilizzo.settimanaId, utilizzo.settimanaFineId) : 'N/A'}
                             </div>
                           </div>
                           
