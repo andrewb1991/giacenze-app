@@ -2540,9 +2540,10 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
   const [filteredPoli, setFilteredPoli] = useState(poli);
   const [filteredSettimane, setFilteredSettimane] = useState(settimane);
 
-  // Stati per i filtri
-  const [selectedAnno, setSelectedAnno] = useState('');
-  const [selectedMese, setSelectedMese] = useState('');
+  // Stati per i filtri - Inizializza con anno e mese correnti
+  const oggi = new Date();
+  const [selectedAnno, setSelectedAnno] = useState(oggi.getFullYear().toString());
+  const [selectedMese, setSelectedMese] = useState((oggi.getMonth() + 1).toString());
   const [nascondiPoliVuoti, setNascondiPoliVuoti] = useState(true);
 
   // Stato per loading iniziale del calendario
