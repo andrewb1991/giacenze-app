@@ -5,6 +5,7 @@ mongoose.connect('mongodb://localhost:27017/automando', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
+"prova"
 
 // Schema Ordini
 const ordineSchema = new mongoose.Schema({

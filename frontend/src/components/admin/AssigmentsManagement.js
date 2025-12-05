@@ -2539,7 +2539,12 @@ const AssignmentsManagement = () => {
 const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBackToList }) => {
   const [filteredPoli, setFilteredPoli] = useState(poli);
   const [filteredSettimane, setFilteredSettimane] = useState(settimane);
-  
+
+  // Stati per i filtri
+  const [settimanaInizioId, setSettimanaInizioId] = useState('');
+  const [settimanaFineId, setSettimanaFineId] = useState('');
+  const [nascondiPoliVuoti, setNascondiPoliVuoti] = useState(false);
+
   // Stato per loading iniziale del calendario
   const [loading, setLoading] = useState(true);
   
