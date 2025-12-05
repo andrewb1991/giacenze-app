@@ -2541,8 +2541,8 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
   const [filteredSettimane, setFilteredSettimane] = useState(settimane);
 
   // Stati per i filtri
-  const [settimanaInizioId, setSettimanaInizioId] = useState('');
-  const [settimanaFineId, setSettimanaFineId] = useState('');
+  const [selectedAnno, setSelectedAnno] = useState('');
+  const [selectedMese, setSelectedMese] = useState('');
   const [nascondiPoliVuoti, setNascondiPoliVuoti] = useState(false);
 
   // Stato per loading iniziale del calendario
@@ -2557,31 +2557,50 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
     return () => clearTimeout(timer);
   }, []);
 
-  // Applica filtri settimane
+  // Estrai anni disponibili dalle settimane
+  const anniDisponibili = React.useMemo(() => {
+    const anni = [...new Set(settimane.map(s => s.anno))].sort((a, b) => a - b);
+    return anni;
+  }, [settimane]);
+
+  // Nomi mesi
+  const mesiNomi = [
+    'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+  ];
+
+  // Applica filtri anno/mese
   useEffect(() => {
-    if (!settimanaInizioId && !settimanaFineId) {
+    if (!selectedAnno && !selectedMese) {
       // Nessun filtro, mostra tutte le settimane
       setFilteredSettimane(settimane);
       return;
     }
 
-    const sortedAllSettimane = sortWeeksChronologically(settimane);
+    const filtered = settimane.filter(settimana => {
+      // Filtra per anno se selezionato
+      if (selectedAnno && settimana.anno !== parseInt(selectedAnno)) {
+        return false;
+      }
 
-    const inizioIndex = settimanaInizioId
-      ? sortedAllSettimane.findIndex(s => s._id === settimanaInizioId)
-      : 0;
+      // Filtra per mese se selezionato
+      if (selectedMese) {
+        const meseIndex = parseInt(selectedMese);
+        const dataInizio = new Date(settimana.dataInizio);
+        const dataFine = new Date(settimana.dataFine);
 
-    const fineIndex = settimanaFineId
-      ? sortedAllSettimane.findIndex(s => s._id === settimanaFineId)
-      : sortedAllSettimane.length - 1;
+        // Una settimana appartiene al mese se la sua data inizio o fine cade in quel mese
+        const meseInizio = dataInizio.getMonth() + 1; // getMonth() is 0-indexed
+        const meseFine = dataFine.getMonth() + 1;
 
-    if (inizioIndex !== -1 && fineIndex !== -1 && inizioIndex <= fineIndex) {
-      const filtered = sortedAllSettimane.slice(inizioIndex, fineIndex + 1);
-      setFilteredSettimane(filtered);
-    } else {
-      setFilteredSettimane(settimane);
-    }
-  }, [settimanaInizioId, settimanaFineId, settimane]);
+        return meseInizio === meseIndex || meseFine === meseIndex;
+      }
+
+      return true;
+    });
+
+    setFilteredSettimane(filtered);
+  }, [selectedAnno, selectedMese, settimane]);
 
   // Applica filtro poli vuoti
   useEffect(() => {
@@ -2710,41 +2729,41 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Filtro Settimana Inizio */}
+          {/* Filtro Anno */}
           <div>
             <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
               <Calendar className="w-4 h-4 mr-2" />
-              Da Settimana
+              Anno
             </label>
             <select
               className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-              value={settimanaInizioId}
-              onChange={(e) => setSettimanaInizioId(e.target.value)}
+              value={selectedAnno}
+              onChange={(e) => setSelectedAnno(e.target.value)}
             >
-              <option value="" className="bg-gray-800">Tutte (inizio)</option>
-              {sortWeeksChronologically(settimane).map(settimana => (
-                <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                  Sett. {settimana.numero}/{settimana.anno} ({new Date(settimana.dataInizio).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })})
+              <option value="" className="bg-gray-800">Tutti gli anni</option>
+              {anniDisponibili.map(anno => (
+                <option key={anno} value={anno} className="bg-gray-800">
+                  {anno}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Filtro Settimana Fine */}
+          {/* Filtro Mese */}
           <div>
             <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
               <Calendar className="w-4 h-4 mr-2" />
-              A Settimana
+              Mese
             </label>
             <select
               className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-              value={settimanaFineId}
-              onChange={(e) => setSettimanaFineId(e.target.value)}
+              value={selectedMese}
+              onChange={(e) => setSelectedMese(e.target.value)}
             >
-              <option value="" className="bg-gray-800">Tutte (fine)</option>
-              {sortWeeksChronologically(settimane).map(settimana => (
-                <option key={settimana._id} value={settimana._id} className="bg-gray-800">
-                  Sett. {settimana.numero}/{settimana.anno} ({new Date(settimana.dataInizio).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })})
+              <option value="" className="bg-gray-800">Tutti i mesi</option>
+              {mesiNomi.map((nome, index) => (
+                <option key={index} value={index + 1} className="bg-gray-800">
+                  {nome}
                 </option>
               ))}
             </select>
@@ -2776,17 +2795,17 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
         </div>
 
         {/* Info filtri attivi */}
-        {(settimanaInizioId || settimanaFineId || nascondiPoliVuoti) && (
+        {(selectedAnno || selectedMese || nascondiPoliVuoti) && (
           <div className="mt-4 flex items-center gap-2 text-sm text-white/70">
             <span>Filtri attivi:</span>
-            {settimanaInizioId && (
+            {selectedAnno && (
               <span className="glass-badge px-3 py-1 rounded-full text-blue-200 border border-blue-300/20">
-                Da: Sett. {settimane.find(s => s._id === settimanaInizioId)?.numero}
+                Anno: {selectedAnno}
               </span>
             )}
-            {settimanaFineId && (
+            {selectedMese && (
               <span className="glass-badge px-3 py-1 rounded-full text-blue-200 border border-blue-300/20">
-                A: Sett. {settimane.find(s => s._id === settimanaFineId)?.numero}
+                Mese: {mesiNomi[parseInt(selectedMese) - 1]}
               </span>
             )}
             {nascondiPoliVuoti && (
@@ -2796,8 +2815,8 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
             )}
             <button
               onClick={() => {
-                setSettimanaInizioId('');
-                setSettimanaFineId('');
+                setSelectedAnno('');
+                setSelectedMese('');
                 setNascondiPoliVuoti(false);
               }}
               className="glass-button px-3 py-1 rounded-full text-white/70 hover:text-white hover:scale-105 transition-all duration-300 ml-2"
