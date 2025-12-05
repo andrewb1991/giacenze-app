@@ -2553,9 +2553,53 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
     const timer = setTimeout(() => {
       setLoading(false);
     }, 800);
-    
+
     return () => clearTimeout(timer);
   }, []);
+
+  // Applica filtri settimane
+  useEffect(() => {
+    if (!settimanaInizioId && !settimanaFineId) {
+      // Nessun filtro, mostra tutte le settimane
+      setFilteredSettimane(settimane);
+      return;
+    }
+
+    const sortedAllSettimane = sortWeeksChronologically(settimane);
+
+    const inizioIndex = settimanaInizioId
+      ? sortedAllSettimane.findIndex(s => s._id === settimanaInizioId)
+      : 0;
+
+    const fineIndex = settimanaFineId
+      ? sortedAllSettimane.findIndex(s => s._id === settimanaFineId)
+      : sortedAllSettimane.length - 1;
+
+    if (inizioIndex !== -1 && fineIndex !== -1 && inizioIndex <= fineIndex) {
+      const filtered = sortedAllSettimane.slice(inizioIndex, fineIndex + 1);
+      setFilteredSettimane(filtered);
+    } else {
+      setFilteredSettimane(settimane);
+    }
+  }, [settimanaInizioId, settimanaFineId, settimane]);
+
+  // Applica filtro poli vuoti
+  useEffect(() => {
+    if (!nascondiPoliVuoti) {
+      setFilteredPoli(poli);
+      return;
+    }
+
+    // Filtra i poli che hanno almeno un'assegnazione nelle settimane filtrate
+    const poliConAssegnazioni = poli.filter(polo => {
+      return filteredSettimane.some(settimana => {
+        const assignments = getAssignmentsForCell(polo._id, settimana._id);
+        return assignments.length > 0;
+      });
+    });
+
+    setFilteredPoli(poliConAssegnazioni);
+  }, [nascondiPoliVuoti, poli, filteredSettimane, assegnazioni]);
 
   // Helper per trovare i dati completi di un ordine
   const getOrdineCompleto = (numeroOrdine) => {
@@ -2656,6 +2700,112 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
             <span className="font-medium">Torna alla Lista</span>
           </button>
         </div>
+      </div>
+
+      {/* Filtri */}
+      <div className="glass-card p-6 rounded-2xl mb-6">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <Filter className="w-5 h-5 mr-2" />
+          Filtri Calendario
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Filtro Settimana Inizio */}
+          <div>
+            <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
+              <Calendar className="w-4 h-4 mr-2" />
+              Da Settimana
+            </label>
+            <select
+              className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+              value={settimanaInizioId}
+              onChange={(e) => setSettimanaInizioId(e.target.value)}
+            >
+              <option value="" className="bg-gray-800">Tutte (inizio)</option>
+              {sortWeeksChronologically(settimane).map(settimana => (
+                <option key={settimana._id} value={settimana._id} className="bg-gray-800">
+                  Sett. {settimana.numero}/{settimana.anno} ({new Date(settimana.dataInizio).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filtro Settimana Fine */}
+          <div>
+            <label className="block text-sm font-medium text-white/80 mb-2 flex items-center">
+              <Calendar className="w-4 h-4 mr-2" />
+              A Settimana
+            </label>
+            <select
+              className="glass-input w-full px-3 py-2 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+              value={settimanaFineId}
+              onChange={(e) => setSettimanaFineId(e.target.value)}
+            >
+              <option value="" className="bg-gray-800">Tutte (fine)</option>
+              {sortWeeksChronologically(settimane).map(settimana => (
+                <option key={settimana._id} value={settimana._id} className="bg-gray-800">
+                  Sett. {settimana.numero}/{settimana.anno} ({new Date(settimana.dataInizio).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Checkbox Nascondi Poli Vuoti */}
+          <div className="flex items-end">
+            <label className="glass-checkbox-container flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={nascondiPoliVuoti}
+                onChange={(e) => setNascondiPoliVuoti(e.target.checked)}
+                className="sr-only"
+              />
+              <div className={`glass-checkbox w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${
+                nascondiPoliVuoti
+                  ? 'border-blue-400 bg-blue-400/20'
+                  : 'border-white/30 bg-transparent'
+              }`}>
+                {nascondiPoliVuoti && (
+                  <svg className="w-3 h-3 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <span className="ml-2 text-sm text-white/80">Nascondi poli senza assegnazioni</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Info filtri attivi */}
+        {(settimanaInizioId || settimanaFineId || nascondiPoliVuoti) && (
+          <div className="mt-4 flex items-center gap-2 text-sm text-white/70">
+            <span>Filtri attivi:</span>
+            {settimanaInizioId && (
+              <span className="glass-badge px-3 py-1 rounded-full text-blue-200 border border-blue-300/20">
+                Da: Sett. {settimane.find(s => s._id === settimanaInizioId)?.numero}
+              </span>
+            )}
+            {settimanaFineId && (
+              <span className="glass-badge px-3 py-1 rounded-full text-blue-200 border border-blue-300/20">
+                A: Sett. {settimane.find(s => s._id === settimanaFineId)?.numero}
+              </span>
+            )}
+            {nascondiPoliVuoti && (
+              <span className="glass-badge px-3 py-1 rounded-full text-green-200 border border-green-300/20">
+                Solo poli con assegnazioni
+              </span>
+            )}
+            <button
+              onClick={() => {
+                setSettimanaInizioId('');
+                setSettimanaFineId('');
+                setNascondiPoliVuoti(false);
+              }}
+              className="glass-button px-3 py-1 rounded-full text-white/70 hover:text-white hover:scale-105 transition-all duration-300 ml-2"
+            >
+              Cancella filtri
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Calendario */}
