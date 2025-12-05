@@ -2598,11 +2598,34 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
   
   // Funzione per ottenere assegnazioni per polo/settimana
   const getAssignmentsForCell = (poloId, settimanaId) => {
-    return assegnazioni.filter(a => 
-      a.poloId?._id === poloId && 
-      a.settimanaId?._id === settimanaId &&
-      a.attiva
-    );
+    // Trova la settimana corrente per confrontare
+    const currentSettimana = sortedSettimane.find(s => s._id === settimanaId);
+    if (!currentSettimana) return [];
+
+    return assegnazioni.filter(a => {
+      if (a.poloId?._id !== poloId || !a.attiva) return false;
+
+      const settimanaInizio = a.settimanaId;
+      const settimanaFine = a.settimanaFineId || a.settimanaId; // Se non c'è fine, usa inizio
+
+      if (!settimanaInizio) return false;
+
+      // Controlla se la settimana corrente è nel range dell'assegnazione
+      const currentYear = currentSettimana.anno;
+      const currentWeek = currentSettimana.numero;
+
+      const startYear = settimanaInizio.anno;
+      const startWeek = settimanaInizio.numero;
+
+      const endYear = settimanaFine.anno;
+      const endWeek = settimanaFine.numero;
+
+      // Confronto: current >= start && current <= end
+      const isAfterStart = (currentYear > startYear) || (currentYear === startYear && currentWeek >= startWeek);
+      const isBeforeEnd = (currentYear < endYear) || (currentYear === endYear && currentWeek <= endWeek);
+
+      return isAfterStart && isBeforeEnd;
+    });
   };
 
   return (
