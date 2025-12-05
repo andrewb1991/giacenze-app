@@ -692,6 +692,8 @@ const AssignmentsManagement = () => {
         const existing = grouped.get(key);
         existing.operatore2 = assegnazione.userId;  // Salva il secondo operatore
         existing._id2 = assegnazione._id;  // Salva anche l'ID della seconda assegnazione per eliminazione
+        existing.ordine2 = assegnazione.ordine;  // Salva ordine operatore2
+        existing.rdt2 = assegnazione.rdt;  // Salva RDT operatore2
       }
     });
 
@@ -2050,69 +2052,94 @@ const AssignmentsManagement = () => {
                             </div>
                           ) : (
                             <>
-                              {/* Ordine */}
-                              <div className="flex items-center">
-                                <Hash className="w-4 h-4 mr-2 text-green-400 flex-shrink-0" />
-                                <div className="text-sm text-white">
-                                  {assegnazione.ordine ? (
-                                    (() => {
-                                      const numeroOrdine = typeof assegnazione.ordine === 'object'
-                                        ? assegnazione.ordine.numero
-                                        : assegnazione.ordine;
-                                      const ordineCompleto = getOrdineCompleto(numeroOrdine);
+                              {/* Raccogli tutti gli ordini (op1 e op2) */}
+                              {(() => {
+                                const ordini = [];
+                                // Ordine operatore 1
+                                if (assegnazione.ordine) {
+                                  const num1 = typeof assegnazione.ordine === 'object' ? assegnazione.ordine.numero : assegnazione.ordine;
+                                  ordini.push(num1);
+                                }
+                                // Ordine operatore 2
+                                if (assegnazione.ordine2) {
+                                  const num2 = typeof assegnazione.ordine2 === 'object' ? assegnazione.ordine2.numero : assegnazione.ordine2;
+                                  if (!ordini.includes(num2)) ordini.push(num2); // Evita duplicati
+                                }
 
-                                      return (
-                                        <button
-                                          onClick={() => openOrdineRdtModal(ordineCompleto?.numero || numeroOrdine, null)}
-                                          className="text-blue-400 hover:text-blue-300 transition-colors underline text-left"
-                                          title={ordineCompleto ? `Cliente: ${ordineCompleto.cliente}` : 'Clicca per vedere dettagli'}
-                                        >
-                                          {ordineCompleto?.numero || numeroOrdine}
-                                          {ordineCompleto && (
-                                            <div className="text-xs text-white/60 mt-1">
-                                              {ordineCompleto.cliente}
-                                            </div>
-                                          )}
-                                        </button>
-                                      );
-                                    })()
-                                  ) : (
-                                    <span className="text-white/40 italic text-xs">Nessun ordine</span>
-                                  )}
-                                </div>
-                              </div>
+                                return ordini.length > 0 ? (
+                                  <div className="flex items-start">
+                                    <Hash className="w-4 h-4 mr-2 text-green-400 flex-shrink-0 mt-0.5" />
+                                    <div className="text-sm text-white space-y-1">
+                                      {ordini.map((numeroOrdine, idx) => {
+                                        const ordineCompleto = getOrdineCompleto(numeroOrdine);
+                                        return (
+                                          <div key={idx}>
+                                            <button
+                                              onClick={() => openOrdineRdtModal(ordineCompleto?.numero || numeroOrdine, null)}
+                                              className="text-blue-400 hover:text-blue-300 transition-colors underline text-left"
+                                              title={ordineCompleto ? `Cliente: ${ordineCompleto.cliente}` : 'Clicca per vedere dettagli'}
+                                            >
+                                              {ordineCompleto?.numero || numeroOrdine}
+                                              {ordineCompleto && (
+                                                <span className="text-xs text-white/60 ml-1">
+                                                  ({ordineCompleto.cliente})
+                                                </span>
+                                              )}
+                                            </button>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ) : null;
+                              })()}
 
-                              {/* RDT */}
-                              <div className="flex items-center">
-                                <Clipboard className="w-4 h-4 mr-2 text-purple-400 flex-shrink-0" />
-                                <div className="text-sm text-white">
-                                  {assegnazione.rdt ? (
-                                    (() => {
-                                      const numeroRdt = typeof assegnazione.rdt === 'object'
-                                        ? assegnazione.rdt.numero
-                                        : assegnazione.rdt;
-                                      const rdtCompleto = getRdtCompleto(numeroRdt);
+                              {/* Raccogli tutti gli RDT (op1 e op2) */}
+                              {(() => {
+                                const rdts = [];
+                                // RDT operatore 1
+                                if (assegnazione.rdt) {
+                                  const num1 = typeof assegnazione.rdt === 'object' ? assegnazione.rdt.numero : assegnazione.rdt;
+                                  rdts.push(num1);
+                                }
+                                // RDT operatore 2
+                                if (assegnazione.rdt2) {
+                                  const num2 = typeof assegnazione.rdt2 === 'object' ? assegnazione.rdt2.numero : assegnazione.rdt2;
+                                  if (!rdts.includes(num2)) rdts.push(num2); // Evita duplicati
+                                }
 
-                                      return (
-                                        <button
-                                          onClick={() => openOrdineRdtModal(null, rdtCompleto?.numero || numeroRdt)}
-                                          className="text-purple-400 hover:text-purple-300 transition-colors underline text-left"
-                                          title={rdtCompleto ? `Cliente: ${rdtCompleto.cliente}` : 'Clicca per vedere dettagli'}
-                                        >
-                                          {rdtCompleto?.numero || numeroRdt}
-                                          {rdtCompleto && (
-                                            <div className="text-xs text-white/60 mt-1">
-                                              {rdtCompleto.cliente}
-                                            </div>
-                                          )}
-                                        </button>
-                                      );
-                                    })()
-                                  ) : (
-                                    <span className="text-white/40 italic text-xs">Nessun RDT</span>
-                                  )}
-                                </div>
-                              </div>
+                                return rdts.length > 0 ? (
+                                  <div className="flex items-start">
+                                    <Clipboard className="w-4 h-4 mr-2 text-purple-400 flex-shrink-0 mt-0.5" />
+                                    <div className="text-sm text-white space-y-1">
+                                      {rdts.map((numeroRdt, idx) => {
+                                        const rdtCompleto = getRdtCompleto(numeroRdt);
+                                        return (
+                                          <div key={idx}>
+                                            <button
+                                              onClick={() => openOrdineRdtModal(null, rdtCompleto?.numero || numeroRdt)}
+                                              className="text-purple-400 hover:text-purple-300 transition-colors underline text-left"
+                                              title={rdtCompleto ? `Cliente: ${rdtCompleto.cliente}` : 'Clicca per vedere dettagli'}
+                                            >
+                                              {rdtCompleto?.numero || numeroRdt}
+                                              {rdtCompleto && (
+                                                <span className="text-xs text-white/60 ml-1">
+                                                  ({rdtCompleto.cliente})
+                                                </span>
+                                              )}
+                                            </button>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ) : null;
+                              })()}
+
+                              {/* Se non ci sono né ordini né RDT */}
+                              {!assegnazione.ordine && !assegnazione.ordine2 && !assegnazione.rdt && !assegnazione.rdt2 && (
+                                <div className="text-white/40 italic text-xs">Nessun ordine/RDT</div>
+                              )}
                             </>
                           )}
                         </div>
