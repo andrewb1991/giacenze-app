@@ -1907,27 +1907,10 @@ const AssignmentsManagement = () => {
                         )}
                       </div>
                     </th>
-                    {/* ✅ NUOVE COLONNE */}
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
-                      onClick={() => handleSort('ordine')}
-                    >
+                    {/* ✅ COLONNA UNIFICATA ORDINE/RDT */}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       <div className="flex items-center gap-2">
-                        <span>Ordine</span>
-                        {sortConfig.field === 'ordine' && (
-                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                        )}
-                      </div>
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
-                      onClick={() => handleSort('rdt')}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>RDT</span>
-                        {sortConfig.field === 'rdt' && (
-                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                        )}
+                        <span>Ordine / RDT</span>
                       </div>
                     </th>
                     <th
@@ -2117,90 +2100,81 @@ const AssignmentsManagement = () => {
                         </div>
                       </td>
 
-                      {/* ✅ ORDINE - cliccabile con dati completi */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
+                      {/* ✅ COLONNA UNIFICATA ORDINE/RDT */}
+                      <td className="px-6 py-4">
+                        <div className="space-y-2">
                           {editAssignmentId === assegnazione._id ? (
-                            <div className="text-white/70 italic text-sm">
-                              {editForm.ordine || 'Nessun ordine'}
+                            <div className="text-white/70 italic text-sm space-y-1">
+                              <div>{editForm.ordine || 'Nessun ordine'}</div>
+                              <div>{editForm.rdt || 'Nessun RDT'}</div>
                               <div className="text-xs text-white/50 mt-1">
                                 Modificabile solo da Ordini Management
                               </div>
                             </div>
                           ) : (
                             <>
-                              <Hash className="w-4 h-4 mr-2 text-green-400" />
-                              <div className="text-sm text-white">
-                                {assegnazione.ordine ? (
-                                  (() => {
-                                    const numeroOrdine = typeof assegnazione.ordine === 'object' 
-                                      ? assegnazione.ordine.numero 
-                                      : assegnazione.ordine;
-                                    const ordineCompleto = getOrdineCompleto(numeroOrdine);
-                                    
-                                    return (
-                                      <button
-                                        onClick={() => openOrdineRdtModal(ordineCompleto?.numero || numeroOrdine, null)}
-                                        className="text-blue-400 hover:text-blue-300 transition-colors underline"
-                                        title={ordineCompleto ? `Cliente: ${ordineCompleto.cliente}` : 'Clicca per vedere dettagli'}
-                                      >
-                                        {ordineCompleto?.numero || numeroOrdine}
-                                        {ordineCompleto && (
-                                          <div className="text-xs text-white/60 mt-1">
-                                            {ordineCompleto.cliente}
-                                          </div>
-                                        )}
-                                      </button>
-                                    );
-                                  })()
-                                ) : (
-                                  <span className="text-white/40 italic">Non assegnato</span>
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </td>
+                              {/* Ordine */}
+                              <div className="flex items-center">
+                                <Hash className="w-4 h-4 mr-2 text-green-400 flex-shrink-0" />
+                                <div className="text-sm text-white">
+                                  {assegnazione.ordine ? (
+                                    (() => {
+                                      const numeroOrdine = typeof assegnazione.ordine === 'object'
+                                        ? assegnazione.ordine.numero
+                                        : assegnazione.ordine;
+                                      const ordineCompleto = getOrdineCompleto(numeroOrdine);
 
-                      {/* ✅ RDT - cliccabile con dati completi */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {editAssignmentId === assegnazione._id ? (
-                            <div className="text-white/70 italic text-sm">
-                              {editForm.rdt || 'Nessun RDT'}
-                              <div className="text-xs text-white/50 mt-1">
-                                Modificabile solo da Ordini Management
+                                      return (
+                                        <button
+                                          onClick={() => openOrdineRdtModal(ordineCompleto?.numero || numeroOrdine, null)}
+                                          className="text-blue-400 hover:text-blue-300 transition-colors underline text-left"
+                                          title={ordineCompleto ? `Cliente: ${ordineCompleto.cliente}` : 'Clicca per vedere dettagli'}
+                                        >
+                                          {ordineCompleto?.numero || numeroOrdine}
+                                          {ordineCompleto && (
+                                            <div className="text-xs text-white/60 mt-1">
+                                              {ordineCompleto.cliente}
+                                            </div>
+                                          )}
+                                        </button>
+                                      );
+                                    })()
+                                  ) : (
+                                    <span className="text-white/40 italic text-xs">Nessun ordine</span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <>
-                              <Clipboard className="w-4 h-4 mr-2 text-purple-400" />
-                              <div className="text-sm text-white">
-                                {assegnazione.rdt ? (
-                                  (() => {
-                                    const numeroRdt = typeof assegnazione.rdt === 'object' 
-                                      ? assegnazione.rdt.numero 
-                                      : assegnazione.rdt;
-                                    const rdtCompleto = getRdtCompleto(numeroRdt);
-                                    
-                                    return (
-                                      <button
-                                        onClick={() => openOrdineRdtModal(null, rdtCompleto?.numero || numeroRdt)}
-                                        className="text-purple-400 hover:text-purple-300 transition-colors underline"
-                                        title={rdtCompleto ? `Cliente: ${rdtCompleto.cliente}` : 'Clicca per vedere dettagli'}
-                                      >
-                                        {rdtCompleto?.numero || numeroRdt}
-                                        {rdtCompleto && (
-                                          <div className="text-xs text-white/60 mt-1">
-                                            {rdtCompleto.cliente}
-                                          </div>
-                                        )}
-                                      </button>
-                                    );
-                                  })()
-                                ) : (
-                                  <span className="text-white/40 italic">Non assegnato</span>
-                                )}
+
+                              {/* RDT */}
+                              <div className="flex items-center">
+                                <Clipboard className="w-4 h-4 mr-2 text-purple-400 flex-shrink-0" />
+                                <div className="text-sm text-white">
+                                  {assegnazione.rdt ? (
+                                    (() => {
+                                      const numeroRdt = typeof assegnazione.rdt === 'object'
+                                        ? assegnazione.rdt.numero
+                                        : assegnazione.rdt;
+                                      const rdtCompleto = getRdtCompleto(numeroRdt);
+
+                                      return (
+                                        <button
+                                          onClick={() => openOrdineRdtModal(null, rdtCompleto?.numero || numeroRdt)}
+                                          className="text-purple-400 hover:text-purple-300 transition-colors underline text-left"
+                                          title={rdtCompleto ? `Cliente: ${rdtCompleto.cliente}` : 'Clicca per vedere dettagli'}
+                                        >
+                                          {rdtCompleto?.numero || numeroRdt}
+                                          {rdtCompleto && (
+                                            <div className="text-xs text-white/60 mt-1">
+                                              {rdtCompleto.cliente}
+                                            </div>
+                                          )}
+                                        </button>
+                                      );
+                                    })()
+                                  ) : (
+                                    <span className="text-white/40 italic text-xs">Nessun RDT</span>
+                                  )}
+                                </div>
                               </div>
                             </>
                           )}
