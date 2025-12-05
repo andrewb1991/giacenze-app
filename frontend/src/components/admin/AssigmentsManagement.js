@@ -1896,17 +1896,6 @@ const AssignmentsManagement = () => {
                         )}
                       </div>
                     </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-all"
-                      onClick={() => handleSort('mezzo')}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>Mezzo</span>
-                        {sortConfig.field === 'mezzo' && (
-                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                        )}
-                      </div>
-                    </th>
                     {/* ✅ COLONNA UNIFICATA ORDINE/RDT */}
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                       <div className="flex items-center gap-2">
@@ -1933,17 +1922,13 @@ const AssignmentsManagement = () => {
                   {filteredAssegnazioni.map(assegnazione => (
                     <tr key={assegnazione._id} className="glass-table-row hover:bg-white/5 transition-all duration-300">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="glass-avatar w-10 h-10 rounded-xl flex items-center justify-center mr-3">
-                            <User className="w-5 h-5 text-white" />
+                        <div>
+                          <div className="text-sm font-medium text-white">
+                            {assegnazione.userId?.username}
                           </div>
-                          <div>
-                            <div className="text-sm font-medium text-white">
-                              {assegnazione.userId?.username}
-                            </div>
-                            <div className="text-sm text-white/50">
-                              {assegnazione.userId?.email}
-                            </div>
+                          <div className="text-sm text-white/50 flex items-center mt-1">
+                            <Truck className="w-3 h-3 mr-1" />
+                            {assegnazione.mezzoId?.nome || 'N/A'}
                           </div>
                         </div>
                       </td>
@@ -1951,17 +1936,13 @@ const AssignmentsManagement = () => {
                       {/* ✅ OPERATORE 2 */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         {assegnazione.operatore2 ? (
-                          <div className="flex items-center">
-                            <div className="glass-avatar w-10 h-10 rounded-xl flex items-center justify-center mr-3">
-                              <User className="w-5 h-5 text-white" />
+                          <div>
+                            <div className="text-sm font-medium text-white">
+                              {assegnazione.operatore2.username}
                             </div>
-                            <div>
-                              <div className="text-sm font-medium text-white">
-                                {assegnazione.operatore2.username}
-                              </div>
-                              <div className="text-sm text-white/50">
-                                {assegnazione.operatore2.email}
-                              </div>
+                            <div className="text-sm text-white/50 flex items-center mt-1">
+                              <Truck className="w-3 h-3 mr-1" />
+                              {assegnazione.mezzoId?.nome || 'N/A'}
                             </div>
                           </div>
                         ) : (
@@ -2051,50 +2032,6 @@ const AssignmentsManagement = () => {
                                   );
                                 })()}
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-
-                      
-                      {/* ✅ MEZZO - con modifica inline */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {editAssignmentId === assegnazione._id ? (
-                            <div className="glass-input-container">
-                              <select
-                                className="glass-input w-full p-2 rounded-xl bg-transparent border-0 outline-none text-white text-sm"
-                                value={editForm.mezzoId}
-                                onChange={(e) => updateEditForm({ mezzoId: e.target.value })}
-                              >
-                                <option value="" className="bg-gray-800">Seleziona Mezzo</option>
-                                {mezzi.map(m => (
-                                  <option key={m._id} value={m._id} className="bg-gray-800">{m.nome}</option>
-                                ))}
-                              </select>
-                            </div>
-                          ) : (
-                            <div className="flex items-center">
-                              <div className="text-sm font-medium text-white">
-                                {assegnazione.mezzoId?.nome || 'N/A'}
-                              </div>
-                              {/* ✅ NUOVO: Indicatore se il mezzo è condiviso */}
-                              {(() => {
-                                const assignments = getAssignmentsForPoloWeek(assegnazione.poloId?._id, assegnazione.settimanaId?._id);
-                                const sharedUsers = assignments.filter(a => a.mezzoId?._id === assegnazione.mezzoId?._id);
-                                
-                                if (sharedUsers.length > 1) {
-                                  const otherUser = sharedUsers.find(a => a._id !== assegnazione._id);
-                                  return (
-                                    <div className="ml-2">
-                                      <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300">
-                                        Condiviso con {otherUser?.userId?.username}
-                                      </span>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              })()}
                             </div>
                           )}
                         </div>
