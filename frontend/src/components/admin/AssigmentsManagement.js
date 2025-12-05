@@ -2543,7 +2543,7 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
   // Stati per i filtri
   const [selectedAnno, setSelectedAnno] = useState('');
   const [selectedMese, setSelectedMese] = useState('');
-  const [nascondiPoliVuoti, setNascondiPoliVuoti] = useState(false);
+  const [nascondiPoliVuoti, setNascondiPoliVuoti] = useState(true);
 
   // Stato per loading iniziale del calendario
   const [loading, setLoading] = useState(true);
