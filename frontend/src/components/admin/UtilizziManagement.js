@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGiacenze } from '../../hooks/useGiacenze';
 import { apiCall } from '../../services/api';
 import { useModalAnimation, useStaggerAnimation } from '../../hooks/useModalAnimation';
-import { formatWeek, formatDateTime, getCurrentWeekFromList, sortWeeksChronologically, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
+import { formatWeek, formatWeekRange, formatDateTime, getCurrentWeekFromList, sortWeeksChronologically, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
 
 const UtilizziManagement = () => {
   const { token, setError } = useAuth();
@@ -195,6 +195,7 @@ const UtilizziManagement = () => {
           userId: utilizzo.userId,
           productId: utilizzo.productId,
           settimanaId: utilizzo.settimanaId,
+          settimanaFineId: utilizzo.settimanaFineId,
           utilizzi: [],
           totalQuantita: 0,
           numeroUtilizzi: 0,
@@ -789,7 +790,7 @@ const UtilizziManagement = () => {
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-2 text-green-300" />
                             <div className="text-sm font-medium text-white">
-                              {group.settimanaId ? formatWeek(group.settimanaId) : 'N/A'}
+                              {group.settimanaId ? formatWeekRange(group.settimanaId, group.settimanaFineId) : 'N/A'}
                             </div>
                           </div>
                         </td>
@@ -867,7 +868,7 @@ const UtilizziManagement = () => {
                       Dettagli Utilizzi - {selectedGroup.productId?.nome}
                     </h3>
                     <p className="text-white/70">
-                      {selectedGroup.userId?.username} • {selectedGroup.settimanaId ? formatWeek(selectedGroup.settimanaId) : 'N/A'}
+                      {selectedGroup.userId?.username} • {selectedGroup.settimanaId ? formatWeekRange(selectedGroup.settimanaId, selectedGroup.settimanaFineId) : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -948,7 +949,7 @@ const UtilizziManagement = () => {
                               Settimana
                             </div>
                             <div className="text-sm text-white">
-                              {utilizzo.settimanaId ? formatWeek(utilizzo.settimanaId) : 'N/A'}
+                              {utilizzo.settimanaId ? formatWeekRange(utilizzo.settimanaId, utilizzo.settimanaFineId) : 'N/A'}
                             </div>
                           </div>
                           
