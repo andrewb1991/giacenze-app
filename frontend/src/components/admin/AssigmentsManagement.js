@@ -2747,6 +2747,20 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
                                 <div className="font-medium text-white flex items-center justify-center gap-1">
                                   <User className="w-3 h-3" />
                                   {assignment.userId?.username}
+                                  {/* Badge numero settimane se range */}
+                                  {(() => {
+                                    if (assignment.settimanaFineId && assignment.settimanaId) {
+                                      const weekDiff = assignment.settimanaFineId.numero - assignment.settimanaId.numero + 1;
+                                      if (weekDiff > 1) {
+                                        return (
+                                          <span className="ml-1 px-1.5 py-0.5 bg-purple-500/30 border border-purple-400/40 rounded text-purple-200 text-[10px] font-semibold">
+                                            {weekDiff} sett.
+                                          </span>
+                                        );
+                                      }
+                                    }
+                                    return null;
+                                  })()}
                                 </div>
                                 <div className="text-white/70 flex items-center justify-center gap-1 mt-1">
                                   <Truck className="w-3 h-3" />
@@ -2830,6 +2844,10 @@ const CalendarView = ({ assegnazioni, poli, settimane, ordiniData, rdtData, onBa
           <div className="flex items-center gap-2">
             <span className="text-blue-300 text-lg">🤝</span>
             <span className="text-white/80">Mezzo condiviso tra operatori</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-1.5 py-0.5 bg-purple-500/30 border border-purple-400/40 rounded text-purple-200 text-[10px] font-semibold">2 sett.</span>
+            <span className="text-white/80">Assegnazione multi-settimana</span>
           </div>
           {/* ✅ NUOVE ICONE NELLA LEGENDA */}
           <div className="flex items-center gap-2">
