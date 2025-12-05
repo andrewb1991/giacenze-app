@@ -407,6 +407,7 @@ const utilizzoSchema = new mongoose.Schema({
   quantitaRimasta: Number,
   dataUtilizzo: { type: Date, default: Date.now },
   settimanaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Settimana' },
+  settimanaFineId: { type: mongoose.Schema.Types.ObjectId, ref: 'Settimana' },
   poloId: { type: mongoose.Schema.Types.ObjectId, ref: 'Polo' },
   mezzoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Mezzo' },
   postazioneId: { type: mongoose.Schema.Types.ObjectId, ref: 'Postazione' },
@@ -947,6 +948,7 @@ app.get('/api/admin/utilizzi', authenticateToken, requireAdmin, async (req, res)
       .populate('userId', 'username email')
       .populate('productId', 'nome codice unita categoria')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('settimanaFineId', 'numero anno dataInizio dataFine')
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
       .populate('giacenzaUtenteId', 'quantitaDisponibile quantitaAssegnata quantitaMinima')
@@ -1267,6 +1269,7 @@ app.post('/api/use-product', authenticateToken, async (req, res) => {
       quantitaPrimaDellUso: quantitaPrecedente,
       quantitaRimasta: quantitaPrecedente - quantitaUtilizzata,
       settimanaId: assegnazione.settimanaId,
+      settimanaFineId: assegnazione.settimanaFineId || null,
       poloId: assegnazione.poloId,
       mezzoId: assegnazione.mezzoId,
       postazioneId: postazioneId || null
@@ -1828,6 +1831,7 @@ app.get('/api/utilizzi/my', authenticateToken, async (req, res) => {
     const utilizzi = await Utilizzo.find(filter)
       .populate('productId', 'nome codice unita categoria')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('settimanaFineId', 'numero anno dataInizio dataFine')
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
       .populate('postazioneId', 'nome indirizzo')
@@ -1859,6 +1863,7 @@ app.get('/api/admin/utilizzi', authenticateToken, requireAdmin, async (req, res)
       .populate('userId', 'username')
       .populate('productId', 'nome codice unita categoria')
       .populate('settimanaId', 'numero anno dataInizio dataFine')
+      .populate('settimanaFineId', 'numero anno dataInizio dataFine')
       .populate('poloId', 'nome')
       .populate('mezzoId', 'nome')
       .sort({ dataUtilizzo: -1 });
