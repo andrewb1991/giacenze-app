@@ -1106,29 +1106,33 @@ const AssignmentsManagement = () => {
       console.log('🔍 DEBUG: activeTab attuale:', activeTab);
       console.log('🔍 DEBUG: Numero ordine/rdt:', itemData.numero);
 
-      modalDiv.remove();
-
       try {
-        // Imposta il filtro per la ricerca
+        // 1. Imposta il filtro PRIMA di cambiare tab
         dispatch({
           type: 'SET_FILTRO_ORDINE_RDT',
           payload: { searchTerm: itemData.numero }
         });
         console.log('✅ DEBUG: Filtro impostato:', itemData.numero);
 
-        // Naviga alla sezione ordini se non ci siamo già
-        if (activeTab !== 'ordini') {
-          dispatch({ type: 'SET_ACTIVE_TAB', payload: 'ordini' });
-          console.log('✅ DEBUG: Navigato alla sezione ordini');
-        } else {
-          console.log('✅ DEBUG: Già nella sezione ordini - filtro applicato');
-        }
+        // 2. Nascondi immediatamente il modal (ma non rimuoverlo ancora)
+        modalDiv.style.display = 'none';
 
-        // Scroll verso l'alto per una migliore UX
+        // 3. Naviga alla sezione ordini
+        dispatch({ type: 'SET_ACTIVE_TAB', payload: 'ordini' });
+        console.log('✅ DEBUG: Navigato alla sezione ordini');
+
+        // 4. Scroll verso l'alto subito
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // 5. Rimuovi il modal dal DOM dopo un breve delay per sicurezza
+        setTimeout(() => {
+          modalDiv.remove();
+        }, 300);
+
       } catch (error) {
         console.error('❌ DEBUG: Errore nel dispatch:', error);
         alert('Errore nella navigazione: ' + error.message);
+        modalDiv.remove();
       }
     };
     
