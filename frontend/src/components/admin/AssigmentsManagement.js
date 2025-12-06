@@ -825,10 +825,12 @@ const AssignmentsManagement = () => {
       // Trova l'assegnazione collegata per ottenere l'operatore
       const assegnazione = assegnazioni.find(a => {
         if (numeroOrdine) {
-          const ordineNumero = typeof a.ordine === 'object' ? a.ordine.numero : a.ordine;
+          // Controlla che a.ordine non sia null prima di accedere a .numero
+          const ordineNumero = (typeof a.ordine === 'object' && a.ordine !== null) ? a.ordine.numero : a.ordine;
           return ordineNumero === numeroOrdine && a.attiva;
         } else if (numeroRdt) {
-          const rdtNumero = typeof a.rdt === 'object' ? a.rdt.numero : a.rdt;
+          // Controlla che a.rdt non sia null prima di accedere a .numero
+          const rdtNumero = (typeof a.rdt === 'object' && a.rdt !== null) ? a.rdt.numero : a.rdt;
           return rdtNumero === numeroRdt && a.attiva;
         }
         return false;
