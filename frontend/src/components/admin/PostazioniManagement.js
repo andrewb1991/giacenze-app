@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Edit, Trash2, Save, X, Building, MapPin, Download, Upload, FileSpreadsheet, Search, ChevronUp, ChevronDown, ChevronsUpDown, Settings, Truck } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Building, MapPin, Download, Upload, FileSpreadsheet, Search, ChevronUp, ChevronDown, ChevronsUpDown, Truck } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { apiCall } from '../../services/api';
 
@@ -456,15 +456,6 @@ const PostazioniManagement = () => {
               >
                 <Truck className="w-4 h-4" />
                 <span className="font-medium">Gestisci Mezzi</span>
-              </button>
-
-              <button
-                onClick={() => setCurrentPage('admin-poli')}
-                className="glass-button-secondary flex items-center gap-2 px-4 py-3 rounded-2xl hover:scale-105 transition-all duration-300"
-                title="Gestisci Poli"
-              >
-                <Settings className="w-4 h-4" />
-                <span className="font-medium">Gestisci Clienti</span>
               </button>
 
               <button

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, Building, MapPin, Search, ChevronUp, ChevronDown, ChevronsUpDown, ArrowLeft } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Building, MapPin, Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { apiCall } from '../../services/api';
 import { useModalAnimation } from '../../hooks/useModalAnimation';
+import Navigation, { SidebarProvider } from '../shared/Navigation';
+import SidebarMenu from '../shared/SidebarMenu';
 
 // Get API base URL helper
 const getApiBaseUrl = () => {
@@ -364,16 +366,23 @@ const PoliManagement = () => {
 
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6">
-      {/* Background Effects */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-        <div className="absolute top-40 right-20 w-72 h-72 bg-gradient-to-r from-yellow-400 to-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-gradient-to-r from-green-400 to-blue-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-      </div>
+    <SidebarProvider>
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
+        {/* Background Effects */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+          <div className="absolute top-40 right-20 w-72 h-72 bg-gradient-to-r from-yellow-400 to-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-gradient-to-r from-green-400 to-blue-600 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+        </div>
 
-      {/* Main Content */}
-      <div className="relative z-10 space-y-6">
+        {/* Sidebar Menu */}
+        <SidebarMenu />
+
+        {/* Navigation */}
+        <Navigation title="👔 Gestione Clienti" showBackToDashboard={true} showSidebarToggle={true} />
+
+        {/* Main Content */}
+        <div className="relative z-10 w-full mx-auto pt-20 pb-6 px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Header */}
         <div className="glass-card p-6 rounded-2xl">
           <div className="flex items-center justify-between">
@@ -388,18 +397,8 @@ const PoliManagement = () => {
                 </p>
               </div>
             </div>
-            
-            <div className="flex items-center space-x-3">
-              {/* Torna a Postazioni */}
-              <button
-                onClick={() => setCurrentPage('admin-postazioni')}
-                className="glass-button px-4 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center space-x-2"
-                title="Torna a Gestione Postazioni"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Torna a Postazioni</span>
-              </button>
 
+            <div className="flex items-center space-x-3">
               {/* Aggiungi Polo */}
               <button
                 onClick={() => setShowAddForm(true)}
@@ -1201,7 +1200,8 @@ const PoliManagement = () => {
           }
         }
       `}</style>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
