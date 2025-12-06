@@ -1108,28 +1108,26 @@ const AssignmentsManagement = () => {
         e.stopPropagation();
 
         try {
-          // 1. Imposta il filtro
+          // 1. Imposta il filtro nel context
           dispatch({
             type: 'SET_FILTRO_ORDINE_RDT',
             payload: { searchTerm: itemData.numero }
           });
 
-          // 2. Rimuovi il modal immediatamente
+          // 2. Rimuovi il modal
           modalDiv.remove();
 
-          // 3. Cambia tab solo se necessario
-          if (state.activeTab !== 'ordini') {
-            dispatch({ type: 'SET_ACTIVE_TAB', payload: 'ordini' });
-          } else {
-            // Forza applicazione filtro quando già nella tab ordini
-            setTimeout(() => {
-              const searchInput = document.querySelector('input[placeholder="Cerca numero..."]');
-              if (searchInput) {
-                searchInput.value = itemData.numero;
-                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-              }
-            }, 50);
-          }
+          // 3. Naviga alla tab ordini
+          dispatch({ type: 'SET_ACTIVE_TAB', payload: 'ordini' });
+
+          // 4. Backup: forza l'applicazione del filtro via DOM dopo il render
+          setTimeout(() => {
+            const searchInput = document.querySelector('input[placeholder="Cerca numero..."]');
+            if (searchInput) {
+              searchInput.value = itemData.numero;
+              searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          }, 100);
 
         } catch (error) {
           console.error('Errore durante la navigazione alla sezione ordini:', error);
