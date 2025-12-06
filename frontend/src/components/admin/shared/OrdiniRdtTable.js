@@ -28,7 +28,7 @@ import { triggerOrdiniRdtUpdate } from '../../../utils/events';
 import OrdineRdtModal from './OrdineRdtModal';
 import AggiungiProdottoOrdine from '../AggiungiProdottoOrdine';
 import { useModalAnimation } from '../../../hooks/useModalAnimation';
-import { sortWeeksCenteredOnCurrent, getCurrentWeekFromList } from '../../../utils/formatters';
+import { sortWeeksCenteredOnCurrent, getCurrentWeekFromList, formatWeekRange } from '../../../utils/formatters';
 
 const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsChange }) => {
   const { token, setError } = useAuth();
@@ -1168,8 +1168,8 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
                           </select>
                         ) : (
                           <div className="text-sm text-white">
-                            {assegnazione?.settimanaId ? 
-                              `Settimana ${assegnazione.settimanaId.numero}/${assegnazione.settimanaId.anno}` :
+                            {assegnazione?.settimanaId ?
+                              formatWeekRange(assegnazione.settimanaId, assegnazione.settimanaFineId) :
                               <span className="text-white/40 italic">Non assegnata</span>
                             }
                           </div>

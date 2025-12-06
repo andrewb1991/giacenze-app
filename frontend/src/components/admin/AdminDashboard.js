@@ -58,7 +58,7 @@ const AdminDashboard = () => {
       id: 'postazioni', 
       label: 'Gestione Postazioni', 
       icon: '🏢',
-      description: 'Gestisci poli, mezzi e postazioni di lavoro',
+      description: 'Gestisci Clienti, mezzi e postazioni di lavoro',
       color: 'from-red-400 to-pink-600'
     },
     { 

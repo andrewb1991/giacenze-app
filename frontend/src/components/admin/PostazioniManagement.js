@@ -464,7 +464,7 @@ const PostazioniManagement = () => {
                 title="Gestisci Poli"
               >
                 <Settings className="w-4 h-4" />
-                <span className="font-medium">Gestisci Poli</span>
+                <span className="font-medium">Gestisci Clienti</span>
               </button>
 
               <button

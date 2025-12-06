@@ -49,11 +49,12 @@ const CreaOrdini = () => {
   const [availableAssignments, setAvailableAssignments] = useState([]);
   const [showProductForm, setShowProductForm] = useState(false);
 
-  // Stati per clienti
+  // Stati per clienti (ora usa Poli)
   const [clienti, setClienti] = useState([]);
   const [clientiFiltered, setClientiFiltered] = useState([]);
   const [showClientiDropdown, setShowClientiDropdown] = useState(false);
   const [clienteSearchTerm, setClienteSearchTerm] = useState('');
+  const [loadingClienti, setLoadingClienti] = useState(false);
   const [tableProducts, setTableProducts] = useState([{ 
     id: Date.now(),
     productId: '',
@@ -95,21 +96,26 @@ const CreaOrdini = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Carica clienti dal database
-  useEffect(() => {
-    const loadClienti = async () => {
-      try {
-        const data = await apiCall('/clienti', {}, token);
-        setClienti(data || []);
-      } catch (err) {
-        console.error('Errore caricamento clienti:', err);
-      }
-    };
-
-    if (token) {
-      loadClienti();
+  // ✅ AGGIORNATO: Carica clienti (poli) tramite autocomplete
+  const searchClienti = async (searchTerm) => {
+    if (!searchTerm || searchTerm.trim().length < 1) {
+      setClientiFiltered([]);
+      setShowClientiDropdown(false);
+      return;
     }
-  }, [token]);
+
+    try {
+      setLoadingClienti(true);
+      const data = await apiCall(`/poli/autocomplete?q=${encodeURIComponent(searchTerm.trim())}`, {}, token);
+      setClientiFiltered(data || []);
+      setShowClientiDropdown(true);
+    } catch (err) {
+      console.error('Errore ricerca clienti:', err);
+      setClientiFiltered([]);
+    } finally {
+      setLoadingClienti(false);
+    }
+  };
 
   // Chiudi dropdown clienti quando si clicca fuori
   useEffect(() => {
@@ -290,23 +296,13 @@ const CreaOrdini = () => {
     }));
   };
 
-  // Gestione ricerca clienti
+  // ✅ AGGIORNATO: Gestione ricerca clienti tramite autocomplete
   const handleClienteSearch = (value) => {
     setClienteSearchTerm(value);
     updateFormData({ cliente: value });
 
-    if (value.length > 0) {
-      const filtered = clienti.filter(c =>
-        c.nome.toLowerCase().includes(value.toLowerCase()) ||
-        (c.email && c.email.toLowerCase().includes(value.toLowerCase())) ||
-        (c.partitaIva && c.partitaIva.toLowerCase().includes(value.toLowerCase()))
-      );
-      setClientiFiltered(filtered);
-      setShowClientiDropdown(true);
-    } else {
-      setClientiFiltered([]);
-      setShowClientiDropdown(false);
-    }
+    // Chiama API autocomplete con debouncing minimo
+    searchClienti(value);
   };
 
   const selectCliente = (cliente) => {
@@ -773,10 +769,21 @@ const CreaOrdini = () => {
                 </div>
               )}
 
-              {showClientiDropdown && clientiFiltered.length === 0 && clienteSearchTerm && (
+              {/* Loading indicator */}
+              {loadingClienti && clienteSearchTerm && (
+                <div className="absolute z-50 w-full mt-2 glass-dropdown rounded-2xl p-4">
+                  <div className="text-white/70 text-sm text-center flex items-center justify-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Ricerca clienti...</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {!loadingClienti && showClientiDropdown && clientiFiltered.length === 0 && clienteSearchTerm && (
                 <div className="absolute z-50 w-full mt-2 glass-dropdown rounded-2xl p-4">
                   <div className="text-white/70 text-sm text-center">
-                    Nessun cliente trovato. Digita il nome manualmente o crea un nuovo cliente.
+                    Nessun cliente trovato. Digita il nome manualmente.
                   </div>
                 </div>
               )}

@@ -59,6 +59,12 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
   const [availableAssignments, setAvailableAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAggiungiProdotti, setShowAggiungiProdotti] = useState(false);
+
+  // Stati per autocomplete clienti (poli)
+  const [clientiFiltered, setClientiFiltered] = useState([]);
+  const [showClientiDropdown, setShowClientiDropdown] = useState(false);
+  const [clienteSearchTerm, setClienteSearchTerm] = useState('');
+  const [loadingClienti, setLoadingClienti] = useState(false);
   
   // Funzione per ricaricare i dati dell'ordine
   const ricaricaDatiOrdine = async () => {
@@ -92,6 +98,40 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
     }
   };
   
+  // ✅ AGGIORNATO: Ricerca clienti (poli) tramite autocomplete
+  const searchClienti = async (searchTerm) => {
+    if (!searchTerm || searchTerm.trim().length < 1) {
+      setClientiFiltered([]);
+      setShowClientiDropdown(false);
+      return;
+    }
+
+    try {
+      setLoadingClienti(true);
+      const data = await apiCall(`/poli/autocomplete?q=${encodeURIComponent(searchTerm.trim())}`, {}, token);
+      setClientiFiltered(data || []);
+      setShowClientiDropdown(true);
+    } catch (err) {
+      console.error('Errore ricerca clienti:', err);
+      setClientiFiltered([]);
+    } finally {
+      setLoadingClienti(false);
+    }
+  };
+
+  // ✅ AGGIORNATO: Gestione ricerca clienti
+  const handleClienteSearch = (value) => {
+    setClienteSearchTerm(value);
+    updateFormData('cliente', value);
+    searchClienti(value);
+  };
+
+  const selectCliente = (cliente) => {
+    setClienteSearchTerm(cliente.nome);
+    updateFormData('cliente', cliente.nome);
+    setShowClientiDropdown(false);
+  };
+
   // RIMOSSO: Stati per gestione prodotti (ora gestiti in AggiungiProdottoOrdine)
 
   // Inizializza form con dati item
@@ -111,6 +151,9 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
         tempoStimato: item.tempoStimato || 60,
         stato: item.stato || 'CREATO'
       });
+
+      // Inizializza search term con cliente esistente
+      setClienteSearchTerm(item.cliente || '');
 
       // Trova assegnazione corrente
       if (assegnazioni) {
@@ -140,7 +183,7 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
   // Aggiorna assegnazioni disponibili quando cambia operatore
   useEffect(() => {
     if (operatoreId && assegnazioni) {
-      const userAssignments = assegnazioni.filter(a => 
+      const userAssignments = assegnazioni.filter(a =>
         a.userId?._id === operatoreId && a.attiva
       );
       setAvailableAssignments(userAssignments);
@@ -148,6 +191,18 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
       setAvailableAssignments([]);
     }
   }, [operatoreId, assegnazioni]);
+
+  // Chiudi dropdown clienti quando si clicca fuori
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showClientiDropdown && !event.target.closest('.cliente-autocomplete-container')) {
+        setShowClientiDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showClientiDropdown]);
 
   // RIMOSSO: Caricamento giacenze (ora gestito in AggiungiProdottoOrdine)
 
@@ -286,16 +341,69 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
                     />
                   </div>
 
-                  <div>
+                  <div className="cliente-autocomplete-container relative">
                     <label className="block text-sm font-medium text-white/80 mb-2">
                       Cliente *
                     </label>
                     <input
                       type="text"
-                      className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white"
-                      value={formData.cliente}
-                      onChange={(e) => updateFormData('cliente', e.target.value)}
+                      placeholder="Cerca cliente per nome, email o P.IVA..."
+                      className="glass-input w-full p-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                      value={clienteSearchTerm || formData.cliente}
+                      onChange={(e) => handleClienteSearch(e.target.value)}
+                      onFocus={() => {
+                        if (clienteSearchTerm && clientiFiltered.length > 0) {
+                          setShowClientiDropdown(true);
+                        }
+                      }}
                     />
+
+                    {/* Dropdown clienti */}
+                    {showClientiDropdown && clientiFiltered.length > 0 && (
+                      <div className="absolute z-50 w-full mt-2 glass-dropdown rounded-2xl overflow-hidden max-h-60 overflow-y-auto">
+                        {clientiFiltered.map((cliente) => (
+                          <div
+                            key={cliente._id}
+                            className="glass-dropdown-item p-4 cursor-pointer hover:bg-white/20 transition-all duration-200"
+                            onClick={() => selectCliente(cliente)}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="font-semibold text-white">{cliente.nome}</div>
+                                {cliente.email && (
+                                  <div className="text-sm text-white/70">{cliente.email}</div>
+                                )}
+                                {cliente.partitaIva && (
+                                  <div className="text-xs text-white/50">P.IVA: {cliente.partitaIva}</div>
+                                )}
+                                {cliente.citta && (
+                                  <div className="text-xs text-white/50">{cliente.citta}</div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Loading indicator */}
+                    {loadingClienti && clienteSearchTerm && (
+                      <div className="absolute z-50 w-full mt-2 glass-dropdown rounded-2xl p-4">
+                        <div className="text-white/70 text-sm text-center flex items-center justify-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          <span>Ricerca clienti...</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Empty state */}
+                    {!loadingClienti && showClientiDropdown && clientiFiltered.length === 0 && clienteSearchTerm && (
+                      <div className="absolute z-50 w-full mt-2 glass-dropdown rounded-2xl p-4">
+                        <div className="text-white/70 text-sm text-center">
+                          Nessun cliente trovato. Digita il nome manualmente.
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -698,6 +806,39 @@ const OrdineRdtModal = ({ item, onClose, onSave }) => {
         .modal-custom-bg {
           background: ${bgGradient} !important;
           background-image: ${bgGradient} !important;
+        }
+
+        .glass-dropdown {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-dropdown-item {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-dropdown-item:last-child {
+          border-bottom: none;
+        }
+
+        .glass-dropdown::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 3px;
+        }
+
+        .glass-dropdown::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.5);
         }
       `}</style>
     </div>

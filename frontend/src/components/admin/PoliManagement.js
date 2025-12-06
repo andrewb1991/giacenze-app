@@ -27,18 +27,30 @@ const PoliManagement = () => {
   const [isClosingForm, setIsClosingForm] = useState(false);
   const [addForm, setAddForm] = useState({
     nome: '',
+    descrizione: '',
     indirizzo: '',
-    latitudine: '',
-    longitudine: ''
+    citta: '',
+    cap: '',
+    email: '',
+    telefono: '',
+    partitaIva: '',
+    codiceFiscale: '',
+    note: ''
   });
-  
+
   // Stati per editing
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
     nome: '',
+    descrizione: '',
     indirizzo: '',
-    latitudine: '',
-    longitudine: ''
+    citta: '',
+    cap: '',
+    email: '',
+    telefono: '',
+    partitaIva: '',
+    codiceFiscale: '',
+    note: ''
   });
 
   // Stati per ordinamento
@@ -92,9 +104,15 @@ const PoliManagement = () => {
   const resetAddFormData = () => {
     setAddForm({
       nome: '',
+      descrizione: '',
       indirizzo: '',
-      latitudine: '',
-      longitudine: ''
+      citta: '',
+      cap: '',
+      email: '',
+      telefono: '',
+      partitaIva: '',
+      codiceFiscale: '',
+      note: ''
     });
   };
 
@@ -102,20 +120,23 @@ const PoliManagement = () => {
   const addPolo = async () => {
     try {
       setError('');
-      
+
       if (!addForm.nome.trim()) {
         setError('Il nome è obbligatorio');
         return;
       }
 
-      // Prepara i dati con coordinate nel formato corretto
       const newPolo = {
         nome: addForm.nome.trim(),
+        descrizione: addForm.descrizione.trim(),
         indirizzo: addForm.indirizzo.trim(),
-        coordinate: {
-          lat: parseFloat(addForm.latitudine) || '',
-          lng: parseFloat(addForm.longitudine) || ''
-        }
+        citta: addForm.citta.trim(),
+        cap: addForm.cap.trim(),
+        email: addForm.email.trim(),
+        telefono: addForm.telefono.trim(),
+        partitaIva: addForm.partitaIva.trim(),
+        codiceFiscale: addForm.codiceFiscale.trim(),
+        note: addForm.note.trim()
       };
 
       await apiCall('/poli', {
@@ -125,9 +146,9 @@ const PoliManagement = () => {
 
       await loadData();
       closeAddForm();
-      setError('Polo aggiunto con successo');
+      setError('Cliente aggiunto con successo');
     } catch (err) {
-      setError('Errore nell\'aggiunta del polo: ' + err.message);
+      setError('Errore nell\'aggiunta del cliente: ' + err.message);
     }
   };
 
@@ -136,9 +157,15 @@ const PoliManagement = () => {
     setEditingId(polo._id);
     setEditForm({
       nome: polo.nome || '',
+      descrizione: polo.descrizione || '',
       indirizzo: polo.indirizzo || '',
-      latitudine: polo.coordinate?.lat || '',
-      longitudine: polo.coordinate?.lng || ''
+      citta: polo.citta || '',
+      cap: polo.cap || '',
+      email: polo.email || '',
+      telefono: polo.telefono || '',
+      partitaIva: polo.partitaIva || '',
+      codiceFiscale: polo.codiceFiscale || '',
+      note: polo.note || ''
     });
   };
 
@@ -147,9 +174,15 @@ const PoliManagement = () => {
     setEditingId(null);
     setEditForm({
       nome: '',
+      descrizione: '',
       indirizzo: '',
-      latitudine: '',
-      longitudine: ''
+      citta: '',
+      cap: '',
+      email: '',
+      telefono: '',
+      partitaIva: '',
+      codiceFiscale: '',
+      note: ''
     });
   };
 
@@ -157,15 +190,18 @@ const PoliManagement = () => {
   const saveEdit = async (poloId) => {
     try {
       setError('');
-      
-      // Prepara i dati con coordinate nel formato corretto
+
       const updateData = {
         nome: editForm.nome,
+        descrizione: editForm.descrizione,
         indirizzo: editForm.indirizzo,
-        coordinate: {
-          lat: parseFloat(editForm.latitudine) || '',
-          lng: parseFloat(editForm.longitudine) || ''
-        }
+        citta: editForm.citta,
+        cap: editForm.cap,
+        email: editForm.email,
+        telefono: editForm.telefono,
+        partitaIva: editForm.partitaIva,
+        codiceFiscale: editForm.codiceFiscale,
+        note: editForm.note
       };
 
       await apiCall(`/poli/${poloId}`, {
@@ -175,7 +211,7 @@ const PoliManagement = () => {
 
       await loadData();
       cancelEdit();
-      setError('Polo aggiornato con successo');
+      setError('Cliente aggiornato con successo');
     } catch (err) {
       setError('Errore nella modifica: ' + err.message);
     }
@@ -346,9 +382,9 @@ const PoliManagement = () => {
                 <Building className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Gestione Poli</h2>
+                <h2 className="text-2xl font-bold text-white">Gestione Clienti</h2>
                 <p className="text-white/70">
-                  Gestisci i poli del sistema
+                  Gestisci i clienti del sistema
                 </p>
               </div>
             </div>
@@ -370,7 +406,7 @@ const PoliManagement = () => {
                 className="glass-button-primary px-6 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center space-x-2"
               >
                 <Plus className="w-5 h-5" />
-                <span>Nuovo Polo</span>
+                <span>Nuovo Cliente</span>
               </button>
             </div>
           </div>
@@ -382,7 +418,7 @@ const PoliManagement = () => {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-white flex items-center">
                 <Plus className="w-6 h-6 mr-3 text-green-400" />
-                Aggiungi Nuovo Polo
+                Aggiungi Nuovo Cliente
               </h3>
               <button
                 onClick={closeAddForm}
@@ -393,21 +429,55 @@ const PoliManagement = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Nome */}
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
-                  Nome Polo *
+                  Nome Cliente *
                 </label>
                 <div className="glass-input-container rounded-xl">
                   <input
                     type="text"
                     className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    placeholder="Es: Sede Centrale Milano"
+                    placeholder="Es: Azienda XYZ S.r.l."
                     value={addForm.nome}
                     onChange={(e) => setAddForm({ ...addForm, nome: e.target.value })}
                   />
                 </div>
               </div>
 
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Email
+                </label>
+                <div className="glass-input-container rounded-xl">
+                  <input
+                    type="email"
+                    className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                    placeholder="Es: info@cliente.it"
+                    value={addForm.email}
+                    onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Telefono */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Telefono
+                </label>
+                <div className="glass-input-container rounded-xl">
+                  <input
+                    type="tel"
+                    className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                    placeholder="Es: +39 02 1234567"
+                    value={addForm.telefono}
+                    onChange={(e) => setAddForm({ ...addForm, telefono: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Indirizzo */}
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
                   Indirizzo
@@ -416,41 +486,105 @@ const PoliManagement = () => {
                   <input
                     type="text"
                     className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    placeholder="Es: Via Roma 123, Milano"
+                    placeholder="Es: Via Roma 123"
                     value={addForm.indirizzo}
                     onChange={(e) => setAddForm({ ...addForm, indirizzo: e.target.value })}
                   />
                 </div>
               </div>
 
+              {/* Città */}
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
-                  Latitudine
+                  Città
                 </label>
                 <div className="glass-input-container rounded-xl">
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
                     className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    placeholder="Es: 45.464664"
-                    value={addForm.latitudine}
-                    onChange={(e) => setAddForm({ ...addForm, latitudine: e.target.value })}
+                    placeholder="Es: Milano"
+                    value={addForm.citta}
+                    onChange={(e) => setAddForm({ ...addForm, citta: e.target.value })}
                   />
                 </div>
               </div>
 
+              {/* CAP */}
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
-                  Longitudine
+                  CAP
                 </label>
                 <div className="glass-input-container rounded-xl">
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
                     className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
-                    placeholder="Es: 9.188540"
-                    value={addForm.longitudine}
-                    onChange={(e) => setAddForm({ ...addForm, longitudine: e.target.value })}
+                    placeholder="Es: 20100"
+                    value={addForm.cap}
+                    onChange={(e) => setAddForm({ ...addForm, cap: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* P.IVA */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Partita IVA
+                </label>
+                <div className="glass-input-container rounded-xl">
+                  <input
+                    type="text"
+                    className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                    placeholder="Es: 12345678901"
+                    value={addForm.partitaIva}
+                    onChange={(e) => setAddForm({ ...addForm, partitaIva: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Codice Fiscale */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Codice Fiscale
+                </label>
+                <div className="glass-input-container rounded-xl">
+                  <input
+                    type="text"
+                    className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                    placeholder="Es: 12345678901"
+                    value={addForm.codiceFiscale}
+                    onChange={(e) => setAddForm({ ...addForm, codiceFiscale: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Descrizione - colspan 2 */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Descrizione
+                </label>
+                <div className="glass-input-container rounded-xl">
+                  <textarea
+                    rows="2"
+                    className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50 resize-none"
+                    placeholder="Breve descrizione del cliente..."
+                    value={addForm.descrizione}
+                    onChange={(e) => setAddForm({ ...addForm, descrizione: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Note - colspan 2 */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Note
+                </label>
+                <div className="glass-input-container rounded-xl">
+                  <textarea
+                    rows="3"
+                    className="glass-input w-full p-4 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50 resize-none"
+                    placeholder="Note aggiuntive..."
+                    value={addForm.note}
+                    onChange={(e) => setAddForm({ ...addForm, note: e.target.value })}
                   />
                 </div>
               </div>
@@ -462,7 +596,7 @@ const PoliManagement = () => {
                 className="glass-button-success px-6 py-2 rounded-xl text-white hover:scale-105 transition-all duration-300 flex items-center space-x-2"
               >
                 <Save className="w-4 h-4" />
-                <span>Salva Polo</span>
+                <span>Salva Cliente</span>
               </button>
               <button
                 onClick={closeAddForm}
@@ -484,14 +618,14 @@ const PoliManagement = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-white/80 mb-2">
-                Cerca per Nome Polo
+                Cerca per Nome Cliente
               </label>
               <div className="glass-input-container rounded-xl">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5" />
                   <input
                     type="text"
-                    placeholder="Nome polo..."
+                    placeholder="Nome cliente..."
                     className="glass-input w-full pl-10 pr-4 py-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
                     value={searchPoli}
                     onChange={(e) => setSearchPoli(e.target.value)}
@@ -525,7 +659,7 @@ const PoliManagement = () => {
           <div className="px-6 py-4 border-b border-white/10">
             <h3 className="text-lg font-semibold text-white flex items-center">
               <Building className="w-5 h-5 mr-2" />
-              Lista Poli ({sortedPoli.length})
+              Lista Clienti ({sortedPoli.length})
             </h3>
           </div>
           
@@ -535,20 +669,20 @@ const PoliManagement = () => {
               <div className="space-y-2">
                 {/* Header skeleton */}
                 <div className="glass-table-header-row flex">
-                  {[...Array(4)].map((_, i) => (
+                  {[...Array(6)].map((_, i) => (
                     <div key={i} className="flex-1 px-6 py-3">
                       <div className="animate-pulse bg-white/20 h-4 rounded"></div>
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Row skeletons */}
                 {[...Array(5)].map((_, rowIndex) => (
                   <div key={rowIndex} className="glass-table-row flex border-t border-white/5">
-                    {[...Array(4)].map((_, colIndex) => (
+                    {[...Array(6)].map((_, colIndex) => (
                       <div key={colIndex} className="flex-1 px-6 py-4">
-                        <div className="animate-pulse bg-white/10 h-4 rounded" 
-                             style={{ animationDelay: `${(rowIndex * 4 + colIndex) * 100}ms` }}>
+                        <div className="animate-pulse bg-white/10 h-4 rounded"
+                             style={{ animationDelay: `${(rowIndex * 6 + colIndex) * 100}ms` }}>
                         </div>
                       </div>
                     ))}
@@ -559,16 +693,19 @@ const PoliManagement = () => {
               <table className="w-full">
                 <thead>
                   <tr className="glass-table-header-row">
-                    <th 
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
                       onClick={() => handleSort('nome')}
                     >
                       <div className="flex items-center justify-between">
-                        Nome Polo
+                        Nome Cliente
                         {renderSortIcon('nome')}
                       </div>
                     </th>
-                    <th 
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
+                      Contatti
+                    </th>
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
                       onClick={() => handleSort('indirizzo')}
                     >
@@ -578,7 +715,10 @@ const PoliManagement = () => {
                       </div>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                      Coordinate
+                      P.IVA / C.F.
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
+                      Note
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-white/80 uppercase tracking-wider">
                       Azioni
@@ -592,7 +732,7 @@ const PoliManagement = () => {
                     return (
                       <tr key={polo._id} className="glass-table-row hover:bg-white/5 transition-all duration-300">
                         {/* Nome */}
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4">
                           {isEditing ? (
                             <input
                               type="text"
@@ -604,60 +744,125 @@ const PoliManagement = () => {
                             <div className="flex items-center">
                               <Building className="w-4 h-4 mr-2 text-blue-300" />
                               <div>
-                                <div className="text-sm font-medium text-white">
-                                  {polo.nome}
-                                </div>
+                                <div className="text-sm font-medium text-white">{polo.nome}</div>
+                                {polo.descrizione && (
+                                  <div className="text-xs text-white/50 mt-1">{polo.descrizione}</div>
+                                )}
                               </div>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Contatti */}
+                        <td className="px-6 py-4">
+                          {isEditing ? (
+                            <div className="space-y-2">
+                              <input
+                                type="email"
+                                placeholder="Email"
+                                className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white text-sm"
+                                value={editForm.email}
+                                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                              />
+                              <input
+                                type="tel"
+                                placeholder="Telefono"
+                                className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white text-sm"
+                                value={editForm.telefono}
+                                onChange={(e) => setEditForm({ ...editForm, telefono: e.target.value })}
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-sm text-white">
+                              {polo.email && <div>{polo.email}</div>}
+                              {polo.telefono && <div className="text-white/70">{polo.telefono}</div>}
+                              {!polo.email && !polo.telefono && <div className="text-white/50">N/A</div>}
                             </div>
                           )}
                         </td>
 
                         {/* Indirizzo */}
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4">
                           {isEditing ? (
-                            <input
-                              type="text"
-                              className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white"
-                              value={editForm.indirizzo}
-                              onChange={(e) => setEditForm({ ...editForm, indirizzo: e.target.value })}
-                            />
-                          ) : (
-                            <div className="flex items-center">
-                              <MapPin className="w-4 h-4 mr-2 text-green-300" />
-                              <div className="text-sm text-white">
-                                {polo.indirizzo || 'N/A'}
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                placeholder="Indirizzo"
+                                className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white text-sm"
+                                value={editForm.indirizzo}
+                                onChange={(e) => setEditForm({ ...editForm, indirizzo: e.target.value })}
+                              />
+                              <div className="grid grid-cols-2 gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Città"
+                                  className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white text-sm"
+                                  value={editForm.citta}
+                                  onChange={(e) => setEditForm({ ...editForm, citta: e.target.value })}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="CAP"
+                                  className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white text-sm"
+                                  value={editForm.cap}
+                                  onChange={(e) => setEditForm({ ...editForm, cap: e.target.value })}
+                                />
                               </div>
+                            </div>
+                          ) : (
+                            <div className="text-sm text-white">
+                              {polo.indirizzo && <div>{polo.indirizzo}</div>}
+                              {(polo.citta || polo.cap) && (
+                                <div className="text-white/70">
+                                  {polo.cap} {polo.citta}
+                                </div>
+                              )}
+                              {!polo.indirizzo && !polo.citta && <div className="text-white/50">N/A</div>}
                             </div>
                           )}
                         </td>
 
-                        {/* Coordinate */}
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        {/* P.IVA / C.F. */}
+                        <td className="px-6 py-4">
                           {isEditing ? (
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-2">
                               <input
-                                type="number"
-                                step="any"
-                                placeholder="Lat"
-                                className="glass-input w-full px-2 py-1 rounded-lg bg-transparent border border-white/20 outline-none text-white text-xs"
-                                value={editForm.latitudine}
-                                onChange={(e) => setEditForm({ ...editForm, latitudine: e.target.value })}
+                                type="text"
+                                placeholder="P.IVA"
+                                className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white text-sm"
+                                value={editForm.partitaIva}
+                                onChange={(e) => setEditForm({ ...editForm, partitaIva: e.target.value })}
                               />
                               <input
-                                type="number"
-                                step="any"
-                                placeholder="Lng"
-                                className="glass-input w-full px-2 py-1 rounded-lg bg-transparent border border-white/20 outline-none text-white text-xs"
-                                value={editForm.longitudine}
-                                onChange={(e) => setEditForm({ ...editForm, longitudine: e.target.value })}
+                                type="text"
+                                placeholder="C.F."
+                                className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white text-sm"
+                                value={editForm.codiceFiscale}
+                                onChange={(e) => setEditForm({ ...editForm, codiceFiscale: e.target.value })}
                               />
                             </div>
                           ) : (
-                            <div className="text-sm text-white/70">
-                              {polo.coordinate?.lat && polo.coordinate?.lng 
-                                ? `${polo.coordinate.lat}, ${polo.coordinate.lng}`
-                                : 'N/A'
-                              }
+                            <div className="text-sm text-white">
+                              {polo.partitaIva && <div>P.IVA: {polo.partitaIva}</div>}
+                              {polo.codiceFiscale && <div className="text-white/70">C.F.: {polo.codiceFiscale}</div>}
+                              {!polo.partitaIva && !polo.codiceFiscale && <div className="text-white/50">N/A</div>}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Note */}
+                        <td className="px-6 py-4">
+                          {isEditing ? (
+                            <textarea
+                              rows="2"
+                              placeholder="Note..."
+                              className="glass-input w-full px-3 py-2 rounded-lg bg-transparent border border-white/20 outline-none text-white text-sm resize-none"
+                              value={editForm.note}
+                              onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
+                            />
+                          ) : (
+                            <div className="text-sm text-white/70 max-w-xs truncate">
+                              {polo.note || '-'}
                             </div>
                           )}
                         </td>
@@ -715,11 +920,11 @@ const PoliManagement = () => {
                   <Building className="w-8 h-8 text-white/50" />
                 </div>
                 <p className="text-white/70 text-lg mb-2">
-                  {poli.length === 0 ? 'Nessun polo creato' : 'Nessun polo trovato con i filtri selezionati'}
+                  {poli.length === 0 ? 'Nessun cliente creato' : 'Nessun cliente trovato con i filtri selezionati'}
                 </p>
                 <p className="text-white/50 text-sm">
-                  {poli.length === 0 
-                    ? 'Clicca "Nuovo Polo" per iniziare'
+                  {poli.length === 0
+                    ? 'Clicca "Nuovo Cliente" per iniziare'
                     : 'Prova a modificare i filtri per vedere più risultati'
                   }
                 </p>

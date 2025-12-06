@@ -57,13 +57,16 @@ const productSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const poloSchema = new mongoose.Schema({
-  nome: { type: String, required: true },
-  descrizione: String,
-  indirizzo: String,
-  coordinate: {
-    lat: { type: Number },
-    lng: { type: Number }
-  },
+  nome: { type: String, required: true, trim: true },
+  descrizione: { type: String, trim: true },
+  indirizzo: { type: String, trim: true },
+  citta: { type: String, trim: true },
+  cap: { type: String, trim: true },
+  email: { type: String, trim: true },
+  telefono: { type: String, trim: true },
+  partitaIva: { type: String, trim: true },
+  codiceFiscale: { type: String, trim: true },
+  note: { type: String, trim: true },
   attivo: { type: Boolean, default: true }
 }, { timestamps: true });
 
@@ -603,21 +606,6 @@ const RDT = mongoose.model('RDT', rdtSchema);
 const RicaricaGiacenza = mongoose.model('RicaricaGiacenza', ricaricaGiacenzaSchema);
 const Postazione = mongoose.model('Postazione', postazioneSchema);
 
-// Schema Cliente
-const clienteSchema = new mongoose.Schema({
-  nome: { type: String, required: true, trim: true },
-  email: { type: String, trim: true },
-  telefono: { type: String, trim: true },
-  indirizzo: { type: String, trim: true },
-  citta: { type: String, trim: true },
-  cap: { type: String, trim: true },
-  partitaIva: { type: String, trim: true },
-  codiceFiscale: { type: String, trim: true },
-  note: { type: String, trim: true },
-  attivo: { type: Boolean, default: true }
-}, { timestamps: true });
-
-const Cliente = mongoose.model('Cliente', clienteSchema);
 // Middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -2293,30 +2281,36 @@ app.get('/api/poli', authenticateToken, async (req, res) => {
 // POST - Crea nuovo polo (Admin)
 app.post('/api/poli', authenticateToken, async (req, res) => {
   try {
-    const { nome, descrizione, indirizzo, coordinate } = req.body;
-    
+    const { nome, descrizione, indirizzo, citta, cap, email, telefono, partitaIva, codiceFiscale, note } = req.body;
+
     if (!nome) {
-      return res.status(400).json({ message: 'Il nome del polo è obbligatorio' });
+      return res.status(400).json({ message: 'Il nome del cliente è obbligatorio' });
     }
 
     // Verifica se esiste già un polo con lo stesso nome
     const existingPolo = await Polo.findOne({ nome: nome.trim(), attivo: true });
     if (existingPolo) {
-      return res.status(400).json({ message: 'Esiste già un polo con questo nome' });
+      return res.status(400).json({ message: 'Esiste già un cliente con questo nome' });
     }
 
     const newPolo = new Polo({
       nome: nome.trim(),
       descrizione: descrizione?.trim() || '',
       indirizzo: indirizzo?.trim() || '',
-      coordinate: coordinate || { lat: '', lng: '' },
+      citta: citta?.trim() || '',
+      cap: cap?.trim() || '',
+      email: email?.trim() || '',
+      telefono: telefono?.trim() || '',
+      partitaIva: partitaIva?.trim() || '',
+      codiceFiscale: codiceFiscale?.trim() || '',
+      note: note?.trim() || '',
       attivo: true
     });
 
     const savedPolo = await newPolo.save();
     res.status(201).json(savedPolo);
   } catch (error) {
-    console.error('❌ Errore creazione polo:', error);
+    console.error('❌ Errore creazione cliente:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -2325,20 +2319,20 @@ app.post('/api/poli', authenticateToken, async (req, res) => {
 app.put('/api/poli/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nome, descrizione, indirizzo, coordinate } = req.body;
-    
+    const { nome, descrizione, indirizzo, citta, cap, email, telefono, partitaIva, codiceFiscale, note } = req.body;
+
     if (!nome) {
-      return res.status(400).json({ message: 'Il nome del polo è obbligatorio' });
+      return res.status(400).json({ message: 'Il nome del cliente è obbligatorio' });
     }
 
     // Verifica se esiste già un altro polo con lo stesso nome
-    const existingPolo = await Polo.findOne({ 
-      nome: nome.trim(), 
+    const existingPolo = await Polo.findOne({
+      nome: nome.trim(),
       attivo: true,
       _id: { $ne: id }
     });
     if (existingPolo) {
-      return res.status(400).json({ message: 'Esiste già un polo con questo nome' });
+      return res.status(400).json({ message: 'Esiste già un cliente con questo nome' });
     }
 
     const updatedPolo = await Polo.findByIdAndUpdate(
@@ -2347,7 +2341,13 @@ app.put('/api/poli/:id', authenticateToken, async (req, res) => {
         nome: nome.trim(),
         descrizione: descrizione?.trim() || '',
         indirizzo: indirizzo?.trim() || '',
-        coordinate: coordinate || { lat: '', lng: '' }
+        citta: citta?.trim() || '',
+        cap: cap?.trim() || '',
+        email: email?.trim() || '',
+        telefono: telefono?.trim() || '',
+        partitaIva: partitaIva?.trim() || '',
+        codiceFiscale: codiceFiscale?.trim() || '',
+        note: note?.trim() || ''
       },
       { new: true, runValidators: true }
     );
@@ -2453,6 +2453,30 @@ app.delete('/api/poli/:id/force', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Errore eliminazione forzata polo:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// GET - Autocomplete nomi Poli (per Ordini e RDT)
+app.get('/api/poli/autocomplete', authenticateToken, async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q || q.trim().length < 1) {
+      return res.json([]);
+    }
+
+    const poli = await Polo.find({
+      attivo: true,
+      nome: { $regex: q.trim(), $options: 'i' }
+    })
+      .select('nome email telefono indirizzo citta cap partitaIva')
+      .sort({ nome: 1 })
+      .limit(10);
+
+    res.json(poli);
+  } catch (error) {
+    console.error('❌ Errore autocomplete poli:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -5654,114 +5678,6 @@ app.post('/api/postazioni/copy', authenticateToken, requireAdmin, async (req, re
     });
   } catch (error) {
     console.error('❌ Errore copia postazioni:', error);
-    res.status(400).json({ message: error.message });
-  }
-});
-
-// =====================================================
-// ROTTE API PER GESTIONE CLIENTI
-// =====================================================
-
-// GET - Lista tutti i clienti
-app.get('/api/clienti', authenticateToken, async (req, res) => {
-  try {
-    const clienti = await Cliente.find({ attivo: true })
-      .sort({ nome: 1 });
-    res.json(clienti);
-  } catch (error) {
-    console.error('❌ Errore caricamento clienti:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// GET - Dettaglio cliente singolo
-app.get('/api/clienti/:id', authenticateToken, async (req, res) => {
-  try {
-    const cliente = await Cliente.findById(req.params.id);
-    if (!cliente) {
-      return res.status(404).json({ message: 'Cliente non trovato' });
-    }
-    res.json(cliente);
-  } catch (error) {
-    console.error('❌ Errore caricamento cliente:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// POST - Crea nuovo cliente
-app.post('/api/clienti', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const { nome, email, telefono, indirizzo, citta, cap, partitaIva, codiceFiscale, note } = req.body;
-
-    if (!nome) {
-      return res.status(400).json({ message: 'Il nome del cliente è obbligatorio' });
-    }
-
-    const nuovoCliente = new Cliente({
-      nome,
-      email,
-      telefono,
-      indirizzo,
-      citta,
-      cap,
-      partitaIva,
-      codiceFiscale,
-      note
-    });
-
-    await nuovoCliente.save();
-    console.log('✅ Cliente creato:', nuovoCliente.nome);
-    res.status(201).json(nuovoCliente);
-  } catch (error) {
-    console.error('❌ Errore creazione cliente:', error);
-    res.status(400).json({ message: error.message });
-  }
-});
-
-// PUT - Modifica cliente
-app.put('/api/clienti/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const { nome, email, telefono, indirizzo, citta, cap, partitaIva, codiceFiscale, note } = req.body;
-
-    const cliente = await Cliente.findById(req.params.id);
-    if (!cliente) {
-      return res.status(404).json({ message: 'Cliente non trovato' });
-    }
-
-    if (nome !== undefined) cliente.nome = nome;
-    if (email !== undefined) cliente.email = email;
-    if (telefono !== undefined) cliente.telefono = telefono;
-    if (indirizzo !== undefined) cliente.indirizzo = indirizzo;
-    if (citta !== undefined) cliente.citta = citta;
-    if (cap !== undefined) cliente.cap = cap;
-    if (partitaIva !== undefined) cliente.partitaIva = partitaIva;
-    if (codiceFiscale !== undefined) cliente.codiceFiscale = codiceFiscale;
-    if (note !== undefined) cliente.note = note;
-
-    await cliente.save();
-    console.log('✅ Cliente modificato:', cliente.nome);
-    res.json(cliente);
-  } catch (error) {
-    console.error('❌ Errore modifica cliente:', error);
-    res.status(400).json({ message: error.message });
-  }
-});
-
-// DELETE - Elimina cliente (soft delete)
-app.delete('/api/clienti/:id', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const cliente = await Cliente.findById(req.params.id);
-    if (!cliente) {
-      return res.status(404).json({ message: 'Cliente non trovato' });
-    }
-
-    cliente.attivo = false;
-    await cliente.save();
-
-    console.log('✅ Cliente eliminato (soft):', cliente.nome);
-    res.json({ message: 'Cliente eliminato con successo', cliente });
-  } catch (error) {
-    console.error('❌ Errore eliminazione cliente:', error);
     res.status(400).json({ message: error.message });
   }
 });
