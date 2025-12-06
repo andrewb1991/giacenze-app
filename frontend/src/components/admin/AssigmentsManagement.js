@@ -1101,38 +1101,53 @@ const AssignmentsManagement = () => {
     document.getElementById('close-real-modal-btn').onclick = () => modalDiv.remove();
     
     // Pulsante "Vai a Ordini/RDT" - naviga a OrdiniManagement con filtro
-    document.getElementById('goto-management-btn').onclick = () => {
-      console.log('🔍 DEBUG: Click su Vai a Ordini');
-      console.log('🔍 DEBUG: activeTab attuale:', activeTab);
-      console.log('🔍 DEBUG: Numero ordine/rdt:', itemData.numero);
+    const gotoBtn = document.getElementById('goto-management-btn');
+    if (gotoBtn) {
+      gotoBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
 
-      try {
-        // 1. Imposta il filtro PRIMA di cambiare tab
-        dispatch({
-          type: 'SET_FILTRO_ORDINE_RDT',
-          payload: { searchTerm: itemData.numero }
-        });
-        console.log('✅ DEBUG: Filtro impostato:', itemData.numero);
+        console.log('🔍 DEBUG: Click su Vai a Ordini');
+        console.log('🔍 DEBUG: activeTab attuale:', state.activeTab);
+        console.log('🔍 DEBUG: Numero ordine/rdt:', itemData.numero);
 
-        // 2. Nascondi immediatamente il modal (ma non rimuoverlo ancora)
-        modalDiv.style.display = 'none';
+        try {
+          // 1. Imposta il filtro
+          dispatch({
+            type: 'SET_FILTRO_ORDINE_RDT',
+            payload: { searchTerm: itemData.numero }
+          });
+          console.log('✅ DEBUG: Filtro impostato:', itemData.numero);
 
-        // 3. Naviga alla sezione ordini
-        dispatch({ type: 'SET_ACTIVE_TAB', payload: 'ordini' });
-        console.log('✅ DEBUG: Navigato alla sezione ordini');
-
-        // 4. Rimuovi il modal dopo un breve delay
-        setTimeout(() => {
+          // 2. Rimuovi il modal immediatamente
           modalDiv.remove();
           console.log('✅ DEBUG: Modal rimosso');
-        }, 100);
 
-      } catch (error) {
-        console.error('❌ DEBUG: Errore nel dispatch:', error);
-        alert('Errore nella navigazione: ' + error.message);
-        modalDiv.remove();
-      }
-    };
+          // 3. Cambia tab solo se necessario
+          if (state.activeTab !== 'ordini') {
+            dispatch({ type: 'SET_ACTIVE_TAB', payload: 'ordini' });
+            console.log('✅ DEBUG: Navigato alla sezione ordini');
+          } else {
+            console.log('ℹ️ DEBUG: Già nella sezione ordini - filtro applicato');
+            // Forza un piccolo re-render per assicurarsi che il filtro venga applicato
+            setTimeout(() => {
+              const searchInput = document.querySelector('input[placeholder="Cerca numero..."]');
+              if (searchInput) {
+                searchInput.value = itemData.numero;
+                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+            }, 50);
+          }
+
+        } catch (error) {
+          console.error('❌ DEBUG: Errore:', error);
+          alert('Errore nella navigazione: ' + error.message);
+          modalDiv.remove();
+        }
+      };
+    } else {
+      console.error('❌ DEBUG: Pulsante goto-management-btn non trovato!');
+    }
     
     // Chiudi cliccando fuori dal modal
     modalDiv.onclick = (e) => {
