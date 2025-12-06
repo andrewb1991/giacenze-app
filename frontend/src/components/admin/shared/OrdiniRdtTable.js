@@ -163,8 +163,6 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
   // Applica filtro automatico da navigazione AssigmentsManagement
   useEffect(() => {
     if (state.filtroOrdineRdt && state.filtroOrdineRdt.searchTerm) {
-      console.log('🔍 Applicazione filtro automatico:', state.filtroOrdineRdt.searchTerm);
-
       // Applica il filtro di ricerca
       setFilters(prev => ({
         ...prev,
@@ -176,8 +174,6 @@ const OrdiniRdtTable = ({ title = "Ordini e RDT", showActions = true, onItemsCha
         type: 'SET_FILTRO_ORDINE_RDT',
         payload: null
       });
-
-      console.log('✅ Filtro applicato e rimosso dal contesto');
     }
   }, [state.filtroOrdineRdt, contextDispatch]);
 
