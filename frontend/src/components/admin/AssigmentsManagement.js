@@ -38,7 +38,7 @@ import { listenToOrdiniRdtUpdates, triggerOrdiniRdtUpdate } from '../../utils/ev
 // import OrdineRdtModal from './shared/OrdineRdtModal'; // Non più necessario - usiamo DOM puro
 
 const AssignmentsManagement = () => {
-  const { token, setError } = useAuth();
+  const { token, setError, setCurrentPage } = useAuth();
   const { users, poli, mezzi, settimane } = useGiacenze();
   const { state, dispatch } = useAppContext();
   const { assegnazioneForm, editAssignmentId, editForm, activeTab } = state;
@@ -1117,17 +1117,8 @@ const AssignmentsManagement = () => {
           // 2. Rimuovi il modal
           modalDiv.remove();
 
-          // 3. Naviga alla tab ordini
-          dispatch({ type: 'SET_ACTIVE_TAB', payload: 'ordini' });
-
-          // 4. Backup: forza l'applicazione del filtro via DOM dopo il render
-          setTimeout(() => {
-            const searchInput = document.querySelector('input[placeholder="Cerca numero..."]');
-            if (searchInput) {
-              searchInput.value = itemData.numero;
-              searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-          }, 100);
+          // 3. Naviga alla pagina Gestione Ordini (come il menu burger)
+          setCurrentPage('admin-ordini');
 
         } catch (error) {
           console.error('Errore durante la navigazione alla sezione ordini:', error);
