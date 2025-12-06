@@ -35,6 +35,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { apiCall } from '../../services/api';
 import { formatWeek, formatWeekRange, sortAssignmentsByCurrentWeekFirst, sortWeeksChronologically, getCurrentWeekIndex, getCurrentWeekFromList, sortWeeksCenteredOnCurrent } from '../../utils/formatters';
 import { listenToOrdiniRdtUpdates, triggerOrdiniRdtUpdate } from '../../utils/events';
+import Pagination from '../shared/Pagination';
 // import OrdineRdtModal from './shared/OrdineRdtModal'; // Non più necessario - usiamo DOM puro
 
 const AssignmentsManagement = () => {
@@ -80,6 +81,10 @@ const AssignmentsManagement = () => {
   const [assegnazioni, setAssegnazioni] = useState([]);
   const [filteredAssegnazioni, setFilteredAssegnazioni] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Stati per paginazione
+  const [currentPagePagination, setCurrentPagePagination] = useState(1);
+  const pageSize = 20;
 
   // Mouse tracking
 
@@ -734,6 +739,18 @@ const AssignmentsManagement = () => {
 
     setFilteredAssegnazioni(filtered);
   }, [assegnazioni, filters.searchTerm, sortConfig]);
+
+  // Reset pagina quando cambiano i filtri
+  useEffect(() => {
+    setCurrentPagePagination(1);
+  }, [filters, sortConfig, showAllWeeks]);
+
+  // Calcola dati paginati
+  const totalPages = Math.ceil(filteredAssegnazioni.length / pageSize);
+  const paginatedAssegnazioni = filteredAssegnazioni.slice(
+    (currentPagePagination - 1) * pageSize,
+    currentPagePagination * pageSize
+  );
 
   // Ricarica quando cambiano i filtri principali - ✅ AGGIORNATO
   useEffect(() => {
@@ -1969,7 +1986,7 @@ const AssignmentsManagement = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {filteredAssegnazioni.map(assegnazione => (
+                  {paginatedAssegnazioni.map(assegnazione => (
                     <tr key={assegnazione._id} className="glass-table-row hover:bg-white/5 transition-all duration-300">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
@@ -2307,6 +2324,15 @@ const AssignmentsManagement = () => {
                 </div>
               )}
             </div>
+
+            {/* Paginazione */}
+            <Pagination
+              currentPage={currentPagePagination}
+              totalPages={totalPages}
+              totalItems={filteredAssegnazioni.length}
+              pageSize={pageSize}
+              onPageChange={(page) => setCurrentPagePagination(page)}
+            />
         </div>
       </div>
 

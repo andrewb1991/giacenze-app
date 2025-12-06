@@ -5,6 +5,7 @@ import { apiCall } from '../../services/api';
 import { useModalAnimation } from '../../hooks/useModalAnimation';
 import Navigation, { SidebarProvider } from '../shared/Navigation';
 import SidebarMenu from '../shared/SidebarMenu';
+import Pagination from '../shared/Pagination';
 
 // Get API base URL helper
 const getApiBaseUrl = () => {
@@ -58,10 +59,14 @@ const PoliManagement = () => {
   // Stati per ordinamento
   const [sortField, setSortField] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
-  
+
   // Stati per filtri di ricerca
   const [searchPoli, setSearchPoli] = useState('');
   const [searchIndirizzi, setSearchIndirizzi] = useState('');
+
+  // Stati per paginazione
+  const [tablePage, setTablePage] = useState(1);
+  const pageSize = 20;
 
   // Stati per popup conferma eliminazione
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -353,6 +358,18 @@ const PoliManagement = () => {
   };
 
   const sortedPoli = getSortedPoli();
+
+  // Reset pagina quando cambiano i filtri
+  useEffect(() => {
+    setTablePage(1);
+  }, [searchPoli, searchIndirizzi, sortField, sortDirection]);
+
+  // Calcola dati paginati
+  const totalPages = Math.ceil(sortedPoli.length / pageSize);
+  const paginatedPoli = sortedPoli.slice(
+    (tablePage - 1) * pageSize,
+    tablePage * pageSize
+  );
 
   // Render icona ordinamento
   const renderSortIcon = (field) => {
@@ -725,7 +742,7 @@ const PoliManagement = () => {
                   </tr>
                 </thead>
                 <tbody className="glass-table-body">
-                  {sortedPoli.map(polo => {
+                  {paginatedPoli.map(polo => {
                     const isEditing = editingId === polo._id;
                     
                     return (
@@ -941,6 +958,15 @@ const PoliManagement = () => {
               </div>
             )}
           </div>
+
+          {/* Paginazione */}
+          <Pagination
+            currentPage={tablePage}
+            totalPages={totalPages}
+            totalItems={sortedPoli.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setTablePage(page)}
+          />
         </div>
       </div>
 

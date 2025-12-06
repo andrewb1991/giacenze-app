@@ -5,6 +5,7 @@ import { useGiacenze } from '../../hooks/useGiacenze';
 import { useAppContext } from '../../contexts/AppContext';
 import { calculatePercentage, formatDate } from '../../utils/formatters';
 import UserGiacenzeView from './UserGiacenzeView';
+import Pagination from '../shared/Pagination';
 
 const GiacenzeManagement = () => {
   const { users, allProducts, allGiacenze, assegnazioni, assignGiacenza, updateGiacenza, deleteGiacenza } = useGiacenze();
@@ -37,6 +38,10 @@ const GiacenzeManagement = () => {
 
   // Stati per giacenze filtrate
   const [filteredGiacenze, setFilteredGiacenze] = useState([]);
+
+  // Stati per paginazione
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
   // Stati per ordinamento
   const [sortConfig, setSortConfig] = useState({
@@ -186,6 +191,18 @@ const GiacenzeManagement = () => {
     const sorted = sortGiacenze(filtered, sortConfig);
     setFilteredGiacenze(sorted);
   }, [allGiacenze, filters, sortConfig]);
+
+  // Reset pagina quando cambiano i filtri
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, sortConfig]);
+
+  // Calcola dati paginati
+  const totalPages = Math.ceil(filteredGiacenze.length / pageSize);
+  const paginatedGiacenze = filteredGiacenze.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const setSelectedUser = (userId) => {
     dispatch({ type: 'SET_SELECTED_USER', payload: userId });
@@ -836,7 +853,7 @@ const GiacenzeManagement = () => {
                 </tr>
               </thead>
               <tbody className="glass-table-body">
-                {filteredGiacenze.map(giacenza => {
+                {paginatedGiacenze.map(giacenza => {
                   const isSottoSoglia = giacenza.quantitaDisponibile <= giacenza.quantitaMinima;
                   const percentualeRimasta = calculatePercentage(giacenza.quantitaDisponibile, giacenza.quantitaAssegnata);
                   
@@ -975,6 +992,15 @@ const GiacenzeManagement = () => {
               </div>
             )}
           </div>
+
+          {/* Paginazione */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredGiacenze.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+          />
         </div>
 
       {/* Edit Modal */}

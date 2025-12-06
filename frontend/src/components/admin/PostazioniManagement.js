@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit, Trash2, Save, X, Building, MapPin, Download, Upload, FileSpreadsheet, Search, ChevronUp, ChevronDown, ChevronsUpDown, Truck } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { apiCall } from '../../services/api';
+import Pagination from '../shared/Pagination';
 
 // Get API base URL helper
 const getApiBaseUrl = () => {
@@ -49,11 +50,15 @@ const PostazioniManagement = () => {
   // Stati per ordinamento
   const [sortField, setSortField] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
-  
+
   // Stati per filtri di ricerca
   const [searchPostazioni, setSearchPostazioni] = useState('');
   const [searchIndirizzi, setSearchIndirizzi] = useState('');
   const [selectedPolo, setSelectedPolo] = useState('');
+
+  // Stati per paginazione
+  const [tablePage, setTablePage] = useState(1);
+  const pageSize = 20;
 
   // Carica dati dal server
   const loadData = async () => {
@@ -388,6 +393,18 @@ const PostazioniManagement = () => {
     return 0;
   });
 
+  // Reset pagina quando cambiano i filtri
+  useEffect(() => {
+    setTablePage(1);
+  }, [searchPostazioni, searchIndirizzi, selectedPolo, sortField, sortDirection]);
+
+  // Calcola dati paginati
+  const totalPages = Math.ceil(sortedPostazioni.length / pageSize);
+  const paginatedPostazioni = sortedPostazioni.slice(
+    (tablePage - 1) * pageSize,
+    tablePage * pageSize
+  );
+
   return (
     <>
       <div className="space-y-6">
@@ -702,7 +719,7 @@ const PostazioniManagement = () => {
                   </tr>
                 </thead>
                 <tbody className="glass-table-body">
-                  {sortedPostazioni.map(postazione => {
+                  {paginatedPostazioni.map(postazione => {
                     const isEditing = editingId === postazione._id;
                     
                     return (
@@ -868,6 +885,15 @@ const PostazioniManagement = () => {
               )}
             </div>
           )}
+
+          {/* Paginazione */}
+          <Pagination
+            currentPage={tablePage}
+            totalPages={totalPages}
+            totalItems={sortedPostazioni.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setTablePage(page)}
+          />
         </div>
 
         {/* Contatore postazioni compatto */}
