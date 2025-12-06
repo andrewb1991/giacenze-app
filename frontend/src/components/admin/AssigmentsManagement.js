@@ -1251,11 +1251,55 @@ const AssignmentsManagement = () => {
 
   // ✅ AGGIUNTO: Funzione per ottenere le assegnazioni per polo/settimana
   const getAssignmentsForPoloWeek = (poloId, settimanaId) => {
-    return assegnazioni.filter(a => 
-      a.poloId?._id === poloId && 
+    return assegnazioni.filter(a =>
+      a.poloId?._id === poloId &&
       a.settimanaId?._id === settimanaId &&
       a.attiva
     );
+  };
+
+  // ✅ NUOVO: Filtra mezzi in base agli operatori selezionati
+  const getFilteredMezziByOperators = () => {
+    const { userId, userId2 } = assegnazioneForm;
+
+    // Se nessun operatore è selezionato, mostra tutti i mezzi
+    if (!userId && !userId2) {
+      return mezzi;
+    }
+
+    // Filtra mezzi assegnati agli operatori selezionati
+    const selectedOperatorIds = [userId, userId2].filter(Boolean);
+
+    return mezzi.filter(mezzo => {
+      // Se il mezzo non ha operatore assegnato, mostralo sempre
+      if (!mezzo.operatoreId) {
+        return true;
+      }
+
+      // Gestisci sia il caso in cui operatoreId è un oggetto popolato che una stringa
+      const mezzoOperatorId = typeof mezzo.operatoreId === 'object'
+        ? mezzo.operatoreId._id
+        : mezzo.operatoreId;
+
+      // Mostra il mezzo solo se è assegnato a uno degli operatori selezionati
+      return selectedOperatorIds.includes(mezzoOperatorId);
+    });
+  };
+
+  // ✅ NUOVO: Ottieni nome operatore per un mezzo
+  const getOperatorNameForMezzo = (mezzo) => {
+    if (!mezzo.operatoreId) {
+      return '';
+    }
+
+    // Gestisci sia oggetto popolato che stringa
+    if (typeof mezzo.operatoreId === 'object' && mezzo.operatoreId.username) {
+      return ` (${mezzo.operatoreId.username})`;
+    }
+
+    // Se è solo un ID, cerca l'username dall'array users
+    const operator = users.find(u => u._id === mezzo.operatoreId);
+    return operator ? ` (${operator.username})` : '';
   };
 
   if (showCalendarView) {
@@ -1402,13 +1446,18 @@ const AssignmentsManagement = () => {
                   onChange={(e) => updateAssegnazioneForm({ mezzoId: e.target.value })}
                 >
                   <option value="" className="bg-gray-800">Seleziona mezzo</option>
-                  {mezzi.map(mezzo => (
+                  {getFilteredMezziByOperators().map(mezzo => (
                     <option key={mezzo._id} value={mezzo._id} className="bg-gray-800">
-                      {mezzo.nome}
+                      {mezzo.nome}{getOperatorNameForMezzo(mezzo)}
                     </option>
                   ))}
                 </select>
               </div>
+              {(assegnazioneForm.userId || assegnazioneForm.userId2) && (
+                <p className="text-xs text-white/50 mt-1">
+                  Mezzi filtrati per operatore/i selezionato/i
+                </p>
+              )}
             </div>
 
             <div>

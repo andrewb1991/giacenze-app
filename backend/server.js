@@ -74,6 +74,7 @@ const mezzoSchema = new mongoose.Schema({
   marca: String,
   modello: String,
   descrizione: String,
+  operatoreId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Operatore collegato al mezzo (univoco ma non obbligatorio)
   attivo: { type: Boolean, default: true }
 }, { timestamps: true });
 
@@ -2459,7 +2460,7 @@ app.delete('/api/poli/:id/force', authenticateToken, async (req, res) => {
 // ✅ ROTTE API PER MEZZI
 app.get('/api/mezzi', authenticateToken, async (req, res) => {
   try {
-    const mezzi = await Mezzo.find({ attivo: true });
+    const mezzi = await Mezzo.find({ attivo: true }).populate('operatoreId', 'username email');
     res.json(mezzi);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -2469,8 +2470,8 @@ app.get('/api/mezzi', authenticateToken, async (req, res) => {
 // POST - Crea nuovo mezzo
 app.post('/api/mezzi', authenticateToken, async (req, res) => {
   try {
-    const { nome, targa, tipo, marca, modello, descrizione } = req.body;
-    
+    const { nome, targa, tipo, marca, modello, descrizione, operatoreId } = req.body;
+
     if (!nome) {
       return res.status(400).json({ message: 'Nome mezzo è obbligatorio' });
     }
@@ -2481,10 +2482,12 @@ app.post('/api/mezzi', authenticateToken, async (req, res) => {
       tipo: tipo?.trim() || '',
       marca: marca?.trim() || '',
       modello: modello?.trim() || '',
-      descrizione: descrizione?.trim() || ''
+      descrizione: descrizione?.trim() || '',
+      operatoreId: operatoreId || null
     });
 
     const mezzoSalvato = await nuovoMezzo.save();
+    await mezzoSalvato.populate('operatoreId', 'username email');
     console.log('✅ Mezzo creato:', mezzoSalvato);
     res.status(201).json(mezzoSalvato);
   } catch (error) {
@@ -2501,7 +2504,7 @@ app.post('/api/mezzi', authenticateToken, async (req, res) => {
 app.put('/api/mezzi/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nome, targa, tipo, marca, modello, descrizione } = req.body;
+    const { nome, targa, tipo, marca, modello, descrizione, operatoreId } = req.body;
 
     if (!nome) {
       return res.status(400).json({ message: 'Nome mezzo è obbligatorio' });
@@ -2515,10 +2518,11 @@ app.put('/api/mezzi/:id', authenticateToken, async (req, res) => {
         tipo: tipo?.trim() || '',
         marca: marca?.trim() || '',
         modello: modello?.trim() || '',
-        descrizione: descrizione?.trim() || ''
+        descrizione: descrizione?.trim() || '',
+        operatoreId: operatoreId || null
       },
       { new: true, runValidators: true }
-    );
+    ).populate('operatoreId', 'username email');
 
     if (!mezzoAggiornato) {
       return res.status(404).json({ message: 'Mezzo non trovato' });

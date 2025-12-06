@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, Truck, Search, ChevronUp, ChevronDown, ChevronsUpDown, ArrowLeft } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Truck, Search, ChevronUp, ChevronDown, ChevronsUpDown, ArrowLeft, User } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useGiacenze } from '../../hooks/useGiacenze';
 import { apiCall } from '../../services/api';
 import { useModalAnimation } from '../../hooks/useModalAnimation';
 
@@ -16,7 +17,8 @@ const getApiBaseUrl = () => {
 
 const MezziManagement = () => {
   const { token, setError, setCurrentPage } = useAuth();
-  
+  const { users } = useGiacenze();
+
   // Stati per dati
   const [mezzi, setMezzi] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -31,9 +33,10 @@ const MezziManagement = () => {
     targa: '',
     tipo: '',
     marca: '',
-    modello: ''
+    modello: '',
+    operatoreId: ''
   });
-  
+
   // Stati per editing
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -42,8 +45,13 @@ const MezziManagement = () => {
     targa: '',
     tipo: '',
     marca: '',
-    modello: ''
+    modello: '',
+    operatoreId: ''
   });
+
+  // Stati per ricerca operatore
+  const [searchOperatore, setSearchOperatore] = useState('');
+  const [searchOperatoreEdit, setSearchOperatoreEdit] = useState('');
 
   // Stati per ordinamento
   const [sortField, setSortField] = useState('');
@@ -102,15 +110,17 @@ const MezziManagement = () => {
       targa: '',
       tipo: '',
       marca: '',
-      modello: ''
+      modello: '',
+      operatoreId: ''
     });
+    setSearchOperatore('');
   };
 
   // Aggiunge nuovo mezzo
   const addMezzo = async () => {
     try {
       setError('');
-      
+
       if (!addForm.nome.trim()) {
         setError('Il nome è obbligatorio');
         return;
@@ -122,7 +132,8 @@ const MezziManagement = () => {
         targa: addForm.targa.trim(),
         tipo: addForm.tipo.trim(),
         marca: addForm.marca.trim(),
-        modello: addForm.modello.trim()
+        modello: addForm.modello.trim(),
+        operatoreId: addForm.operatoreId || null
       };
 
       await apiCall('/mezzi', {
@@ -147,8 +158,10 @@ const MezziManagement = () => {
       targa: mezzo.targa || '',
       tipo: mezzo.tipo || '',
       marca: mezzo.marca || '',
-      modello: mezzo.modello || ''
+      modello: mezzo.modello || '',
+      operatoreId: mezzo.operatoreId?._id || ''
     });
+    setSearchOperatoreEdit('');
   };
 
   // Annulla editing
@@ -160,22 +173,25 @@ const MezziManagement = () => {
       targa: '',
       tipo: '',
       marca: '',
-      modello: ''
+      modello: '',
+      operatoreId: ''
     });
+    setSearchOperatoreEdit('');
   };
 
   // Salva modifiche
   const saveEdit = async (mezzoId) => {
     try {
       setError('');
-      
+
       const updateData = {
         nome: editForm.nome,
         descrizione: editForm.descrizione,
         targa: editForm.targa,
         tipo: editForm.tipo,
         marca: editForm.marca,
-        modello: editForm.modello
+        modello: editForm.modello,
+        operatoreId: editForm.operatoreId || null
       };
 
       await apiCall(`/mezzi/${mezzoId}`, {
@@ -324,6 +340,10 @@ const MezziManagement = () => {
             aValue = a.modello || '';
             bValue = b.modello || '';
             break;
+          case 'operatore':
+            aValue = a.operatoreId?.username || '';
+            bValue = b.operatoreId?.username || '';
+            break;
           default:
             return 0;
         }
@@ -346,11 +366,38 @@ const MezziManagement = () => {
     if (sortField !== field) {
       return <ChevronsUpDown className="w-4 h-4 opacity-50" />;
     }
-    return sortDirection === 'asc' 
+    return sortDirection === 'asc'
       ? <ChevronUp className="w-4 h-4 text-blue-400" />
       : <ChevronDown className="w-4 h-4 text-blue-400" />;
   };
 
+  // Filtra operatori in base alla ricerca (per form creazione)
+  const getFilteredOperatori = () => {
+    if (!users) return [];
+    const operatori = users.filter(u => u.role === 'user');
+
+    if (!searchOperatore) return operatori;
+
+    const searchLower = searchOperatore.toLowerCase();
+    return operatori.filter(op =>
+      op.username?.toLowerCase().includes(searchLower) ||
+      op.email?.toLowerCase().includes(searchLower)
+    );
+  };
+
+  // Filtra operatori in base alla ricerca (per form edit)
+  const getFilteredOperatoriEdit = () => {
+    if (!users) return [];
+    const operatori = users.filter(u => u.role === 'user');
+
+    if (!searchOperatoreEdit) return operatori;
+
+    const searchLower = searchOperatoreEdit.toLowerCase();
+    return operatori.filter(op =>
+      op.username?.toLowerCase().includes(searchLower) ||
+      op.email?.toLowerCase().includes(searchLower)
+    );
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-6">
@@ -507,6 +554,81 @@ const MezziManagement = () => {
                   />
                 </div>
               </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Operatore (Opzionale)
+                </label>
+                <div className="glass-input-container rounded-xl">
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5" />
+                    <input
+                      type="text"
+                      placeholder="Cerca operatore per nome o email..."
+                      className="glass-input w-full pl-10 pr-10 py-3 rounded-xl bg-transparent border-0 outline-none text-white placeholder-white/50"
+                      value={searchOperatore}
+                      onChange={(e) => setSearchOperatore(e.target.value)}
+                      onFocus={() => setSearchOperatore('')}
+                    />
+                    {addForm.operatoreId && (
+                      <button
+                        onClick={() => {
+                          setAddForm({ ...addForm, operatoreId: '' });
+                          setSearchOperatore('');
+                        }}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white"
+                        title="Rimuovi operatore"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Lista operatori filtrati */}
+                {searchOperatore && (
+                  <div className="mt-2 glass-card rounded-xl max-h-48 overflow-y-auto">
+                    {getFilteredOperatori().length > 0 ? (
+                      getFilteredOperatori().map(op => (
+                        <button
+                          key={op._id}
+                          onClick={() => {
+                            setAddForm({ ...addForm, operatoreId: op._id });
+                            setSearchOperatore(op.username);
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/5 last:border-0"
+                        >
+                          <div className="text-white font-medium">{op.username}</div>
+                          <div className="text-white/60 text-sm">{op.email}</div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-white/50 text-sm">Nessun operatore trovato</div>
+                    )}
+                  </div>
+                )}
+
+                {/* Operatore selezionato */}
+                {addForm.operatoreId && !searchOperatore && (
+                  <div className="mt-2 glass-card p-3 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <User className="w-4 h-4 text-blue-300" />
+                      <span className="text-white">
+                        {users?.find(u => u._id === addForm.operatoreId)?.username || 'Operatore selezionato'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setAddForm({ ...addForm, operatoreId: '' });
+                        setSearchOperatore('');
+                      }}
+                      className="text-red-300 hover:text-red-200"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-start space-x-4 mt-6">
@@ -588,20 +710,20 @@ const MezziManagement = () => {
               <div className="space-y-2">
                 {/* Header skeleton */}
                 <div className="glass-table-header-row flex">
-                  {[...Array(6)].map((_, i) => (
+                  {[...Array(7)].map((_, i) => (
                     <div key={i} className="flex-1 px-6 py-3">
                       <div className="animate-pulse bg-white/20 h-4 rounded"></div>
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Row skeletons */}
                 {[...Array(5)].map((_, rowIndex) => (
                   <div key={rowIndex} className="glass-table-row flex border-t border-white/5">
-                    {[...Array(6)].map((_, colIndex) => (
+                    {[...Array(7)].map((_, colIndex) => (
                       <div key={colIndex} className="flex-1 px-6 py-4">
-                        <div className="animate-pulse bg-white/10 h-4 rounded" 
-                             style={{ animationDelay: `${(rowIndex * 6 + colIndex) * 100}ms` }}>
+                        <div className="animate-pulse bg-white/10 h-4 rounded"
+                             style={{ animationDelay: `${(rowIndex * 7 + colIndex) * 100}ms` }}>
                         </div>
                       </div>
                     ))}
@@ -648,13 +770,22 @@ const MezziManagement = () => {
                         {renderSortIcon('marca')}
                       </div>
                     </th>
-                    <th 
+                    <th
                       className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
                       onClick={() => handleSort('modello')}
                     >
                       <div className="flex items-center justify-between">
                         Modello
                         {renderSortIcon('modello')}
+                      </div>
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider cursor-pointer hover:bg-white/10 transition-colors"
+                      onClick={() => handleSort('operatore')}
+                    >
+                      <div className="flex items-center justify-between">
+                        Operatore
+                        {renderSortIcon('operatore')}
                       </div>
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-white/80 uppercase tracking-wider">
@@ -767,6 +898,74 @@ const MezziManagement = () => {
                           ) : (
                             <div className="text-sm text-white">
                               {mezzo.modello || 'N/A'}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Operatore */}
+                        <td className="px-6 py-4">
+                          {isEditing ? (
+                            <div className="relative">
+                              <div className="glass-input-container rounded-lg">
+                                <div className="relative">
+                                  <User className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4" />
+                                  <input
+                                    type="text"
+                                    placeholder="Cerca operatore..."
+                                    className="glass-input w-full pl-8 pr-8 py-2 rounded-lg bg-transparent border-0 outline-none text-white text-sm placeholder-white/50"
+                                    value={searchOperatoreEdit}
+                                    onChange={(e) => setSearchOperatoreEdit(e.target.value)}
+                                    onFocus={() => setSearchOperatoreEdit('')}
+                                  />
+                                  {editForm.operatoreId && (
+                                    <button
+                                      onClick={() => {
+                                        setEditForm({ ...editForm, operatoreId: '' });
+                                        setSearchOperatoreEdit('');
+                                      }}
+                                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Lista filtrata */}
+                              {searchOperatoreEdit && (
+                                <div className="absolute z-50 mt-1 glass-card rounded-lg max-h-32 overflow-y-auto w-full">
+                                  {getFilteredOperatoriEdit().length > 0 ? (
+                                    getFilteredOperatoriEdit().map(op => (
+                                      <button
+                                        key={op._id}
+                                        onClick={() => {
+                                          setEditForm({ ...editForm, operatoreId: op._id });
+                                          setSearchOperatoreEdit(op.username);
+                                        }}
+                                        className="w-full px-3 py-2 text-left hover:bg-white/10 transition-colors border-b border-white/5 last:border-0"
+                                      >
+                                        <div className="text-white text-sm">{op.username}</div>
+                                      </button>
+                                    ))
+                                  ) : (
+                                    <div className="px-3 py-2 text-white/50 text-xs">Nessuno</div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Operatore selezionato */}
+                              {editForm.operatoreId && !searchOperatoreEdit && (
+                                <div className="mt-1 text-sm text-blue-300">
+                                  {users?.find(u => u._id === editForm.operatoreId)?.username}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2">
+                              <User className="w-4 h-4 text-blue-300" />
+                              <div className="text-sm text-white">
+                                {mezzo.operatoreId?.username || 'Non assegnato'}
+                              </div>
                             </div>
                           )}
                         </td>
