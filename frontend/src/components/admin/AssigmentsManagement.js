@@ -1121,12 +1121,10 @@ const AssignmentsManagement = () => {
         dispatch({ type: 'SET_ACTIVE_TAB', payload: 'ordini' });
         console.log('✅ DEBUG: Navigato alla sezione ordini');
 
-        // 4. Rimuovi il modal e fai scroll DOPO che React ha renderizzato
+        // 4. Rimuovi il modal dopo un breve delay
         setTimeout(() => {
           modalDiv.remove();
-          // Scroll verso l'alto DOPO il render del nuovo componente
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          console.log('✅ DEBUG: Modal rimosso e scroll effettuato');
+          console.log('✅ DEBUG: Modal rimosso');
         }, 100);
 
       } catch (error) {
